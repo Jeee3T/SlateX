@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Whiteboard</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<div id="board-container">
+  <canvas id="board"></canvas>
+</div>
+
+<div class="toolbar">
+
+  <!-- Draw -->
+  <div class="tool-wrapper">
+    <button class="tool active" id="drawBtn">✏️</button>
+    <button class="arrow" data-target="drawMenu">▾</button>
+    <div class="menu" id="drawMenu">
+      <button data-draw="pen">✏️</button>
+      <button data-draw="pencil">✒️</button>
+      <button data-draw="brush">🖌️</button>
+    </div>
+  </div>
+
+  <button class="tool" id="eraser">🧽</button>
+  <button class="tool" id="text">T</button>
+  <button class="tool" id="note">📝</button>
+  <button class="tool" id="hand">✋</button>
+
+  <div class="divider"></div>
+
+  <!-- Color -->
+  <div class="tool-wrapper">
+    <button class="tool" id="colorBtn">🎨</button>
+    <button class="arrow" data-target="colorMenu">▾</button>
+    <div class="menu" id="colorMenu">
+      <span data-color="#000"></span>
+      <span data-color="#ef4444"></span>
+      <span data-color="#3b82f6"></span>
+      <span data-color="#22c55e"></span>
+      <span data-color="#f59e0b"></span>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <button class="tool" id="zoomIn">＋</button>
+  <button class="tool" id="zoomOut">－</button>
+  <button class="tool" id="download">⬇️</button>
+</div>
+
+<script src="/js/board.js"></script>
+</body>
+</html>

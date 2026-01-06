@@ -1,0 +1,24 @@
+{
+  "name": "whiteboard-project",
+  "version": "1.0.0",
+  "description": "SlateX is a real-time collaborative whiteboard platform with AI-powered features for smart drawing, text recognition, voice notes, and automated summaries.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Jeee3T/SlateX.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Jeee3T/SlateX/issues"
+  },
+  "homepage": "https://github.com/Jeee3T/SlateX#readme",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.2.1"
+  }
+}

@@ -1,0 +1,134 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #f3f4f6;
+}
+
+#board-container {
+  position: absolute;
+  inset: 0;
+}
+
+canvas {
+  background: white;
+  cursor: crosshair;
+}
+
+/* Toolbar */
+.toolbar {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: white;
+  padding: 10px 14px;
+  border-radius: 18px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+  z-index: 10;
+}
+
+.tool, .arrow {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.arrow {
+  width: 26px;
+}
+
+.tool.active {
+  background: #e0e7ff;
+}
+
+.divider {
+  width: 1px;
+  height: 28px;
+  background: #e5e7eb;
+}
+
+/* Tool wrapper */
+.tool-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* Menus */
+.menu {
+  position: absolute;
+  bottom: 52px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  padding: 6px;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+  display: none;
+  gap: 6px;
+}
+
+.menu.show {
+  display: flex;
+}
+
+/* Menu buttons */
+.menu button {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: none;
+  background: #f3f4f6;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+/* Colors */
+.menu span {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.menu span[data-color="#000"] { background:#000 }
+.menu span[data-color="#ef4444"] { background:#ef4444 }
+.menu span[data-color="#3b82f6"] { background:#3b82f6 }
+.menu span[data-color="#22c55e"] { background:#22c55e }
+.menu span[data-color="#f59e0b"] { background:#f59e0b }
+
+/* Text input */
+.text-input {
+  position: absolute;
+  min-width: 120px;
+  font: 20px "Segoe UI";
+  outline: none;
+  border: none;
+  background: transparent;
+}
+
+/* Sticky note */
+.note {
+  position: absolute;
+  width: 160px;
+  min-height: 120px;
+  background: #fff9c4;
+  padding: 8px;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+  cursor: move;
+}
