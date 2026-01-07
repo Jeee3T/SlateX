@@ -9,4 +9,5 @@ Feature added as of now :
 4. Late joiner sync (state recovery)
 5. Username support
 6. Active drawer indicator
+7. Added Homepage and merged with the canvas
    
