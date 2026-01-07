@@ -7,19 +7,42 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// 🔐 lock
+// =======================
+// 🧠 WHITEBOARD STATE
+// =======================
+
+// 🔐 lock (only one drawer at a time)
 let currentDrawer = null;
 
-// 🧠 FULL STROKES ONLY
+// 🧠 store FULL strokes
 let boardPaths = [];
 
-// 👤 users
+// 👤 connected users
 let users = {};
 
+// =======================
+// 📁 STATIC FILES
+// =======================
+
 app.use(express.static(path.join(__dirname, "public")));
-app.get("/", (_, res) =>
-  res.sendFile(path.join(__dirname, "public", "canvas.html"))
-);
+
+// =======================
+// 🌐 ROUTES
+// =======================
+
+// Homepage
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
+// Canvas / Whiteboard page
+app.get("/canvas", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "canvas.html"));
+});
+
+// =======================
+// 🔌 SOCKET.IO LOGIC
+// =======================
 
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
@@ -28,7 +51,7 @@ io.on("connection", (socket) => {
     users[socket.id] = name;
   });
 
-  // ✅ send FULL strokes to late joiner
+  // ✅ send FULL board to late joiners
   socket.emit("init-board", boardPaths);
 
   socket.on("request-draw", () => {
@@ -41,12 +64,12 @@ io.on("connection", (socket) => {
     }
   });
 
-  // 🔴 LIVE POINTS (do NOT store)
+  // 🔴 LIVE POINTS (not stored)
   socket.on("draw-point", (data) => {
     socket.broadcast.emit("draw-point", data);
   });
 
-  // ✅ FINAL STROKE (store this)
+  // ✅ FINAL STROKE (store)
   socket.on("draw-stroke", (stroke) => {
     boardPaths.push(stroke);
     socket.broadcast.emit("draw-stroke", stroke);
@@ -60,16 +83,27 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("disconnect", () => {
-    if (currentDrawer === socket.id) {
-      currentDrawer = null;
-      io.emit("draw-released");
-      io.emit("drawer-cleared");
-    }
-    delete users[socket.id];
-  });
+  socket.on("disconnect", (reason) => {
+  console.log("User disconnected:", socket.id, "Reason:", reason);
+
+  if (currentDrawer === socket.id) {
+    currentDrawer = null;
+    io.emit("draw-released");
+    io.emit("drawer-cleared");
+  }
+
+  delete users[socket.id];
+});
 });
 
-server.listen(3000, () =>
-  console.log("Server running at http://localhost:3000")
-);
+
+
+
+// =======================
+// 🚀 START SERVER
+// =======================
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log(`Server running at http://localhost:${PORT}`);
+});
