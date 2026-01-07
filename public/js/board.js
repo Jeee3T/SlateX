@@ -3,14 +3,11 @@ const username = prompt("Enter your name") || "Anonymous";
 socket.emit("join", username);
 
 const canvas = document.getElementById("board");
-const container = document.getElementById("board-container");
 const ctx = canvas.getContext("2d");
 
 /* UI */
 const drawBtn = document.getElementById("drawBtn");
 const eraserBtn = document.getElementById("eraser");
-const textBtn = document.getElementById("text");
-const noteBtn = document.getElementById("note");
 const handBtn = document.getElementById("hand");
 const zoomInBtn = document.getElementById("zoomIn");
 const zoomOutBtn = document.getElementById("zoomOut");
@@ -52,15 +49,9 @@ socket.on("draw-allowed", (allowed) => {
   if (allowed && pendingDraw) {
     pendingDraw = false;
     drawing = true;
-    currentPath = [];
   }
 
   canvas.style.cursor = allowed ? "crosshair" : "not-allowed";
-});
-
-socket.on("draw-locked", () => {
-  canDraw = false;
-  canvas.style.cursor = "not-allowed";
 });
 
 socket.on("draw-released", () => {
@@ -104,8 +95,8 @@ function getPos(e) {
 canvas.addEventListener("mousedown", (e) => {
   if (tool === "pen" || tool === "eraser") {
     pendingDraw = true;
-    socket.emit("request-draw");
     currentPath = [getPos(e)];
+    socket.emit("request-draw");
     return;
   }
 
@@ -121,8 +112,8 @@ canvas.addEventListener("mousemove", (e) => {
   const point = getPos(e);
   currentPath.push(point);
 
-  // 🔥 LIVE STREAM DRAWING
-  socket.emit("draw", {
+  // 🔴 LIVE POINTS (NOT STORED)
+  socket.emit("draw-point", {
     tool,
     drawType,
     color,
@@ -135,35 +126,54 @@ canvas.addEventListener("mousemove", (e) => {
 canvas.addEventListener("mouseup", () => {
   if (!drawing) return;
 
-  paths.push({
+  const stroke = {
     tool,
     drawType,
     color,
     points: [...currentPath]
-  });
+  };
+
+  paths.push(stroke);
+
+  // ✅ FINAL STROKE (STORED ON SERVER)
+  socket.emit("draw-stroke", stroke);
+  socket.emit("release-draw");
 
   drawing = false;
-  socket.emit("release-draw");
+  currentPath = [];
 });
 
 /* ======================
-   RECEIVE LIVE DRAWING
+   RECEIVE LIVE POINTS
    ====================== */
-socket.on("draw", (data) => {
+socket.on("draw-point", (data) => {
   if (
-    paths.length === 0 ||
-    paths[paths.length - 1].tool !== data.tool ||
-    paths[paths.length - 1].color !== data.color
+    !paths.length ||
+    paths[paths.length - 1].temp !== true
   ) {
     paths.push({
       tool: data.tool,
       drawType: data.drawType,
       color: data.color,
-      points: []
+      points: [],
+      temp: true
     });
   }
 
   paths[paths.length - 1].points.push(...data.points);
+  redraw();
+});
+
+/* ======================
+   RECEIVE FINAL STROKE
+   ====================== */
+socket.on("draw-stroke", (stroke) => {
+  // Remove temp live stroke if exists
+  if (paths.length && paths[paths.length - 1].temp) {
+    paths.pop();
+  }
+
+  paths.push(stroke);
   redraw();
 });
 
