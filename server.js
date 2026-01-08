@@ -35,7 +35,12 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// Canvas / Whiteboard page
+// 🔐 Auth page (MISSING BEFORE)
+app.get("/auth", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "auth.html"));
+});
+
+// 🎨 Canvas / Whiteboard page
 app.get("/canvas", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "canvas.html"));
 });
@@ -84,20 +89,17 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", (reason) => {
-  console.log("User disconnected:", socket.id, "Reason:", reason);
+    console.log("User disconnected:", socket.id, "Reason:", reason);
 
-  if (currentDrawer === socket.id) {
-    currentDrawer = null;
-    io.emit("draw-released");
-    io.emit("drawer-cleared");
-  }
+    if (currentDrawer === socket.id) {
+      currentDrawer = null;
+      io.emit("draw-released");
+      io.emit("drawer-cleared");
+    }
 
-  delete users[socket.id];
+    delete users[socket.id];
+  });
 });
-});
-
-
-
 
 // =======================
 // 🚀 START SERVER

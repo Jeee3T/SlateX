@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In - LINCX</title>
+    <link rel="stylesheet" href="css/auth.css">
+</head>
+<body>
+    <div class="background-shapes">
+        <div class="shape triangle"></div>
+        <div class="shape diamond"></div>
+        <div class="shape circle"></div>
+    </div>
+
+    <div class="auth-container">
+        <div class="left-panel">
+            <div class="browser-controls">
+                <span class="control red"></span>
+                <span class="control yellow"></span>
+                <span class="control green"></span>
+            </div>
+            <div class="left-content">
+                <h1>Create Together</h1>
+                <p>Unlock the power of visual collaboration</p>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <button class="close-btn" aria-label="Close">&times;</button>
+
+            <div class="form-container">
+                <h2>Welcome Back</h2>
+                <p class="subtitle">Please sign in to access your boards.</p>
+
+                <div id="error-message" class="error-message"></div>
+                <div id="success-message" class="success-message"></div>
+
+                <form id="auth-form">
+                    <div class="form-group">
+                        <label for="email">Username or Email</label>
+                        <input
+                            type="email"
+                            id="email"
+                            name="email"
+                            placeholder="joe.doe@lincx.io"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <div class="label-row">
+                            <label for="password">Password</label>
+                            <a href="#" class="forgot-link" id="forgot-link">Forgot?</a>
+                        </div>
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            placeholder="••••••••••"
+                            required
+                        >
+                    </div>
+
+                    <div class="button-group">
+                        <button type="submit" class="btn-primary" id="sign-in-btn">
+                            Sign In
+                        </button>
+                        <button type="button" class="btn-secondary" id="sign-up-btn">
+                            <span class="user-icon">👤</span> Sign Up
+                        </button>
+                    </div>
+                </form>
+
+                <footer class="auth-footer">
+                    <p>© 2023 LINCX. <a href="#">PRIVACY & TERMS</a> / <a href="#">CONTACT SUPPORT</a></p>
+                </footer>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+
+</body>
+</html>
