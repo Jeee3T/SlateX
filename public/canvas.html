@@ -3,91 +3,203 @@
 <head>
   <meta charset="UTF-8">
   <title>Whiteboard</title>
-  <!-- <link rel="stylesheet" href="/css/canvas.css"> -->
-
-<link rel="stylesheet" href="/css/home.css">
-<link rel="stylesheet" href="/css/canvas.css">
-
- 
-
+  <link rel="stylesheet" href="/css/home.css">
+  <link rel="stylesheet" href="/css/canvas.css">
 </head>
 <body>
 
   <!-- current drawer indicator label -->
-<div id="drawer-indicator"></div>
+  <div id="drawer-indicator"></div>
 
-<!-- AI Button -->
-<button id="ai-btn">✨</button>
+  <!-- AI Button -->
+  <button id="ai-btn">✨</button>
 
-<!-- AI Loader Overlay (hidden by default) -->
-<div id="ai-overlay" class="ai-hidden">
-
-  <!-- Loader from Uiverse -->
-  <div class="loader-wrapper">
-    <span class="loader-letter">G</span>
-    <span class="loader-letter">e</span>
-    <span class="loader-letter">n</span>
-    <span class="loader-letter">e</span>
-    <span class="loader-letter">r</span>
-    <span class="loader-letter">a</span>
-    <span class="loader-letter">t</span>
-    <span class="loader-letter">i</span>
-    <span class="loader-letter">n</span>
-    <span class="loader-letter">g</span>
-    <div class="loader"></div>
-  </div>
-
-</div>
-
-<div id="board-container">
-  <canvas id="board"></canvas>
-</div>
-
-<div class="toolbar">
-
-  <!-- Draw -->
-  <div class="tool-wrapper">
-    <button class="tool active" id="drawBtn">✏️</button>
-    <button class="arrow" data-target="drawMenu">▾</button>
-    <div class="menu" id="drawMenu">
-      <button data-draw="pen">✏️</button>
-      <button data-draw="pencil">✒️</button>
-      <button data-draw="brush">🖌️</button>
+  <!-- AI Loader Overlay (hidden by default) -->
+  <div id="ai-overlay" class="ai-hidden">
+    <div class="loader-wrapper">
+      <span class="loader-letter">G</span>
+      <span class="loader-letter">e</span>
+      <span class="loader-letter">n</span>
+      <span class="loader-letter">e</span>
+      <span class="loader-letter">r</span>
+      <span class="loader-letter">a</span>
+      <span class="loader-letter">t</span>
+      <span class="loader-letter">i</span>
+      <span class="loader-letter">n</span>
+      <span class="loader-letter">g</span>
+      <div class="loader"></div>
     </div>
   </div>
 
-  <button class="tool" id="eraser">🧽</button>
-  <button class="tool" id="text">T</button>
-  <button class="tool" id="note">📝</button>
-  <button class="tool" id="hand">✋</button>
+  <div id="board-container">
+    <canvas id="board"></canvas>
+  </div>
 
-  <div class="divider"></div>
-
-  <!-- Color -->
-  <div class="tool-wrapper">
-    <button class="tool" id="colorBtn">🎨</button>
-    <button class="arrow" data-target="colorMenu">▾</button>
-    <div class="menu" id="colorMenu">
-      <span data-color="#000"></span>
-      <span data-color="#ef4444"></span>
-      <span data-color="#3b82f6"></span>
-      <span data-color="#22c55e"></span>
-      <span data-color="#f59e0b"></span>
+  <!-- Shapes Panel -->
+  <div id="shapes-panel" class="shapes-hidden">
+    <div id="shapes-header">
+      <span>Shapes</span>
+      <button id="shapes-close">×</button>
+    </div>
+    <div id="shapes-grid">
+      <div class="shape-item" data-shape="rectangle" title="Rectangle">
+        <svg viewBox="0 0 60 60"><rect x="10" y="15" width="40" height="30" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      </div>
+      <div class="shape-item" data-shape="circle" title="Circle">
+        <svg viewBox="0 0 60 60"><circle cx="30" cy="30" r="20" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      </div>
+      <div class="shape-item" data-shape="triangle" title="Triangle">
+        <svg viewBox="0 0 60 60"><polygon points="30,10 50,45 10,45" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      </div>
+      <div class="shape-item" data-shape="star" title="Star">
+        <svg viewBox="0 0 60 60"><polygon points="30,10 37,25 52,27 41,38 44,52 30,45 16,52 19,38 8,27 23,25" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      </div>
+      <div class="shape-item" data-shape="hexagon" title="Hexagon">
+        <svg viewBox="0 0 60 60"><polygon points="30,10 45,20 45,40 30,50 15,40 15,20" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      </div>
+      <div class="shape-item" data-shape="pentagon" title="Pentagon">
+        <svg viewBox="0 0 60 60"><polygon points="30,10 50,25 42,48 18,48 10,25" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      </div>
+      <div class="shape-item" data-shape="diamond" title="Diamond">
+        <svg viewBox="0 0 60 60"><polygon points="30,10 50,30 30,50 10,30" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      </div>
+      <div class="shape-item" data-shape="arrow-right" title="Arrow Right">
+        <svg viewBox="0 0 60 60"><path d="M10,25 L40,25 L40,15 L55,30 L40,45 L40,35 L10,35 Z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      </div>
+      <div class="shape-item" data-shape="arrow-left" title="Arrow Left">
+        <svg viewBox="0 0 60 60"><path d="M50,25 L20,25 L20,15 L5,30 L20,45 L20,35 L50,35 Z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      </div>
+      <div class="shape-item" data-shape="arrow-up" title="Arrow Up">
+        <svg viewBox="0 0 60 60"><path d="M25,50 L25,20 L15,20 L30,5 L45,20 L35,20 L35,50 Z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      </div>
+      <div class="shape-item" data-shape="arrow-down" title="Arrow Down">
+        <svg viewBox="0 0 60 60"><path d="M25,10 L25,40 L15,40 L30,55 L45,40 L35,40 L35,10 Z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      </div>
+      <div class="shape-item" data-shape="ellipse" title="Ellipse">
+        <svg viewBox="0 0 60 60"><ellipse cx="30" cy="30" rx="25" ry="15" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      </div>
+      <div class="shape-item" data-shape="heart" title="Heart">
+        <svg viewBox="0 0 60 60"><path d="M30,50 C30,50 10,35 10,22 C10,15 15,10 20,10 C25,10 30,15 30,15 C30,15 35,10 40,10 C45,10 50,15 50,22 C50,35 30,50 30,50 Z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      </div>
+      <div class="shape-item" data-shape="cloud" title="Cloud">
+        <svg viewBox="0 0 60 60"><path d="M45,30 C45,25 42,20 37,20 C36,15 32,12 27,12 C20,12 15,17 15,24 C10,24 7,28 7,32 C7,36 10,40 15,40 L45,40 C50,40 53,36 53,32 C53,28 50,30 45,30 Z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      </div>
+      <div class="shape-item" data-shape="trapezoid" title="Trapezoid">
+        <svg viewBox="0 0 60 60"><polygon points="20,15 40,15 50,45 10,45" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      </div>
+      <div class="shape-item" data-shape="parallelogram" title="Parallelogram">
+        <svg viewBox="0 0 60 60"><polygon points="15,35 35,35 45,15 25,15" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      </div>
+      <div class="shape-item" data-shape="octagon" title="Octagon">
+        <svg viewBox="0 0 60 60"><polygon points="22,10 38,10 50,22 50,38 38,50 22,50 10,38 10,22" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      </div>
+      <div class="shape-item" data-shape="cross" title="Cross">
+        <svg viewBox="0 0 60 60"><path d="M25,10 L35,10 L35,25 L50,25 L50,35 L35,35 L35,50 L25,50 L25,35 L10,35 L10,25 L25,25 Z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      </div>
+      <div class="shape-item" data-shape="rounded-rect" title="Rounded Rectangle">
+        <svg viewBox="0 0 60 60"><rect x="10" y="15" width="40" height="30" rx="5" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      </div>
+      <div class="shape-item" data-shape="speech-bubble" title="Speech Bubble">
+        <svg viewBox="0 0 60 60"><rect x="10" y="10" width="40" height="30" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M25,40 L20,50 L30,40" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      </div>
+      <div class="shape-item" data-shape="lightning" title="Lightning">
+        <svg viewBox="0 0 60 60"><polygon points="35,10 15,30 28,30 25,50 45,28 32,28" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      </div>
+      <div class="shape-item" data-shape="moon" title="Moon">
+        <svg viewBox="0 0 60 60"><path d="M40,15 C35,15 30,18 27,23 C24,28 24,35 27,40 C30,45 35,48 40,48 C35,48 30,45 27,40 C24,35 24,28 27,23 C30,18 35,15 40,15 M40,10 C30,10 20,18 20,30 C20,42 30,50 40,50 C45,50 48,47 48,42 C48,37 45,35 42,35 C44,32 45,28 45,25 C45,18 43,10 40,10 Z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      </div>
+      <div class="shape-item" data-shape="cylinder" title="Cylinder">
+        <svg viewBox="0 0 60 60"><ellipse cx="30" cy="15" rx="20" ry="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10,15 L10,45 M50,15 L50,45" stroke="currentColor" stroke-width="2"/><ellipse cx="30" cy="45" rx="20" ry="8" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      </div>
+      <div class="shape-item" data-shape="cube" title="Cube">
+        <svg viewBox="0 0 60 60"><path d="M20,25 L30,20 L40,25 L40,40 L30,45 L20,40 Z M30,20 L30,35 M20,25 L30,35 L40,25" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      </div>
     </div>
   </div>
 
-  <div class="divider"></div>
+  <div class="toolbar">
+    <!-- Draw -->
+    <div class="tool-wrapper">
+      <button class="tool active" id="drawBtn">✏️</button>
+      <button class="arrow" data-target="drawMenu">▾</button>
+      <div class="menu" id="drawMenu">
+        <button data-draw="pen">✏️</button>
+        <button data-draw="pencil">✒️</button>
+        <button data-draw="brush">🖌️</button>
+      </div>
+    </div>
 
-  <button class="tool" id="zoomIn">＋</button>
-  <button class="tool" id="zoomOut">－</button>
-  <button class="tool" id="download">⬇️</button>
-</div>
+    <button class="tool" id="eraser">🧽</button>
+    
+    <!-- Shapes Button with proper icon -->
+    <div class="tool-wrapper">
+      <button class="tool" id="shapesBtn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"/>
+          <rect x="3" y="3" width="7" height="7" rx="1"/>
+          <polygon points="20,3 23,8 17,8"/>
+        </svg>
+      </button>
+      <button class="arrow" data-target="shapeColorMenu">▾</button>
+      <div class="menu" id="shapeColorMenu">
+        <span data-shape-color="#000"></span>
+        <span data-shape-color="#ef4444"></span>
+        <span data-shape-color="#3b82f6"></span>
+        <span data-shape-color="#22c55e"></span>
+        <span data-shape-color="#f59e0b"></span>
+        <span data-shape-color="#a855f7"></span>
+        <span data-shape-color="#ec4899"></span>
+        <span data-shape-color="#8b5cf6"></span>
+      </div>
+    </div>
+    
+    <button class="tool" id="text">T</button>
+    <button class="tool" id="note">📝</button>
+    <button class="tool" id="hand">✋</button>
 
-<!-- Socket.IO client (MUST come first) -->
-<script src="/socket.io/socket.io.js"></script>
+    <div class="divider"></div>
 
-<!-- Your existing whiteboard logic -->
-<script src="/js/canvas.js"></script>
+    <!-- Drawing Color -->
+    <div class="tool-wrapper">
+      <button class="tool" id="colorBtn">🎨</button>
+      <button class="arrow" data-target="colorMenu">▾</button>
+      <div class="menu" id="colorMenu">
+        <span data-color="#000"></span>
+        <span data-color="#ef4444"></span>
+        <span data-color="#3b82f6"></span>
+        <span data-color="#22c55e"></span>
+        <span data-color="#f59e0b"></span>
+        <span data-color="#a855f7"></span>
+        <span data-color="#ec4899"></span>
+        <span data-color="#8b5cf6"></span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <button class="tool" id="zoomIn">＋</button>
+    <button class="tool" id="zoomOut">－</button>
+    <button class="tool" id="clearAll" title="Clear All">🗑️</button>
+    <button class="tool" id="download">⬇️</button>
+  </div>
+
+  <button id="chat-toggle">💬</button>
+
+  <!-- Chat Panel -->
+  <div id="chat-panel" class="chat-hidden">
+    <div id="chat-header">Chat</div>
+    <div id="chat-messages"></div>
+    <div id="chat-input-box">
+      <input id="chat-input" placeholder="Type a message..." />
+      <button id="chat-send">Send</button>
+    </div>
+  </div>
+
+  <!-- Socket.IO client (MUST come first) -->
+  <script src="/socket.io/socket.io.js"></script>
+
+  <!-- Your existing whiteboard logic -->
+  <script src="/js/canvas.js"></script>
 
 </body>
 </html>

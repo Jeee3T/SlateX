@@ -17,6 +17,15 @@ let currentDrawer = null;
 // 🧠 store FULL strokes
 let boardPaths = [];
 
+// 🎨 store shapes
+let boardShapes = [];
+
+// 📝 store text elements
+let boardTextElements = [];
+
+// 📋 store sticky notes
+let boardStickyNotes = [];
+
 // 👤 connected users
 let users = {};
 
@@ -51,8 +60,18 @@ io.on("connection", (socket) => {
     users[socket.id] = name;
   });
 
-  // ✅ send FULL board to late joiners
-  socket.emit("init-board", boardPaths);
+  // Chat
+  socket.on("chat-message", (msg) => {
+    io.emit("chat-message", msg);
+  });
+
+  // ✅ send FULL board to late joiners (paths + shapes + text + notes)
+  socket.emit("init-board", {
+    paths: boardPaths,
+    shapes: boardShapes,
+    textElements: boardTextElements,
+    stickyNotes: boardStickyNotes
+  });
 
   socket.on("request-draw", () => {
     if (currentDrawer === null) {
@@ -83,21 +102,100 @@ io.on("connection", (socket) => {
     }
   });
 
+  // =======================
+  // 🎨 SHAPES EVENTS
+  // =======================
+
+  // Add shape
+  socket.on("shape-add", (shape) => {
+    boardShapes.push(shape);
+    socket.broadcast.emit("shape-added", shape);
+  });
+
+  // Update shape (move/resize)
+  socket.on("shape-update", (updatedShape) => {
+    const idx = boardShapes.findIndex(s => s.id === updatedShape.id);
+    if (idx !== -1) {
+      boardShapes[idx] = updatedShape;
+      socket.broadcast.emit("shape-updated", updatedShape);
+    }
+  });
+
+  // Delete shape
+  socket.on("shape-delete", (shapeId) => {
+    boardShapes = boardShapes.filter(s => s.id !== shapeId);
+    socket.broadcast.emit("shape-deleted", shapeId);
+  });
+
+  // Clear all
+  socket.on("clear-all", () => {
+    boardPaths = [];
+    boardShapes = [];
+    boardTextElements = [];
+    boardStickyNotes = [];
+    io.emit("clear-all");
+  });
+
+  // =======================
+  // 📝 TEXT EVENTS
+  // =======================
+
+  socket.on("text-add", (textElement) => {
+    boardTextElements.push(textElement);
+    socket.broadcast.emit("text-added", textElement);
+  });
+
+  socket.on("text-update", (updatedText) => {
+    const idx = boardTextElements.findIndex(t => t.id === updatedText.id);
+    if (idx !== -1) {
+      boardTextElements[idx] = updatedText;
+      socket.broadcast.emit("text-updated", updatedText);
+    }
+  });
+
+  socket.on("text-delete", (textId) => {
+    boardTextElements = boardTextElements.filter(t => t.id !== textId);
+    socket.broadcast.emit("text-deleted", textId);
+  });
+
+  // =======================
+  // 📋 STICKY NOTES EVENTS
+  // =======================
+
+  socket.on("note-add", (note) => {
+    boardStickyNotes.push(note);
+    socket.broadcast.emit("note-added", note);
+  });
+
+  socket.on("note-update", (updatedNote) => {
+    const idx = boardStickyNotes.findIndex(n => n.id === updatedNote.id);
+    if (idx !== -1) {
+      boardStickyNotes[idx] = updatedNote;
+      socket.broadcast.emit("note-updated", updatedNote);
+    }
+  });
+
+  socket.on("note-delete", (noteId) => {
+    boardStickyNotes = boardStickyNotes.filter(n => n.id !== noteId);
+    socket.broadcast.emit("note-deleted", noteId);
+  });
+
+  // =======================
+  // 🔌 DISCONNECT
+  // =======================
+
   socket.on("disconnect", (reason) => {
-  console.log("User disconnected:", socket.id, "Reason:", reason);
+    console.log("User disconnected:", socket.id, "Reason:", reason);
 
-  if (currentDrawer === socket.id) {
-    currentDrawer = null;
-    io.emit("draw-released");
-    io.emit("drawer-cleared");
-  }
+    if (currentDrawer === socket.id) {
+      currentDrawer = null;
+      io.emit("draw-released");
+      io.emit("drawer-cleared");
+    }
 
-  delete users[socket.id];
+    delete users[socket.id];
+  });
 });
-});
-
-
-
 
 // =======================
 // 🚀 START SERVER
