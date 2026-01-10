@@ -44,7 +44,12 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// Canvas / Whiteboard page
+// 🔐 Auth page (MISSING BEFORE)
+app.get("/auth", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "auth.html"));
+});
+
+// 🎨 Canvas / Whiteboard page
 app.get("/canvas", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "canvas.html"));
 });
