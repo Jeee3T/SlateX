@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Choose Room - SlateX</title>
+  <link rel="stylesheet" href="/css/room.css">
+</head>
+<body>
+  <div class="room-container">
+    <!-- Logo Header -->
+    <div class="room-header">
+      <img src="./assets/logo/title-logo.png" alt="SlateX" class="header-logo" />
+      <h1>Choose Your Workspace</h1>
+      <p>Create a new room or join an existing one</p>
+    </div>
+
+    <!-- Main Options -->
+    <div class="options-container">
+      <!-- Create Room Card -->
+      <div class="option-card create-card">
+        <div class="card-icon">✨</div>
+        <h2>Create New Room</h2>
+        <p>Start a fresh whiteboard with password protection</p>
+        
+        <form id="create-room-form">
+          <div class="input-group">
+            <label for="room-name">Room Name</label>
+            <input 
+              type="text" 
+              id="room-name" 
+              placeholder="My Awesome Project" 
+              required 
+              maxlength="50"
+            />
+          </div>
+
+          <div class="input-group">
+            <label for="room-password">Room Password</label>
+            <input 
+              type="password" 
+              id="room-password" 
+              placeholder="Create a secure password" 
+              required 
+              minlength="4"
+            />
+            <small>Minimum 4 characters</small>
+          </div>
+
+          <div class="generated-code" id="generated-code" style="display: none;">
+            <label>Your Room ID</label>
+            <div class="code-display">
+              <span id="display-code"></span>
+              <button type="button" class="copy-btn" onclick="copyRoomCode()">
+                📋 Copy
+              </button>
+            </div>
+            <small>Share this ID with your team</small>
+          </div>
+          
+          <button type="submit" class="action-btn primary-btn" id="create-btn">
+            Create Room
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6 12L10 8L6 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </form>
+      </div>
+
+      <!-- Join Room Card -->
+      <div class="option-card join-card">
+        <div class="card-icon">🚪</div>
+        <h2>Join Existing Room</h2>
+        <p>Enter room ID and password to collaborate</p>
+        
+        <form id="join-room-form">
+          <div class="input-group">
+            <label for="room-id">Room ID</label>
+            <input 
+              type="text" 
+              id="room-id" 
+              placeholder="ABC-123-XYZ" 
+              required 
+              maxlength="20"
+              style="text-transform: uppercase;"
+            />
+          </div>
+
+          <div class="input-group">
+            <label for="join-password">Room Password</label>
+            <input 
+              type="password" 
+              id="join-password" 
+              placeholder="Enter room password" 
+              required 
+            />
+          </div>
+          
+          <button type="submit" class="action-btn secondary-btn">
+            Join Room
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6 12L10 8L6 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Recent/Active Rooms -->
+    <div class="recent-rooms" id="recent-rooms" style="display: none;">
+      <h3>Recent Rooms</h3>
+      <div class="rooms-list" id="rooms-list">
+        <!-- Rooms will be populated here -->
+      </div>
+    </div>
+
+    <!-- Back to Home -->
+    <div class="footer-link">
+      <a href="/">← Back to Home</a>
+    </div>
+  </div>
+
+  <!-- Error/Success Toast -->
+  <div id="toast" class="toast"></div>
+
+  <script src="/js/theme.js"></script>
+  <script>
+    // Generate random room ID
+    function generateRoomId() {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let id = '';
+      for (let i = 0; i < 9; i++) {
+        if (i === 3 || i === 6) id += '-';
+        else id += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return id;
+    }
+
+    // Copy room code to clipboard
+    function copyRoomCode() {
+      const code = document.getElementById('display-code').textContent;
+      navigator.clipboard.writeText(code).then(() => {
+        showToast('Room ID copied to clipboard!', 'success');
+      }).catch(() => {
+        showToast('Failed to copy', 'error');
+      });
+    }
+
+    // Show toast message
+    function showToast(message, type = 'info') {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = `toast ${type} show`;
+      
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    }
+
+    // Create Room Handler
+    document.getElementById('create-room-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const roomName = document.getElementById('room-name').value.trim();
+      const roomPassword = document.getElementById('room-password').value;
+      const createBtn = document.getElementById('create-btn');
+      
+      if (!roomName) {
+        showToast('Please enter a room name', 'error');
+        return;
+      }
+
+      if (roomPassword.length < 4) {
+        showToast('Password must be at least 4 characters', 'error');
+        return;
+      }
+
+      // Generate room ID
+      const roomId = generateRoomId();
+
+      try {
+        // Disable button during creation
+        createBtn.disabled = true;
+        createBtn.textContent = 'Creating...';
+
+        // TODO: Send to server to create room
+        const response = await fetch('/api/rooms/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            roomId, 
+            name: roomName, 
+            password: roomPassword 
+          })
+        }).catch(() => null); // Fallback if endpoint doesn't exist yet
+
+        // For now, save locally (replace with server response later)
+        const roomData = {
+          id: roomId,
+          name: roomName,
+          password: roomPassword, // In production, never store plain password
+          createdAt: new Date().toISOString(),
+          isOwner: true
+        };
+        
+        localStorage.setItem('currentRoom', JSON.stringify(roomData));
+        
+        // Save to recent rooms
+        saveToRecentRooms(roomData);
+        
+        // Show generated room ID
+        document.getElementById('display-code').textContent = roomId;
+        document.getElementById('generated-code').style.display = 'block';
+        
+        showToast(`Room created successfully!`, 'success');
+        
+        // Change button to proceed
+        createBtn.textContent = 'Proceed to Templates →';
+        createBtn.disabled = false;
+        createBtn.onclick = () => {
+          window.location.href = '/domain';
+        };
+        
+      } catch (error) {
+        console.error('Error creating room:', error);
+        showToast('Failed to create room. Please try again.', 'error');
+        createBtn.disabled = false;
+        createBtn.textContent = 'Create Room';
+      }
+    });
+
+    // Join Room Handler
+    document.getElementById('join-room-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const roomId = document.getElementById('room-id').value.trim().toUpperCase();
+      const password = document.getElementById('join-password').value;
+      
+      if (!roomId || !password) {
+        showToast('Please enter room ID and password', 'error');
+        return;
+      }
+
+      try {
+        // TODO: Verify room and password on server
+        const response = await fetch('/api/rooms/join', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ roomId, password })
+        }).catch(() => null); // Fallback if endpoint doesn't exist yet
+
+        // For now, accept any room ID/password (replace with server verification)
+        // In production, the server should verify the password
+        
+        const roomData = {
+          id: roomId,
+          name: 'Joined Room',
+          joinedAt: new Date().toISOString(),
+          isOwner: false
+        };
+        
+        localStorage.setItem('currentRoom', JSON.stringify(roomData));
+        
+        // Save to recent rooms
+        saveToRecentRooms(roomData);
+        
+        showToast(`Joining room: ${roomId}`, 'success');
+        
+        // Redirect to domain selection
+        setTimeout(() => {
+          window.location.href = '/domain';
+        }, 1500);
+        
+      } catch (error) {
+        console.error('Error joining room:', error);
+        showToast('Invalid room ID or password', 'error');
+      }
+    });
+
+    // Save to recent rooms
+    function saveToRecentRooms(roomData) {
+      let recentRooms = JSON.parse(localStorage.getItem('recentRooms') || '[]');
+      
+      // Remove duplicate if exists
+      recentRooms = recentRooms.filter(r => r.id !== roomData.id);
+      
+      // Add to beginning
+      recentRooms.unshift({
+        id: roomData.id,
+        name: roomData.name,
+        lastAccessed: new Date().toISOString()
+      });
+      
+      // Keep only last 5 rooms
+      recentRooms = recentRooms.slice(0, 5);
+      
+      localStorage.setItem('recentRooms', JSON.stringify(recentRooms));
+    }
+
+    // Load recent rooms
+    function loadRecentRooms() {
+      const recentRooms = JSON.parse(localStorage.getItem('recentRooms') || '[]');
+      
+      if (recentRooms.length > 0) {
+        document.getElementById('recent-rooms').style.display = 'block';
+        const roomsList = document.getElementById('rooms-list');
+        
+        roomsList.innerHTML = recentRooms.map(room => `
+          <div class="room-item" onclick="quickJoinRoom('${room.id}', '${room.name}')">
+            <div class="room-info">
+              <strong>${room.name}</strong>
+              <span>${room.id}</span>
+            </div>
+            <div class="room-arrow">→</div>
+          </div>
+        `).join('');
+      }
+    }
+
+    function quickJoinRoom(id, name) {
+      // Pre-fill the join form
+      document.getElementById('room-id').value = id;
+      document.getElementById('join-password').focus();
+      
+      // Scroll to join card
+      document.querySelector('.join-card').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Load recent rooms on page load
+    loadRecentRooms();
+  </script>
+</body>
+</html>
