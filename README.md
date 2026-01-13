@@ -10,4 +10,6 @@ Feature added as of now :
 5. Username support
 6. Active drawer indicator
 7. Added Homepage and merged with the canvas
+8. Choose from multiple available templates
+9. Rooms introduced  
    
