@@ -32,8 +32,10 @@
         <a href="#about">About</a>
       </div>
 
-      <!-- Future auth -->
-      <a href="/auth" class="btn-primary nav-btn">Register</a>
+      <div class="nav-actions">
+        <a href="/auth" class="btn-primary nav-btn" id="auth-btn">Login / Register</a>
+        <button class="btn-secondary nav-btn" id="logout-btn" style="display: none;">Logout</button>
+      </div>
     </div>
   </nav>
 
@@ -41,14 +43,13 @@
   <section class="hero">
     <div class="hero-container">
       <div class="hero-content">
-        <h1 class="hero-title">Think. Draw. Create — Smarter.</h1>
+        <h1 class="hero-title">Think. Draw. Create – Smarter.</h1>
         <p class="hero-description">
          An AI-powered whiteboard that understands your ideas and helps you build faster, clearer, and better.
         </p>
 
         <div class="hero-buttons">
-          <!-- MAIN CTA -->
-          <a href="/canvas" class="btn-primary">
+          <a href="/auth" class="btn-primary" id="hero-cta">
             Open Whiteboard
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
               xmlns="http://www.w3.org/2000/svg">
@@ -57,7 +58,9 @@
             </svg>
           </a>
 
-          <button class="btn-secondary">Learn More</button>
+          <button class="btn-secondary" onclick="document.getElementById('features').scrollIntoView({behavior: 'smooth'})">
+            Learn More
+          </button>
         </div>
       </div>
 
@@ -115,30 +118,44 @@
 
       <div class="features-grid">
         <div class="feature-card">
-          <h3 class="feature-title">Freehand Drawing</h3>
+          <h3 class="feature-title">🎨 Freehand Drawing</h3>
           <p class="feature-description">
-            Draw freely with smooth pen strokes.
+            Draw freely with smooth pen strokes and multiple brush types.
           </p>
         </div>
 
         <div class="feature-card">
-          <h3 class="feature-title">Shapes & Lines</h3>
+          <h3 class="feature-title">📐 Shapes & Lines</h3>
           <p class="feature-description">
-            Create structured diagrams and flowcharts.
+            Create structured diagrams with 20+ professional shapes.
           </p>
         </div>
 
         <div class="feature-card">
-          <h3 class="feature-title">Text & Notes</h3>
+          <h3 class="feature-title">📝 Text & Notes</h3>
           <p class="feature-description">
-            Add text anywhere on the canvas.
+            Add text anywhere and create sticky notes for ideas.
           </p>
         </div>
 
         <div class="feature-card">
-          <h3 class="feature-title">Export & Save</h3>
+          <h3 class="feature-title">👥 Real-time Collaboration</h3>
           <p class="feature-description">
-            Save and export your boards easily.
+            Work together with your team simultaneously in real-time.
+          </p>
+        </div>
+
+        <div class="feature-card">
+          <h3 class="feature-title">💼 Domain Templates</h3>
+          <p class="feature-description">
+            Pre-built layouts for coding, medical, finance, and project planning.
+          </p>
+        </div>
+
+        <div class="feature-card">
+          <h3 class="feature-title">💾 Export & Save</h3>
+          <p class="feature-description">
+            Save your work and export boards as high-quality images.
           </p>
         </div>
       </div>
@@ -148,11 +165,63 @@
   <!-- FOOTER -->
   <footer class="footer">
     <div class="footer-container">
-      <span class="logo-text">Whiteboard</span>
+      <div class="footer-content">
+        <span class="logo-text">SlateX</span>
+        <p style="color: rgba(255,255,255,0.7); margin-top: 8px; font-size: 14px;">
+          Collaborative whiteboard with AI-powered features
+        </p>
+      </div>
+      <div class="footer-links">
+        <a href="/auth" style="color: rgba(255,255,255,0.8); text-decoration: none; transition: color 0.2s;">
+          Get Started →
+        </a>
+      </div>
     </div>
   </footer>
 
   <!-- Homepage JS -->
   <script src="/js/home.js"></script>
+
+  <script>
+    // Check if user is logged in and update UI
+    async function checkAuthStatus() {
+      try {
+        const response = await fetch('/api/auth/status');
+        const data = await response.json();
+        
+        if (data.authenticated) {
+          // User is logged in - show logout button and change CTA
+          document.getElementById('auth-btn').style.display = 'none';
+          document.getElementById('logout-btn').style.display = 'block';
+          document.getElementById('hero-cta').href = '/domain';
+          document.getElementById('hero-cta').innerHTML = `
+            Go to Whiteboard
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6 12L10 8L6 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          `;
+        }
+      } catch (error) {
+        console.log('Not authenticated');
+      }
+    }
+
+    // Logout handler
+    document.getElementById('logout-btn').addEventListener('click', async () => {
+      try {
+        const response = await fetch('/api/auth/logout', { method: 'POST' });
+        const data = await response.json();
+        
+        if (data.success) {
+          window.location.reload();
+        }
+      } catch (error) {
+        console.error('Logout failed:', error);
+      }
+    });
+
+    // Check auth status on page load
+    checkAuthStatus();
+  </script>
 </body>
 </html>

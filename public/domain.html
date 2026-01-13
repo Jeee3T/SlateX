@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Choose Your Workspace</title>
+  <link rel="stylesheet" href="/css/domain.css">
+</head>
+<body>
+  <div class="domain-container">
+    <header class="domain-header">
+      <h1>Choose Your Workspace</h1>
+      <p>Select a board type optimized for your workflow</p>
+    </header>
+
+    <div class="domain-grid">
+      <!-- Coding Board -->
+      <div class="domain-card" data-template="coding">
+        <div class="card-icon">💻</div>
+        <h2>Coding Board</h2>
+        <p class="card-description">Structured, logical, interview-oriented</p>
+        
+        <div class="card-preview">
+          <div class="preview-section" style="height: 20%;">
+            <span>Problem Statement</span>
+          </div>
+          <div class="preview-row">
+            <div class="preview-section" style="width: 65%; height: 45%;">
+              <span>Logic / Pseudocode</span>
+            </div>
+            <div class="preview-section" style="width: 33%; height: 45%;">
+              <span>Notes</span>
+            </div>
+          </div>
+          <div class="preview-section" style="height: 35%;">
+            <span>Code Area</span>
+          </div>
+        </div>
+
+        <div class="card-features">
+          <span class="feature-tag">✓ Problem-Solution Flow</span>
+          <span class="feature-tag">✓ Monospace Code Sections</span>
+          <span class="feature-tag">✓ Interview Ready</span>
+        </div>
+
+        <button class="select-btn">Start Coding</button>
+      </div>
+
+      <!-- Medical Board -->
+      <div class="domain-card" data-template="medical">
+        <div class="card-icon">🏥</div>
+        <h2>Medical Board</h2>
+        <p class="card-description">Focused, diagram-first, observational</p>
+        
+        <div class="card-preview">
+          <div class="preview-section" style="height: 70%;">
+            <span>Diagram Area</span>
+          </div>
+          <div class="preview-section" style="height: 28%;">
+            <span>Observations / Notes</span>
+          </div>
+        </div>
+
+        <div class="card-features">
+          <span class="feature-tag">✓ Large Diagram Space</span>
+          <span class="feature-tag">✓ Clinical Notes</span>
+          <span class="feature-tag">✓ Visual First</span>
+        </div>
+
+        <button class="select-btn">Start Diagnosing</button>
+      </div>
+
+      <!-- Finance Board -->
+      <div class="domain-card" data-template="finance">
+        <div class="card-icon">💰</div>
+        <h2>Finance & Accounting</h2>
+        <p class="card-description">Analytical, tabular, decision-focused</p>
+        
+        <div class="card-preview">
+          <div class="preview-row">
+            <div class="preview-section" style="width: 48%; height: 60%;">
+              <span>Numbers / Data</span>
+            </div>
+            <div class="preview-section" style="width: 48%; height: 60%;">
+              <span>Calculations</span>
+            </div>
+          </div>
+          <div class="preview-section" style="height: 38%;">
+            <span>Summary / Decisions</span>
+          </div>
+        </div>
+
+        <div class="card-features">
+          <span class="feature-tag">✓ Split View Analysis</span>
+          <span class="feature-tag">✓ Calculation Focus</span>
+          <span class="feature-tag">✓ Decision Summary</span>
+        </div>
+
+        <button class="select-btn">Start Analyzing</button>
+      </div>
+
+      <!-- Project Planning Board -->
+      <div class="domain-card" data-template="project">
+        <div class="card-icon">📅</div>
+        <h2>Project Planning</h2>
+        <p class="card-description">Workflow-driven, Kanban style</p>
+        
+        <div class="card-preview">
+          <div class="preview-row">
+            <div class="preview-section" style="width: 31%; height: 100%;">
+              <span>To Do</span>
+            </div>
+            <div class="preview-section" style="width: 31%; height: 100%;">
+              <span>In Progress</span>
+            </div>
+            <div class="preview-section" style="width: 31%; height: 100%;">
+              <span>Done</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-features">
+          <span class="feature-tag">✓ Kanban Workflow</span>
+          <span class="feature-tag">✓ Task Tracking</span>
+          <span class="feature-tag">✓ Progress Visibility</span>
+        </div>
+
+        <button class="select-btn">Start Planning</button>
+      </div>
+
+      <!-- Brainstorming Board -->
+      <div class="domain-card" data-template="brainstorm">
+        <div class="card-icon">💡</div>
+        <h2>Brainstorming</h2>
+        <p class="card-description">Open, free, creative canvas</p>
+        
+        <div class="card-preview brainstorm-preview">
+          <div class="floating-element" style="top: 15%; left: 20%;">💭</div>
+          <div class="floating-element" style="top: 40%; left: 60%;">✨</div>
+          <div class="floating-element" style="top: 65%; left: 35%;">🎨</div>
+          <span class="unlimited-text">Unlimited Creative Space</span>
+        </div>
+
+        <div class="card-features">
+          <span class="feature-tag">✓ No Boundaries</span>
+          <span class="feature-tag">✓ Free-form Ideas</span>
+          <span class="feature-tag">✓ Total Freedom</span>
+        </div>
+
+        <button class="select-btn">Start Creating</button>
+      </div>
+    </div>
+
+    <footer class="domain-footer">
+      <p>Not sure? Start with <strong>Brainstorming</strong> for a blank canvas</p>
+    </footer>
+  </div>
+
+  <script>
+    // Handle domain selection
+    document.querySelectorAll('.domain-card').forEach(card => {
+      const btn = card.querySelector('.select-btn');
+      const template = card.dataset.template;
+
+      // Add hover effect
+      card.addEventListener('mouseenter', () => {
+        card.style.transform = 'translateY(-8px)';
+      });
+
+      card.addEventListener('mouseleave', () => {
+        card.style.transform = 'translateY(0)';
+      });
+
+      // Handle click on card or button
+      const selectDomain = () => {
+        // Save selection to localStorage
+        localStorage.setItem('boardTemplate', template);
+        
+        // Add selection animation
+        card.style.transform = 'scale(0.95)';
+        card.style.opacity = '0.7';
+        
+        // Redirect to canvas
+        setTimeout(() => {
+          window.location.href = '/canvas';
+        }, 200);
+      };
+
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        selectDomain();
+      });
+
+      card.addEventListener('click', selectDomain);
+    });
+  </script>
+</body>
+</html>

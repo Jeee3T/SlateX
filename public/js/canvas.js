@@ -4,6 +4,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const socket = io();
   const username = prompt("Enter your name") || "Anonymous";
   socket.emit("join", username);
+  window.BoardTemplates.loadSaved(socket);
 
   /* ================= CANVAS ================= */
   const canvas = document.getElementById("board");
@@ -207,12 +208,20 @@ document.addEventListener("DOMContentLoaded", () => {
   /* ================= MOUSE ================= */
   canvas.addEventListener("mousedown", e => {
 
-    if (tool === "hand") {
-      px = e.clientX;
-      py = e.clientY;
-      return;
+  if (tool === "hand") {
+    px = e.clientX;
+    py = e.clientY;
+    canvas.style.cursor = 'grabbing';
+    
+    // Also move template overlay
+    const templateOverlay = document.getElementById('template-overlay');
+    if (templateOverlay && !window.BoardTemplates.interactMode) {
+      const currentTransform = window.BoardTemplates.templateTransform;
+      window.BoardTemplates.templateStartX = currentTransform.x;
+      window.BoardTemplates.templateStartY = currentTransform.y;
     }
-
+    return;
+  }
     if (tool === "text") {
       e.preventDefault();
       e.stopPropagation();
@@ -231,127 +240,148 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   canvas.addEventListener("mousemove", e => {
-    if (tool === "hand" && e.buttons === 1) {
-      const dx = e.clientX - px;
-      const dy = e.clientY - py;
-      
-      offsetX += dx;
-      offsetY += dy;
-      px = e.clientX;
-      py = e.clientY;
-      
-      redraw();
-      updateAllElementPositions();
-      return;
+  // Hand tool: move canvas AND template together
+  if (tool === "hand" && (e.buttons === 1 || e.which === 1)) {
+    const dx = e.clientX - px;
+    const dy = e.clientY - py;
+    
+    offsetX += dx;
+    offsetY += dy;
+    
+    // 🆕 ADD THIS BLOCK: Move template overlay along with canvas
+    const templateOverlay = document.getElementById('template-overlay');
+    if (templateOverlay && window.BoardTemplates && !window.BoardTemplates.interactMode) {
+      // Update template position by the same delta
+      window.BoardTemplates.templateTransform.x += dx;
+      window.BoardTemplates.templateTransform.y += dy;
+      window.BoardTemplates.applyTransform();
     }
-
-    if (!drawing) return;
-    const p = getPos(e);
-    currentPath.push(p);
-    socket.emit("draw-point", { tool, drawType, color, points: [p] });
+    
+    px = e.clientX;
+    py = e.clientY;
+    
     redraw();
-  });
+    updateAllElementPositions();
+    return;
+  }
+
+  if (!drawing) return;
+  const p = getPos(e);
+  currentPath.push(p);
+  socket.emit("draw-point", { tool, drawType, color, points: [p] });
+  redraw();
+});
 
   canvas.addEventListener("mouseup", () => {
-    if (tool === "text") {
-      const e = event;
-      const pos = getPos(e);
-      const textId = Date.now() + '-' + Math.random();
-      
-      const input = document.createElement("input");
-      input.className = "text-input";
-      input.style.left = e.clientX + "px";
-      input.style.top = e.clientY + "px";
-      input.style.color = color;
-      input.placeholder = "Type text here...";
-      document.body.appendChild(input);
-      
-      // Use setTimeout to ensure input is focused after being added to DOM
+  // Hand tool cursor reset and sync template position
+  if (tool === "hand") {
+    canvas.style.cursor = 'grab';
+    
+    // Sync template position with other users
+    if (window.BoardTemplates && window.BoardTemplates.socket && window.BoardTemplates.templateTransform) {
+      window.BoardTemplates.socket.emit('template-transform-update', window.BoardTemplates.templateTransform);
+    }
+  }
+  
+  if (tool === "text") {
+    const e = event;
+    const pos = getPos(e);
+    const textId = Date.now() + '-' + Math.random();
+    
+    const input = document.createElement("input");
+    input.className = "text-input";
+    input.style.left = e.clientX + "px";
+    input.style.top = e.clientY + "px";
+    input.style.color = color;
+    input.placeholder = "Type text here...";
+    document.body.appendChild(input);
+    
+    // Use setTimeout to ensure input is focused after being added to DOM
+    setTimeout(() => {
+      input.focus();
+    }, 0);
+
+    let textCreated = false;
+
+    input.onkeydown = ev => {
+      ev.stopPropagation(); // Prevent event bubbling
+      if (ev.key === "Enter" && input.value.trim()) {
+        const textElement = {
+          id: textId,
+          text: input.value,
+          x: pos.x,
+          y: pos.y,
+          color: color
+        };
+        
+        textElements.push(textElement);
+        socket.emit("text-add", textElement);
+        textCreated = true;
+        input.remove();
+        renderAllTexts();
+      } else if (ev.key === "Escape") {
+        input.remove();
+      }
+    };
+    
+    input.onblur = () => {
       setTimeout(() => {
-        input.focus();
-      }, 0);
-
-      let textCreated = false;
-
-      input.onkeydown = ev => {
-        ev.stopPropagation(); // Prevent event bubbling
-        if (ev.key === "Enter" && input.value.trim()) {
-          const textElement = {
-            id: textId,
-            text: input.value,
-            x: pos.x,
-            y: pos.y,
-            color: color
-          };
-          
-          textElements.push(textElement);
-          socket.emit("text-add", textElement);
-          textCreated = true;
-          input.remove();
-          renderAllTexts();
-        } else if (ev.key === "Escape") {
+        if (!textCreated && input.parentElement) {
+          if (input.value.trim()) {
+            const textElement = {
+              id: textId,
+              text: input.value,
+              x: pos.x,
+              y: pos.y,
+              color: color
+            };
+            
+            textElements.push(textElement);
+            socket.emit("text-add", textElement);
+            renderAllTexts();
+          }
           input.remove();
         }
-      };
-      
-      input.onblur = () => {
-        setTimeout(() => {
-          if (!textCreated && input.parentElement) {
-            if (input.value.trim()) {
-              const textElement = {
-                id: textId,
-                text: input.value,
-                x: pos.x,
-                y: pos.y,
-                color: color
-              };
-              
-              textElements.push(textElement);
-              socket.emit("text-add", textElement);
-              renderAllTexts();
-            }
-            input.remove();
-          }
-        }, 100);
-      };
-      
-      return;
-    }
+      }, 100);
+    };
+    
+    return;
+  }
 
-    if (tool === "note") {
-      const e = event;
-      const noteId = Date.now() + '-' + Math.random();
-      const pos = getPos(e);
-      
-      const noteData = {
-        id: noteId,
-        x: pos.x,
-        y: pos.y,
-        content: "",
-        color: "#fff9c4"
-      };
-      
-      stickyNotes.push(noteData);
-      socket.emit("note-add", noteData);
-      renderAllNotes();
-      
-      // Focus the newly created note
-      setTimeout(() => {
-        const noteEl = document.querySelector(`[data-note-id="${noteId}"]`);
-        if (noteEl) noteEl.focus();
-      }, 50);
-      
-      return;
-    }
+  if (tool === "note") {
+    const e = event;
+    const noteId = Date.now() + '-' + Math.random();
+    const pos = getPos(e);
+    
+    const noteData = {
+      id: noteId,
+      x: pos.x,
+      y: pos.y,
+      content: "",
+      color: "#fff9c4"
+    };
+    
+    stickyNotes.push(noteData);
+    socket.emit("note-add", noteData);
+    renderAllNotes();
+    
+    // Focus the newly created note
+    setTimeout(() => {
+      const noteEl = document.querySelector(`[data-note-id="${noteId}"]`);
+      if (noteEl) noteEl.focus();
+    }, 50);
+    
+    return;
+  }
 
-    if (!drawing) return;
-    const stroke = { tool, drawType, color, points: currentPath };
-    paths.push(stroke);
-    socket.emit("draw-stroke", stroke);
-    socket.emit("release-draw");
-    drawing = false;
-    currentPath = [];
-  });
+  if (!drawing) return;
+  const stroke = { tool, drawType, color, points: currentPath };
+  paths.push(stroke);
+  socket.emit("draw-stroke", stroke);
+  socket.emit("release-draw");
+  drawing = false;
+  currentPath = [];
+});
 
   socket.on("draw-point", data => {
     paths.push({ ...data });

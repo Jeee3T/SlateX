@@ -11,6 +11,39 @@ html, body {
   background: #f3f4f6;
 }
 
+/* ================= GO HOME BUTTON ================= */
+
+#home-btn {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: #1a1a1a;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+  z-index: 99999;
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+#home-btn:hover {
+  background: #333;
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+}
+
+#home-btn:active {
+  transform: scale(0.95);
+}
+
 /* ================= BOARD ================= */
 
 #board-container {
@@ -335,7 +368,7 @@ canvas {
 #shapes-panel {
   position: fixed;
   top: 70px;
-  left: 16px;
+  left: 70px;
   width: 320px;
   max-height: 520px;
   background: white;
@@ -477,4 +510,183 @@ canvas {
 
 .shape-delete:hover {
   background: #dc2626;
+}
+
+/* ================= BOARD TEMPLATE SELECTOR ================= */
+
+#template-selector-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999999;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.template-selector {
+  background: white;
+  padding: 40px;
+  border-radius: 20px;
+  max-width: 900px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.4s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.template-selector h2 {
+  text-align: center;
+  margin-bottom: 30px;
+  font-size: 28px;
+  color: #1f2937;
+}
+
+.template-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.template-card {
+  background: #f9fafb;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 24px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.template-card:hover {
+  border-color: #3b82f6;
+  background: #eff6ff;
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.2);
+}
+
+.template-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+}
+
+.template-card h3 {
+  font-size: 18px;
+  margin-bottom: 8px;
+  color: #1f2937;
+}
+
+.template-card p {
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+/* ================= TEMPLATE OVERLAY ON CANVAS ================= */
+
+#template-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.template-section {
+  position: absolute;
+  transition: opacity 0.3s ease;
+}
+
+.template-label {
+  user-select: none;
+  white-space: nowrap;
+}
+
+/* Brainstorm mode - hide guidelines completely */
+body.board-brainstorm #template-overlay {
+  display: none;
+}
+
+/* Change board button */
+#change-board-btn {
+  transition: all 0.2s ease;
+}
+
+#change-board-btn:hover {
+  background: #3b82f6 !important;
+  transform: scale(1.1);
+}
+
+/* Section hover effects */
+.template-section:hover {
+  border-color: rgba(59, 130, 246, 0.6) !important;
+  background: rgba(59, 130, 246, 0.08) !important;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
+/* Section text container */
+.section-text-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.section-text-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.section-text-container::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 3px;
+}
+
+.section-text-container::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Section textarea focus animation */
+.section-textarea {
+  transition: all 0.2s ease;
+}
+
+.section-textarea:focus {
+  transform: scale(1.01);
+}
+
+/* Resize handle hover */
+.section-resize-handle:hover svg {
+  opacity: 0.7 !important;
+  color: #3b82f6;
+}
+
+/* Section header buttons */
+.section-write-btn:active {
+  transform: scale(0.95);
+}
+
+/* Template label cursor */
+.template-label {
+  user-select: none;
+}
+
+.template-label:active {
+  cursor: grabbing !important;
 }

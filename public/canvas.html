@@ -2,11 +2,19 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Whiteboard</title>
+  <title>Whiteboard - SlateX</title>
   <link rel="stylesheet" href="/css/home.css">
   <link rel="stylesheet" href="/css/canvas.css">
 </head>
 <body>
+
+  <!-- Go Home Button -->
+  <button id="home-btn" title="Go to Home">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <polyline points="9 22 9 12 15 12 15 22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </button>
 
   <!-- current drawer indicator label -->
   <div id="drawer-indicator"></div>
@@ -197,9 +205,20 @@
 
   <!-- Socket.IO client (MUST come first) -->
   <script src="/socket.io/socket.io.js"></script>
+  
+  <script src="/js/board-templates.js"></script>
 
   <!-- Your existing whiteboard logic -->
   <script src="/js/canvas.js"></script>
+
+  <script>
+    // Go Home button functionality
+    document.getElementById('home-btn').addEventListener('click', () => {
+      if (confirm('Are you sure you want to go home? Any unsaved changes will be lost.')) {
+        window.location.href = '/';
+      }
+    });
+  </script>
 
 </body>
 </html>
