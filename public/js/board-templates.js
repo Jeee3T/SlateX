@@ -636,24 +636,9 @@ const BoardTemplates = {
     btn.id = 'interact-mode-btn';
     btn.innerHTML = '🔧';
     btn.title = 'Interact Mode: OFF (Click to turn ON)';
+    
+    // 🔥 FIXED: Use class instead of inline styles so CSS takes priority
     btn.className = 'tool';
-    btn.style.cssText = `
-      position: fixed;
-      top: 70px;
-      left: 16px;
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      border: none;
-      background: white;
-      color: #111;
-      font-size: 20px;
-      cursor: pointer;
-      z-index: 99999;
-      pointer-events: auto;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      transition: all 0.2s ease;
-    `;
     
     btn.addEventListener('click', () => {
       this.interactMode = !this.interactMode;
@@ -706,22 +691,9 @@ const BoardTemplates = {
     btn.id = 'change-board-btn';
     btn.innerHTML = '🔄';
     btn.title = 'Change Board Type';
-    btn.style.cssText = `
-      position: fixed;
-      top: 16px;
-      left: 16px;
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      border: none;
-      background: #111;
-      color: white;
-      font-size: 20px;
-      cursor: pointer;
-      z-index: 99999;
-      pointer-events: auto;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    `;
+    
+    // 🔥 FIXED: Removed inline styles that override CSS
+    // The CSS file now handles all the styling
     
     btn.addEventListener('click', () => {
       this.showSelector();
