@@ -8,30 +8,136 @@
   <!-- Global + Home styles -->
   <link rel="stylesheet" href="/css/global.css" />
   <link rel="stylesheet" href="/css/home.css" />
+
+ 
+  <style>
+    /* Enhanced logo styles with animations */
+    .logo-image {
+      height: 50px;  /* ADJUST THIS VALUE to make logo bigger/smaller */
+      width: auto;
+      object-fit: contain;
+      display: block;
+      transition: transform 0.3s ease, filter 0.3s ease;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+      position: relative;
+      z-index: 10;
+    }
+
+    .nav-logo {
+      cursor: pointer;
+      overflow: visible;  /* Allows logo to extend beyond navbar */
+    }
+
+    .nav-logo:hover .logo-image {
+      transform: scale(1.05);
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));
+    }
+
+    /* Smooth navbar animation on scroll */
+    .navbar {
+      transition: box-shadow 0.3s ease, background-color 0.3s ease;
+      overflow: visible;  /* Allows logo to extend beyond navbar */
+    }
+
+    .navbar.scrolled {
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+
+    /* Enhanced button animations */
+    .btn-primary, .btn-secondary {
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-primary::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.2);
+      transform: translate(-50%, -50%);
+      transition: width 0.6s ease, height 0.6s ease;
+    }
+
+    .btn-primary:hover::before {
+      width: 300px;
+      height: 300px;
+    }
+
+    .btn-primary:hover, .btn-secondary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    }
+
+    /* Feature cards animation */
+    .feature-card {
+      transition: all 0.3s ease;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+    }
+
+    /* Smooth scroll behavior */
+    html {
+      scroll-behavior: smooth;
+    }
+
+    /* Loading animation for canvas */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .hero-content, .hero-visual {
+      animation: fadeIn 0.8s ease-out;
+    }
+
+    .hero-visual {
+      animation-delay: 0.2s;
+    }
+
+    /* Navigation link hover effect */
+    .nav-links a {
+      position: relative;
+      transition: color 0.3s ease;
+    }
+
+    .nav-links a::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: currentColor;
+      transition: width 0.3s ease;
+    }
+
+    .nav-links a:hover::after {
+      width: 100%;
+    }
+  </style>
 </head>
 
 <body>
   <!-- NAVBAR -->
-  <nav class="navbar">
+  <nav class="navbar" id="navbar">
     <div class="nav-container">
-      <div class="nav-logo">
-        <div class="logo-icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-            xmlns="http://www.w3.org/2000/svg">
-            <path d="M3 17L9 11L13 15L21 7" stroke="white" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M14 7H21V14" stroke="white" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </div>
-        <span class="logo-text">SlateX</span>
+      <div class="nav-logo" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">
+        <img src="./assets/logo/title-logo.png" alt="SlateX Logo" class="logo-image" />
       </div>
 
       <div class="nav-links">
         <a href="#features">Features</a>
         <a href="#about">About</a>
       </div>
-
+   
       <div class="nav-actions">
         <a href="/auth" class="btn-primary nav-btn" id="auth-btn">Login / Register</a>
         <button class="btn-secondary nav-btn" id="logout-btn" style="display: none;">Logout</button>
@@ -183,6 +289,22 @@
   <script src="/js/home.js"></script>
 
   <script>
+    // Navbar scroll effect
+    let lastScroll = 0;
+    const navbar = document.getElementById('navbar');
+    
+    window.addEventListener('scroll', () => {
+      const currentScroll = window.pageYOffset;
+      
+      if (currentScroll > 50) {
+        navbar.classList.add('scrolled');
+      } else {
+        navbar.classList.remove('scrolled');
+      }
+      
+      lastScroll = currentScroll;
+    });
+
     // Check if user is logged in and update UI
     async function checkAuthStatus() {
       try {
@@ -190,11 +312,14 @@
         const data = await response.json();
         
         if (data.authenticated) {
-          // User is logged in - show logout button and change CTA
-          document.getElementById('auth-btn').style.display = 'none';
-          document.getElementById('logout-btn').style.display = 'block';
-          document.getElementById('hero-cta').href = '/domain';
-          document.getElementById('hero-cta').innerHTML = `
+          const authBtn = document.getElementById('auth-btn');
+          const logoutBtn = document.getElementById('logout-btn');
+          const heroCta = document.getElementById('hero-cta');
+          
+          authBtn.style.display = 'none';
+          logoutBtn.style.display = 'block';
+          heroCta.href = '/domain';
+          heroCta.innerHTML = `
             Go to Whiteboard
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M6 12L10 8L6 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -218,6 +343,34 @@
       } catch (error) {
         console.error('Logout failed:', error);
       }
+    });
+
+    // Intersection Observer for feature cards animation
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry, index) => {
+        if (entry.isIntersecting) {
+          setTimeout(() => {
+            entry.target.style.opacity = '1';
+            entry.target.style.transform = 'translateY(0)';
+          }, index * 100);
+        }
+      });
+    }, observerOptions);
+
+    // Observe feature cards
+    document.addEventListener('DOMContentLoaded', () => {
+      const featureCards = document.querySelectorAll('.feature-card');
+      featureCards.forEach(card => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+        observer.observe(card);
+      });
     });
 
     // Check auth status on page load
