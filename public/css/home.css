@@ -349,3 +349,462 @@ body {
     text-align: center;
   }
 }
+
+/*theme mode*/
+
+.theme-toggle {
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-right: 16px;
+  position: relative;
+}
+
+.theme-toggle:hover {
+  background: rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.theme-toggle svg {
+  position: absolute;
+  transition: all 0.3s ease;
+}
+
+.sun-icon {
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
+}
+
+.moon-icon {
+  opacity: 0;
+  transform: rotate(90deg) scale(0);
+}
+
+body.dark-mode .sun-icon {
+  opacity: 0;
+  transform: rotate(-90deg) scale(0);
+}
+
+body.dark-mode .moon-icon {
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
+}
+
+/* ============================================ */
+/* UNIVERSAL DARK MODE STYLES */
+/* ============================================ */
+
+/* Body & Background */
+body.dark-mode {
+  background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 50%, #2d2d2d 100%);
+  color: #ffffff;
+}
+
+/* Navbar */
+body.dark-mode .navbar {
+  background: rgba(20, 20, 20, 0.95);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode .nav-links a {
+  color: #e0e0e0;
+}
+
+body.dark-mode .nav-links a:hover {
+  color: #ffffff;
+}
+
+body.dark-mode .theme-toggle {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+body.dark-mode .theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Hero Section */
+body.dark-mode .hero {
+  background: transparent;
+}
+
+body.dark-mode .hero-title {
+  color: #ffffff;
+}
+
+body.dark-mode .hero-description {
+  color: #b0b0b0;
+}
+
+/* Whiteboard Demo */
+body.dark-mode .whiteboard-demo {
+  background: #1a1a1a;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode .toolbar {
+  background: #0f0f0f;
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode .tool-btn {
+  color: #e0e0e0;
+  background: transparent;
+}
+
+body.dark-mode .tool-btn:hover,
+body.dark-mode .tool-btn.active {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode .placeholder-text {
+  color: #666;
+}
+
+/* Features Section */
+body.dark-mode .features {
+  background: transparent;
+}
+
+body.dark-mode .features-title {
+  color: #ffffff;
+}
+
+body.dark-mode .features-subtitle {
+  color: #b0b0b0;
+}
+
+body.dark-mode .feature-card {
+  background: linear-gradient(145deg, #1e1e1e 0%, #171717 100%);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+body.dark-mode .feature-card:hover {
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+}
+
+body.dark-mode .feature-title {
+  color: #ffffff;
+}
+
+body.dark-mode .feature-description {
+  color: #999;
+}
+
+/* Footer */
+body.dark-mode .footer {
+  background: #0f0f0f;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  color: #e0e0e0;
+}
+
+body.dark-mode .logo-text {
+  color: #ffffff;
+}
+
+/* Buttons */
+body.dark-mode .btn-primary {
+  background: linear-gradient(135deg, #ffffff 0%, #e0e0e0 100%);
+  color: #1a1a1a;
+}
+
+body.dark-mode .btn-primary:hover {
+  background: linear-gradient(135deg, #e0e0e0 0%, #d0d0d0 100%);
+}
+
+body.dark-mode .btn-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+body.dark-mode .btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* ============================================ */
+/* DOMAIN PAGE DARK MODE */
+/* ============================================ */
+
+body.dark-mode .domain-container {
+  background: transparent;
+}
+
+body.dark-mode .domain-header h1 {
+  color: #ffffff;
+}
+
+body.dark-mode .domain-header p {
+  color: #b0b0b0;
+}
+
+body.dark-mode .domain-card {
+  background: linear-gradient(145deg, #1e1e1e 0%, #171717 100%);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+body.dark-mode .domain-card:hover {
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+}
+
+body.dark-mode .domain-card h2 {
+  color: #ffffff;
+}
+
+body.dark-mode .card-description {
+  color: #999;
+}
+
+body.dark-mode .card-preview {
+  background: #0a0a0a;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+body.dark-mode .preview-section {
+  background: linear-gradient(145deg, #1a1a1a 0%, #141414 100%);
+  border-color: rgba(255, 255, 255, 0.06);
+  color: #888;
+}
+
+body.dark-mode .brainstorm-preview {
+  background: linear-gradient(135deg, #2a2a2a 0%, #1f1f1f 100%);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode .unlimited-text {
+  color: #ccc;
+}
+
+body.dark-mode .feature-tag {
+  background: rgba(255, 255, 255, 0.05);
+  color: #bbb;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+body.dark-mode .select-btn {
+  background: linear-gradient(135deg, #333333 0%, #1a1a1a 100%);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+body.dark-mode .select-btn:hover {
+  background: linear-gradient(135deg, #3a3a3a 0%, #202020 100%);
+}
+
+body.dark-mode .domain-footer {
+  color: #999;
+}
+
+body.dark-mode .domain-footer strong {
+  color: #fff;
+}
+
+/* ============================================ */
+/* AUTH PAGE DARK MODE */
+/* ============================================ */
+
+body.dark-mode .auth-container {
+  background: transparent;
+}
+
+body.dark-mode .auth-box {
+  background: linear-gradient(145deg, #1e1e1e 0%, #171717 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+body.dark-mode .auth-box h1 {
+  color: #ffffff;
+}
+
+body.dark-mode .subtitle {
+  color: #999;
+}
+
+body.dark-mode .toggle-buttons {
+  background: #0f0f0f;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode .toggle-btn {
+  color: #999;
+}
+
+body.dark-mode .toggle-btn.active {
+  background: #ffffff;
+  color: #1a1a1a;
+}
+
+body.dark-mode .form-group label {
+  color: #e0e0e0;
+}
+
+body.dark-mode .form-group input {
+  background: #0f0f0f;
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+body.dark-mode .form-group input::placeholder {
+  color: #666;
+}
+
+body.dark-mode .form-group input:focus {
+  background: #1a1a1a;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+body.dark-mode .form-group small {
+  color: #888;
+}
+
+body.dark-mode .submit-btn {
+  background: #ffffff;
+  color: #1a1a1a;
+}
+
+body.dark-mode .submit-btn:hover {
+  background: #e0e0e0;
+}
+
+body.dark-mode .back-home a {
+  color: #999;
+}
+
+body.dark-mode .back-home a:hover {
+  color: #ffffff;
+}
+
+/* ============================================ */
+/* CANVAS PAGE DARK MODE */
+/* ============================================ */
+
+body.dark-mode #board-container {
+  background: #0f0f0f;
+}
+
+body.dark-mode #board {
+  background: #1a1a1a;
+}
+
+body.dark-mode .toolbar {
+  background: rgba(20, 20, 20, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode .tool {
+  background: rgba(255, 255, 255, 0.05);
+  color: #e0e0e0;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode .tool:hover,
+body.dark-mode .tool.active {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+body.dark-mode .divider {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode #home-btn {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+body.dark-mode #home-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+body.dark-mode #ai-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+body.dark-mode #chat-toggle {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+body.dark-mode #chat-panel {
+  background: rgba(20, 20, 20, 0.98);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode #chat-header {
+  background: #0f0f0f;
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+body.dark-mode #chat-messages {
+  background: #1a1a1a;
+}
+
+body.dark-mode #chat-input {
+  background: #0f0f0f;
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+body.dark-mode #chat-input::placeholder {
+  color: #666;
+}
+
+body.dark-mode #chat-send {
+  background: #ffffff;
+  color: #1a1a1a;
+}
+
+body.dark-mode #shapes-panel {
+  background: rgba(20, 20, 20, 0.98);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode #shapes-header {
+  background: #0f0f0f;
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+body.dark-mode .shape-item {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode .shape-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode #drawer-indicator {
+  background: rgba(20, 20, 20, 0.95);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode .menu {
+  background: rgba(20, 20, 20, 0.98);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode .menu button {
+  color: #e0e0e0;
+}
+
+body.dark-mode .menu button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
