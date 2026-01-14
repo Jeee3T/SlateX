@@ -1,380 +1,396 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SlateX</title>
+  <!DOCTYPE html>
+  <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SlateX</title>
 
-  <!-- Global + Home styles -->
-  <link rel="stylesheet" href="/css/global.css" />
-  <link rel="stylesheet" href="/css/home.css" />
+    <!-- Global + Home styles -->
+    <link rel="stylesheet" href="/css/global.css" />
+    <link rel="stylesheet" href="/css/home.css" />
 
- 
-  <style>
-    /* Enhanced logo styles with animations */
-    .logo-image {
-      height: 50px;  /* ADJUST THIS VALUE to make logo bigger/smaller */
-      width: auto;
-      object-fit: contain;
-      display: block;
-      transition: transform 0.3s ease, filter 0.3s ease;
-      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
-      position: relative;
-      z-index: 10;
-    }
+  
+    <style>
+      /* Enhanced logo styles with animations */
+      .logo-image {
+        height: 50px;  /* ADJUST THIS VALUE to make logo bigger/smaller */
+        width: auto;
+        object-fit: contain;
+        display: block;
+        transition: transform 0.3s ease, filter 0.3s ease;
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+        position: relative;
+        z-index: 10;
+      }
 
-    .nav-logo {
-      cursor: pointer;
-      overflow: visible;  /* Allows logo to extend beyond navbar */
-    }
+      .nav-logo {
+        cursor: pointer;
+        overflow: visible;  /* Allows logo to extend beyond navbar */
+      }
 
-    .nav-logo:hover .logo-image {
-      transform: scale(1.05);
-      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));
-    }
+      .nav-logo:hover .logo-image {
+        transform: scale(1.05);
+        filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));
+      }
 
-    /* Smooth navbar animation on scroll */
-    .navbar {
-      transition: box-shadow 0.3s ease, background-color 0.3s ease;
-      overflow: visible;  /* Allows logo to extend beyond navbar */
-    }
+      /* Smooth navbar animation on scroll */
+      .navbar {
+        transition: box-shadow 0.3s ease, background-color 0.3s ease;
+        overflow: visible;  /* Allows logo to extend beyond navbar */
+      }
 
-    .navbar.scrolled {
-      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-    }
+      .navbar.scrolled {
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      }
 
-    /* Enhanced button animations */
-    .btn-primary, .btn-secondary {
-      transition: all 0.3s ease;
-      position: relative;
-      overflow: hidden;
-    }
+      /* Enhanced button animations */
+      .btn-primary, .btn-secondary {
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+      }
 
-    .btn-primary::before {
-      content: '';
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 0;
-      height: 0;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.2);
-      transform: translate(-50%, -50%);
-      transition: width 0.6s ease, height 0.6s ease;
-    }
+      .btn-primary::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.2);
+        transform: translate(-50%, -50%);
+        transition: width 0.6s ease, height 0.6s ease;
+      }
 
-    .btn-primary:hover::before {
-      width: 300px;
-      height: 300px;
-    }
+      .btn-primary:hover::before {
+        width: 300px;
+        height: 300px;
+      }
 
-    .btn-primary:hover, .btn-secondary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-    }
+      .btn-primary:hover, .btn-secondary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+      }
 
-    /* Feature cards animation */
-    .feature-card {
-      transition: all 0.3s ease;
-    }
+      /* Feature cards animation */
+      .feature-card {
+        transition: all 0.3s ease;
+      }
 
-    .feature-card:hover {
-      transform: translateY(-8px);
-      box-shadow: 0 12px 24px rgba(0,0,0,0.15);
-    }
+      .feature-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+      }
 
-    /* Smooth scroll behavior */
-    html {
-      scroll-behavior: smooth;
-    }
+      /* Smooth scroll behavior */
+      html {
+        scroll-behavior: smooth;
+      }
 
-    /* Loading animation for canvas */
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
+      /* Loading animation for canvas */
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
 
-    .hero-content, .hero-visual {
-      animation: fadeIn 0.8s ease-out;
-    }
+      .hero-content, .hero-visual {
+        animation: fadeIn 0.8s ease-out;
+      }
 
-    .hero-visual {
-      animation-delay: 0.2s;
-    }
+      .hero-visual {
+        animation-delay: 0.2s;
+      }
 
-    /* Navigation link hover effect */
-    .nav-links a {
-      position: relative;
-      transition: color 0.3s ease;
-    }
+      /* Navigation link hover effect */
+      .nav-links a {
+        position: relative;
+        transition: color 0.3s ease;
+      }
 
-    .nav-links a::after {
-      content: '';
-      position: absolute;
-      bottom: -4px;
-      left: 0;
-      width: 0;
-      height: 2px;
-      background: currentColor;
-      transition: width 0.3s ease;
-    }
+      .nav-links a::after {
+        content: '';
+        position: absolute;
+        bottom: -4px;
+        left: 0;
+        width: 0;
+        height: 2px;
+        background: currentColor;
+        transition: width 0.3s ease;
+      }
 
-    .nav-links a:hover::after {
-      width: 100%;
-    }
-  </style>
-</head>
+      .nav-links a:hover::after {
+        width: 100%;
+      }
+      /* Remove underlines from links */
+.animated-cta {
+  text-decoration: none;
+}
 
-<body>
-  <!-- NAVBAR -->
-  <nav class="navbar" id="navbar">
-    <div class="nav-container">
-      <div class="nav-logo" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">
-        <img src="./assets/logo/title-logo.png" alt="SlateX Logo" class="logo-image" />
-      </div>
+.btn-primary,
+.nav-btn {
+  text-decoration: none;
+}
 
-      <div class="nav-links">
-        <a href="#features">Features</a>
-        <a href="#about">About</a>
-      </div>
-   
-      <div class="nav-actions">
-        <a href="/auth" class="btn-primary nav-btn" id="auth-btn">Login / Register</a>
-        <button class="btn-secondary nav-btn" id="logout-btn" style="display: none;">Logout</button>
-      </div>
-    </div>
-  </nav>
+/* Ensure no underline on hover */
+.animated-cta:hover,
+.btn-primary:hover,
+.nav-btn:hover {
+  text-decoration: none;
+}
+    </style>
+  </head>
 
-  <!-- HERO -->
-  <section class="hero">
-    <div class="hero-container">
-      <div class="hero-content">
-        <h1 class="hero-title">Think. Draw. Create – Smarter.</h1>
-        <p class="hero-description">
-         An AI-powered whiteboard that understands your ideas and helps you build faster, clearer, and better.
-        </p>
+  <body>
+    <!-- NAVBAR -->
+    <nav class="navbar" id="navbar">
+      <div class="nav-container">
+        <div class="nav-logo" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">
+          <img src="./assets/logo/title-logo.png" alt="SlateX Logo" class="logo-image" />
+        </div>
 
-        <div class="hero-buttons">
-          <a href="/auth" class="btn-primary" id="hero-cta">
-            Open Whiteboard
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
-              xmlns="http://www.w3.org/2000/svg">
-              <path d="M6 12L10 8L6 4" stroke="currentColor" stroke-width="2"
-                stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </a>
-
-          <button class="btn-secondary" onclick="document.getElementById('features').scrollIntoView({behavior: 'smooth'})">
-            Learn More
-          </button>
+        <div class="nav-links">
+          <a href="#features">Features</a>
+          <a href="#about">About</a>
+        </div>
+    
+        <div class="nav-actions">
+          <a href="/auth" class="btn-primary nav-btn" id="auth-btn">Login / Register</a>
+          <button class="btn-secondary nav-btn" id="logout-btn" style="display: none;">Logout</button>
         </div>
       </div>
+    </nav>
 
-      <!-- HERO DEMO -->
-      <div class="hero-visual">
-        <div class="whiteboard-demo">
-          <div class="toolbar">
-            <button class="tool-btn active">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-                xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 19L19 12L22 15L15 22L12 19Z"
-                  stroke="currentColor" stroke-width="2"/>
-                <path d="M18 13L16.5 5.5L2 2L5.5 16.5L13 18L18 13Z"
-                  stroke="currentColor" stroke-width="2"/>
-              </svg>
-            </button>
+    <!-- HERO -->
+    <section class="hero">
+      <div class="hero-container">
+        <div class="hero-content">
+          <h1 class="hero-title">Think. Draw. Create – Smarter.</h1>
+          <p class="hero-description">
+          An AI-powered whiteboard that understands your ideas and helps you build faster, clearer, and better.
+          </p>
 
-            <button class="tool-btn">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+          <div class="hero-buttons">
+            <a href="/auth" class="btn-primary" id="hero-cta">
+              Open Whiteboard
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
                 xmlns="http://www.w3.org/2000/svg">
-                <rect x="3" y="3" width="18" height="18"
-                  stroke="currentColor" stroke-width="2"/>
+                <path d="M6 12L10 8L6 4" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
-            </button>
+            </a>
 
-            <button class="tool-btn">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-                xmlns="http://www.w3.org/2000/svg">
-                <path d="M4 7V17H20V7H4Z"
-                  stroke="currentColor" stroke-width="2"/>
-                <path d="M9 3V7"
-                  stroke="currentColor" stroke-width="2"/>
-                <path d="M15 3V7"
-                  stroke="currentColor" stroke-width="2"/>
-              </svg>
+            <button class="btn-secondary" onclick="document.getElementById('features').scrollIntoView({behavior: 'smooth'})">
+              Learn More
             </button>
           </div>
+        </div>
 
-          <canvas id="demoCanvas"></canvas>
-          <div class="placeholder-text">Your ideas here</div>
+        <!-- HERO DEMO -->
+        <div class="hero-visual">
+          <div class="whiteboard-demo">
+            <div class="toolbar">
+              <button class="tool-btn active">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                  xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 19L19 12L22 15L15 22L12 19Z"
+                    stroke="currentColor" stroke-width="2"/>
+                  <path d="M18 13L16.5 5.5L2 2L5.5 16.5L13 18L18 13Z"
+                    stroke="currentColor" stroke-width="2"/>
+                </svg>
+              </button>
+
+              <button class="tool-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                  xmlns="http://www.w3.org/2000/svg">
+                  <rect x="3" y="3" width="18" height="18"
+                    stroke="currentColor" stroke-width="2"/>
+                </svg>
+              </button>
+
+              <button class="tool-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                  xmlns="http://www.w3.org/2000/svg">
+                  <path d="M4 7V17H20V7H4Z"
+                    stroke="currentColor" stroke-width="2"/>
+                  <path d="M9 3V7"
+                    stroke="currentColor" stroke-width="2"/>
+                  <path d="M15 3V7"
+                    stroke="currentColor" stroke-width="2"/>
+                </svg>
+              </button>
+            </div>
+
+            <canvas id="demoCanvas"></canvas>
+            <div class="placeholder-text">Your ideas here</div>
+          </div>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- FEATURES -->
-  <section class="features" id="features">
-    <div class="features-container">
-      <div class="features-header">
-        <h2 class="features-title">Everything You Need</h2>
-        <p class="features-subtitle">
-          Simple yet powerful tools to bring your ideas to life
-        </p>
+    <!-- FEATURES -->
+    <section class="features" id="features">
+      <div class="features-container">
+        <div class="features-header">
+          <h2 class="features-title">Everything You Need</h2>
+          <p class="features-subtitle">
+            Simple yet powerful tools to bring your ideas to life
+          </p>
+        </div>
+
+        <div class="features-grid">
+          <div class="feature-card">
+            <h3 class="feature-title">🎨 Freehand Drawing</h3>
+            <p class="feature-description">
+              Draw freely with smooth pen strokes and multiple brush types.
+            </p>
+          </div>
+
+          <div class="feature-card">
+            <h3 class="feature-title">📐 Shapes & Lines</h3>
+            <p class="feature-description">
+              Create structured diagrams with 20+ professional shapes.
+            </p>
+          </div>
+
+          <div class="feature-card">
+            <h3 class="feature-title">📝 Text & Notes</h3>
+            <p class="feature-description">
+              Add text anywhere and create sticky notes for ideas.
+            </p>
+          </div>
+
+          <div class="feature-card">
+            <h3 class="feature-title">👥 Real-time Collaboration</h3>
+            <p class="feature-description">
+              Work together with your team simultaneously in real-time.
+            </p>
+          </div>
+
+          <div class="feature-card">
+            <h3 class="feature-title">💼 Domain Templates</h3>
+            <p class="feature-description">
+              Pre-built layouts for coding, medical, finance, and project planning.
+            </p>
+          </div>
+
+          <div class="feature-card">
+            <h3 class="feature-title">💾 Export & Save</h3>
+            <p class="feature-description">
+              Save your work and export boards as high-quality images.
+            </p>
+          </div>
+        </div>
       </div>
+    </section>
 
-      <div class="features-grid">
-        <div class="feature-card">
-          <h3 class="feature-title">🎨 Freehand Drawing</h3>
-          <p class="feature-description">
-            Draw freely with smooth pen strokes and multiple brush types.
+    <!-- FOOTER -->
+    <footer class="footer">
+      <div class="footer-container">
+        <div class="footer-content">
+          <span class="logo-text">SlateX</span>
+          <p style="color: rgba(255,255,255,0.7); margin-top: 8px; font-size: 14px;">
+            Collaborative whiteboard with AI-powered features
           </p>
         </div>
-
-        <div class="feature-card">
-          <h3 class="feature-title">📐 Shapes & Lines</h3>
-          <p class="feature-description">
-            Create structured diagrams with 20+ professional shapes.
-          </p>
-        </div>
-
-        <div class="feature-card">
-          <h3 class="feature-title">📝 Text & Notes</h3>
-          <p class="feature-description">
-            Add text anywhere and create sticky notes for ideas.
-          </p>
-        </div>
-
-        <div class="feature-card">
-          <h3 class="feature-title">👥 Real-time Collaboration</h3>
-          <p class="feature-description">
-            Work together with your team simultaneously in real-time.
-          </p>
-        </div>
-
-        <div class="feature-card">
-          <h3 class="feature-title">💼 Domain Templates</h3>
-          <p class="feature-description">
-            Pre-built layouts for coding, medical, finance, and project planning.
-          </p>
-        </div>
-
-        <div class="feature-card">
-          <h3 class="feature-title">💾 Export & Save</h3>
-          <p class="feature-description">
-            Save your work and export boards as high-quality images.
-          </p>
+        <div class="footer-links">
+          <a href="/auth" style="color: rgba(255,255,255,0.8); text-decoration: none; transition: color 0.2s;">
+            Get Started →
+          </a>
         </div>
       </div>
-    </div>
-  </section>
+    </footer>
 
-  <!-- FOOTER -->
-  <footer class="footer">
-    <div class="footer-container">
-      <div class="footer-content">
-        <span class="logo-text">SlateX</span>
-        <p style="color: rgba(255,255,255,0.7); margin-top: 8px; font-size: 14px;">
-          Collaborative whiteboard with AI-powered features
-        </p>
-      </div>
-      <div class="footer-links">
-        <a href="/auth" style="color: rgba(255,255,255,0.8); text-decoration: none; transition: color 0.2s;">
-          Get Started →
-        </a>
-      </div>
-    </div>
-  </footer>
+    <!-- Homepage JS -->
+    <script src="/js/home.js"></script>
 
-  <!-- Homepage JS -->
-  <script src="/js/home.js"></script>
-
-  <script>
-    // Navbar scroll effect
-    let lastScroll = 0;
-    const navbar = document.getElementById('navbar');
-    
-    window.addEventListener('scroll', () => {
-      const currentScroll = window.pageYOffset;
+    <script>
+      // Navbar scroll effect
+      let lastScroll = 0;
+      const navbar = document.getElementById('navbar');
       
-      if (currentScroll > 50) {
-        navbar.classList.add('scrolled');
-      } else {
-        navbar.classList.remove('scrolled');
-      }
-      
-      lastScroll = currentScroll;
-    });
-
-    // Check if user is logged in and update UI
-    async function checkAuthStatus() {
-      try {
-        const response = await fetch('/api/auth/status');
-        const data = await response.json();
+      window.addEventListener('scroll', () => {
+        const currentScroll = window.pageYOffset;
         
-        if (data.authenticated) {
-          const authBtn = document.getElementById('auth-btn');
-          const logoutBtn = document.getElementById('logout-btn');
-          const heroCta = document.getElementById('hero-cta');
+        if (currentScroll > 50) {
+          navbar.classList.add('scrolled');
+        } else {
+          navbar.classList.remove('scrolled');
+        }
+        
+        lastScroll = currentScroll;
+      });
+
+      // Check if user is logged in and update UI
+      async function checkAuthStatus() {
+        try {
+          const response = await fetch('/api/auth/status');
+          const data = await response.json();
           
-          authBtn.style.display = 'none';
-          logoutBtn.style.display = 'block';
-          heroCta.href = '/domain';
-          heroCta.innerHTML = `
-            Go to Whiteboard
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M6 12L10 8L6 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          `;
+          if (data.authenticated) {
+            const authBtn = document.getElementById('auth-btn');
+            const logoutBtn = document.getElementById('logout-btn');
+            const heroCta = document.getElementById('hero-cta');
+            
+            authBtn.style.display = 'none';
+            logoutBtn.style.display = 'block';
+            heroCta.href = '/domain';
+            heroCta.innerHTML = `
+              Go to Whiteboard
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M6 12L10 8L6 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            `;
+          }
+        } catch (error) {
+          console.log('Not authenticated');
         }
-      } catch (error) {
-        console.log('Not authenticated');
       }
-    }
 
-    // Logout handler
-    document.getElementById('logout-btn').addEventListener('click', async () => {
-      try {
-        const response = await fetch('/api/auth/logout', { method: 'POST' });
-        const data = await response.json();
-        
-        if (data.success) {
-          window.location.reload();
-        }
-      } catch (error) {
-        console.error('Logout failed:', error);
-      }
-    });
-
-    // Intersection Observer for feature cards animation
-    const observerOptions = {
-      threshold: 0.1,
-      rootMargin: '0px 0px -50px 0px'
-    };
-
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry, index) => {
-        if (entry.isIntersecting) {
-          setTimeout(() => {
-            entry.target.style.opacity = '1';
-            entry.target.style.transform = 'translateY(0)';
-          }, index * 100);
+      // Logout handler
+      document.getElementById('logout-btn').addEventListener('click', async () => {
+        try {
+          const response = await fetch('/api/auth/logout', { method: 'POST' });
+          const data = await response.json();
+          
+          if (data.success) {
+            window.location.reload();
+          }
+        } catch (error) {
+          console.error('Logout failed:', error);
         }
       });
-    }, observerOptions);
 
-    // Observe feature cards
-    document.addEventListener('DOMContentLoaded', () => {
-      const featureCards = document.querySelectorAll('.feature-card');
-      featureCards.forEach(card => {
-        card.style.opacity = '0';
-        card.style.transform = 'translateY(20px)';
-        card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-        observer.observe(card);
+      // Intersection Observer for feature cards animation
+      const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+      };
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry, index) => {
+          if (entry.isIntersecting) {
+            setTimeout(() => {
+              entry.target.style.opacity = '1';
+              entry.target.style.transform = 'translateY(0)';
+            }, index * 100);
+          }
+        });
+      }, observerOptions);
+
+      // Observe feature cards
+      document.addEventListener('DOMContentLoaded', () => {
+        const featureCards = document.querySelectorAll('.feature-card');
+        featureCards.forEach(card => {
+          card.style.opacity = '0';
+          card.style.transform = 'translateY(20px)';
+          card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+          observer.observe(card);
+        });
       });
-    });
 
-    // Check auth status on page load
-    checkAuthStatus();
-  </script>
-</body>
-</html>
+      // Check auth status on page load
+      checkAuthStatus();
+    </script>
+  </body>
+  </html>
