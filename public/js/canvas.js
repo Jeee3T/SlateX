@@ -1,10 +1,26 @@
 document.addEventListener("DOMContentLoaded", () => {
 
-  /* ================= SOCKET ================= */
-  const socket = io();
-  const username = prompt("Enter your name") || "Anonymous";
-  socket.emit("join", username);
-  window.BoardTemplates.loadSaved(socket);
+/* ================= GET ROOM INFO ================= */
+// 🔥 CRITICAL FIX: Get room data from localStorage
+const currentRoom = JSON.parse(localStorage.getItem('currentRoom') || 'null');
+if (!currentRoom || !currentRoom.id) {
+  alert('No room selected! Redirecting to room selection...');
+  window.location.href = '/room';
+  return;
+}
+
+const roomId = currentRoom.id;
+console.log('Joining room:', roomId);
+
+/* ================= SOCKET ================= */
+const socket = io();
+const username = prompt("Enter your name") || "Anonymous";
+
+// FIRST: Set up BoardTemplates listeners
+window.BoardTemplates.loadSaved(socket);
+
+// THEN: Join the room (which triggers init-board)
+socket.emit("join-room", roomId, username);
 
   /* ================= CANVAS ================= */
   const canvas = document.getElementById("board");

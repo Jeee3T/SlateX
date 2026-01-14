@@ -441,7 +441,8 @@ const BoardTemplates = {
 
     this.templateTexts.push(textData);
     this.socket.emit('template-text-add', textData);
-    
+    this.renderTextElement(textData); 
+
     setTimeout(() => {
       const elem = document.querySelector(`[data-template-text-id="${textId}"]`);
       if (elem) elem.focus();

@@ -80,7 +80,7 @@ app.get("/room", isAuthenticated, (req, res) => {
 
 // Domain selection (protected - requires login)
 app.get("/domain", isAuthenticated, (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "canvas.html"));
+  res.sendFile(path.join(__dirname, "public", "domain.html"));
 });
 
 // Canvas page (protected - requires login)
