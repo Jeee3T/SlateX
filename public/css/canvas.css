@@ -118,6 +118,11 @@ canvas {
   align-items: center;
 }
 
+.tool:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* ================= MENUS ================= */
 
 .menu {

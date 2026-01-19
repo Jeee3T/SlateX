@@ -356,6 +356,7 @@ document.addEventListener("DOMContentLoaded", () => {
           };
 
           textElements.push(textElement);
+          addToHistory({ type: 'add', objectType: 'text', data: textElement });
           socket.emit("text-add", textElement);
           textCreated = true;
           input.remove();
@@ -378,6 +379,7 @@ document.addEventListener("DOMContentLoaded", () => {
               };
 
               textElements.push(textElement);
+              addToHistory({ type: 'add', objectType: 'text', data: textElement });
               socket.emit("text-add", textElement);
               renderAllTexts();
             }
@@ -403,6 +405,7 @@ document.addEventListener("DOMContentLoaded", () => {
       };
 
       stickyNotes.push(noteData);
+      addToHistory({ type: 'add', objectType: 'note', data: noteData });
       socket.emit("note-add", noteData);
       renderAllNotes();
 
@@ -416,8 +419,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (!drawing) return;
-    const stroke = { tool, drawType, color, size: brushSize, points: currentPath };
+    // ADD ID TO STROKE
+    const strokeId = Date.now() + '-' + Math.random();
+    const stroke = { id: strokeId, tool, drawType, color, size: brushSize, points: currentPath };
     paths.push(stroke);
+    addToHistory({ type: 'add', objectType: 'stroke', data: stroke });
     socket.emit("draw-stroke", stroke);
     socket.emit("release-draw");
     drawing = false;
@@ -425,7 +431,21 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   socket.on("draw-point", data => {
-    paths.push({ ...data });
+    // Current path being drawn by someone else, handled by their mouse move
+    // We just update the view? Actually draw-point pushes to paths in the original code? 
+    // Wait, original code:
+    // socket.on("draw-point", data => { paths.push({ ...data }); redraw(); });
+    // This looks wrong in original code if it pushes EVERY point as a stroke?
+    // Checking original code...
+    // Line 427: socket.on("draw-point", data => { paths.push({ ...data }); redraw(); });
+    // This seems to interpret 'data' as a stroke-like object?
+    // But 'draw-point' emitter (line 308) sends: { tool, drawType, color, points: [p] }
+    // So distinct points are added as mini-strokes during live drawing?
+    // And then 'draw-stroke' sends the full stroke at the end?
+    // If so, we might have duplicates or provisional strokes.
+    // Let's leave 'draw-point' as is for now, assuming it's for live preview.
+    // But we should NOT add these to history.
+    paths.push({ ...data }); // Provisional stroke segment
     redraw();
   });
 
@@ -433,6 +453,88 @@ document.addEventListener("DOMContentLoaded", () => {
     paths.push(stroke);
     redraw();
   });
+
+  socket.on("stroke-deleted", strokeId => {
+    paths = paths.filter(p => p.id !== strokeId);
+    redraw();
+  });
+
+  /* ================= UNDO / REDO ================= */
+  const undoStack = [];
+  const redoStack = [];
+  const undoBtn = document.getElementById("undoBtn");
+  const redoBtn = document.getElementById("redoBtn");
+
+  function updateHistoryButtons() {
+    undoBtn.disabled = undoStack.length === 0;
+    redoBtn.disabled = redoStack.length === 0;
+    undoBtn.style.opacity = undoStack.length === 0 ? "0.5" : "1";
+    redoBtn.style.opacity = redoStack.length === 0 ? "0.5" : "1";
+  }
+
+  function addToHistory(action) {
+    undoStack.push(action);
+    redoStack.length = 0; // Clear redo stack on new action
+    updateHistoryButtons();
+  }
+
+  undoBtn.onclick = () => {
+    if (undoStack.length === 0) return;
+    const action = undoStack.pop();
+    redoStack.push(action);
+    updateHistoryButtons();
+
+    if (action.type === 'add') {
+      // Undo add = delete
+      if (action.objectType === 'stroke') {
+        paths = paths.filter(p => p.id !== action.data.id);
+        socket.emit("stroke-delete", action.data.id);
+        redraw();
+      } else if (action.objectType === 'shape') {
+        shapes = shapes.filter(s => s.id !== action.data.id);
+        socket.emit("shape-delete", action.data.id);
+        renderAllShapes();
+      } else if (action.objectType === 'text') {
+        textElements = textElements.filter(t => t.id !== action.data.id);
+        socket.emit("text-delete", action.data.id);
+        renderAllTexts();
+      } else if (action.objectType === 'note') {
+        stickyNotes = stickyNotes.filter(n => n.id !== action.data.id);
+        socket.emit("note-delete", action.data.id);
+        renderAllNotes();
+      }
+    }
+  };
+
+  redoBtn.onclick = () => {
+    if (redoStack.length === 0) return;
+    const action = redoStack.pop();
+    undoStack.push(action);
+    updateHistoryButtons();
+
+    if (action.type === 'add') {
+      // Redo add = add again
+      if (action.objectType === 'stroke') {
+        paths.push(action.data);
+        socket.emit("draw-stroke", action.data);
+        redraw();
+      } else if (action.objectType === 'shape') {
+        shapes.push(action.data);
+        socket.emit("shape-add", action.data);
+        renderAllShapes();
+      } else if (action.objectType === 'text') {
+        textElements.push(action.data);
+        socket.emit("text-add", action.data);
+        renderAllTexts();
+      } else if (action.objectType === 'note') {
+        stickyNotes.push(action.data);
+        socket.emit("note-add", action.data);
+        renderAllNotes();
+      }
+    }
+  };
+
+  updateHistoryButtons();
 
   /* ================= DRAW ================= */
   function redraw() {
@@ -795,6 +897,7 @@ document.addEventListener("DOMContentLoaded", () => {
         };
 
         shapes.push(shape);
+        addToHistory({ type: 'add', objectType: 'shape', data: shape });
         socket.emit("shape-add", shape);
         renderAllShapes();
       }
