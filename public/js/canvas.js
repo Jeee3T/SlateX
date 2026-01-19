@@ -1,26 +1,29 @@
 document.addEventListener("DOMContentLoaded", () => {
 
-/* ================= GET ROOM INFO ================= */
-// 🔥 CRITICAL FIX: Get room data from localStorage
-const currentRoom = JSON.parse(localStorage.getItem('currentRoom') || 'null');
-if (!currentRoom || !currentRoom.id) {
-  alert('No room selected! Redirecting to room selection...');
-  window.location.href = '/room';
-  return;
-}
+  /* ================= GET ROOM INFO ================= */
+  // 🔥 CRITICAL FIX: Get room data from localStorage
+  const currentRoom = JSON.parse(localStorage.getItem('currentRoom') || 'null');
+  if (!currentRoom || !currentRoom.id) {
+    alert('No room selected! Redirecting to room selection...');
+    window.location.href = '/room';
+    return;
+  }
 
-const roomId = currentRoom.id;
-console.log('Joining room:', roomId);
+  const roomId = currentRoom.id;
+  console.log('Joining room:', roomId);
 
-/* ================= SOCKET ================= */
-const socket = io();
-const username = prompt("Enter your name") || "Anonymous";
+  /* ================= SOCKET ================= */
+  const socket = io();
 
-// FIRST: Set up BoardTemplates listeners
-window.BoardTemplates.loadSaved(socket);
+  // Get username from localStorage
+  const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+  const username = user.username || "Anonymous";
 
-// THEN: Join the room (which triggers init-board)
-socket.emit("join-room", roomId, username);
+  // FIRST: Set up BoardTemplates listeners
+  window.BoardTemplates.loadSaved(socket);
+
+  // THEN: Join the room (which triggers init-board)
+  socket.emit("join-room", roomId, username);
 
   /* ================= CANVAS ================= */
   const canvas = document.getElementById("board");
@@ -36,6 +39,9 @@ socket.emit("join-room", roomId, username);
   const zoomOutBtn = document.getElementById("zoomOut");
   const downloadBtn = document.getElementById("download");
   const indicator = document.getElementById("drawer-indicator");
+  const sizeSlider = document.getElementById("sizeSlider");
+  const sizeValue = document.getElementById("sizeValue");
+  const sizeBtn = document.getElementById("sizeBtn");
 
   /* ================= SHAPES ================= */
   const shapesPanel = document.getElementById("shapes-panel");
@@ -94,6 +100,7 @@ socket.emit("join-room", roomId, username);
   let drawType = "pen";
   let color = "#000";
   let shapeColor = "#3b82f6";
+  let brushSize = 5;
   let drawing = false;
   let pendingDraw = false;
 
@@ -151,7 +158,20 @@ socket.emit("join-room", roomId, username);
   });
 
   socket.on("drawer-cleared", () => {
+    // 🆕 Don't hide the indicator immediately if it's a generic activity
+    if (!indicator.innerText.includes("is drawing")) return;
     indicator.style.display = "none";
+  });
+
+  socket.on("user-activity", data => {
+    indicator.innerText = `${data.username} ${data.activity}...`;
+    indicator.style.display = "block";
+
+    // Clear after 3 seconds of inactivity
+    if (window.activityTimeout) clearTimeout(window.activityTimeout);
+    window.activityTimeout = setTimeout(() => {
+      indicator.style.display = "none";
+    }, 3000);
   });
 
   /* ================= SHAPES SOCKET ================= */
@@ -224,20 +244,20 @@ socket.emit("join-room", roomId, username);
   /* ================= MOUSE ================= */
   canvas.addEventListener("mousedown", e => {
 
-  if (tool === "hand") {
-    px = e.clientX;
-    py = e.clientY;
-    canvas.style.cursor = 'grabbing';
-    
-    // Also move template overlay
-    const templateOverlay = document.getElementById('template-overlay');
-    if (templateOverlay && !window.BoardTemplates.interactMode) {
-      const currentTransform = window.BoardTemplates.templateTransform;
-      window.BoardTemplates.templateStartX = currentTransform.x;
-      window.BoardTemplates.templateStartY = currentTransform.y;
+    if (tool === "hand") {
+      px = e.clientX;
+      py = e.clientY;
+      canvas.style.cursor = 'grabbing';
+
+      // Also move template overlay
+      const templateOverlay = document.getElementById('template-overlay');
+      if (templateOverlay && !window.BoardTemplates.interactMode) {
+        const currentTransform = window.BoardTemplates.templateTransform;
+        window.BoardTemplates.templateStartX = currentTransform.x;
+        window.BoardTemplates.templateStartY = currentTransform.y;
+      }
+      return;
     }
-    return;
-  }
     if (tool === "text") {
       e.preventDefault();
       e.stopPropagation();
@@ -253,151 +273,156 @@ socket.emit("join-room", roomId, username);
     pendingDraw = true;
     currentPath = [getPos(e)];
     socket.emit("request-draw");
+    socket.emit("user-activity", "is drawing");
   });
 
   canvas.addEventListener("mousemove", e => {
-  // Hand tool: move canvas AND template together
-  if (tool === "hand" && (e.buttons === 1 || e.which === 1)) {
-    const dx = e.clientX - px;
-    const dy = e.clientY - py;
-    
-    offsetX += dx;
-    offsetY += dy;
-    
-    // 🆕 ADD THIS BLOCK: Move template overlay along with canvas
-    const templateOverlay = document.getElementById('template-overlay');
-    if (templateOverlay && window.BoardTemplates && !window.BoardTemplates.interactMode) {
-      // Update template position by the same delta
-      window.BoardTemplates.templateTransform.x += dx;
-      window.BoardTemplates.templateTransform.y += dy;
-      window.BoardTemplates.applyTransform();
-    }
-    
-    px = e.clientX;
-    py = e.clientY;
-    
-    redraw();
-    updateAllElementPositions();
-    return;
-  }
+    // Hand tool: move canvas AND template together
+    if (tool === "hand" && (e.buttons === 1 || e.which === 1)) {
+      const dx = e.clientX - px;
+      const dy = e.clientY - py;
 
-  if (!drawing) return;
-  const p = getPos(e);
-  currentPath.push(p);
-  socket.emit("draw-point", { tool, drawType, color, points: [p] });
-  redraw();
-});
+      offsetX += dx;
+      offsetY += dy;
+
+      // 🆕 ADD THIS BLOCK: Move template overlay along with canvas
+      const templateOverlay = document.getElementById('template-overlay');
+      if (templateOverlay && window.BoardTemplates && !window.BoardTemplates.interactMode) {
+        // Update template position by the same delta
+        window.BoardTemplates.templateTransform.x += dx;
+        window.BoardTemplates.templateTransform.y += dy;
+        window.BoardTemplates.applyTransform();
+      }
+
+      px = e.clientX;
+      py = e.clientY;
+
+      redraw();
+      updateAllElementPositions();
+      return;
+    }
+
+    if (!drawing) return;
+    const p = getPos(e);
+    currentPath.push(p);
+    socket.emit("draw-point", { tool, drawType, color, points: [p] });
+    redraw();
+  });
 
   canvas.addEventListener("mouseup", () => {
-  // Hand tool cursor reset and sync template position
-  if (tool === "hand") {
-    canvas.style.cursor = 'grab';
-    
-    // Sync template position with other users
-    if (window.BoardTemplates && window.BoardTemplates.socket && window.BoardTemplates.templateTransform) {
-      window.BoardTemplates.socket.emit('template-transform-update', window.BoardTemplates.templateTransform);
-    }
-  }
-  
-  if (tool === "text") {
-    const e = event;
-    const pos = getPos(e);
-    const textId = Date.now() + '-' + Math.random();
-    
-    const input = document.createElement("input");
-    input.className = "text-input";
-    input.style.left = e.clientX + "px";
-    input.style.top = e.clientY + "px";
-    input.style.color = color;
-    input.placeholder = "Type text here...";
-    document.body.appendChild(input);
-    
-    // Use setTimeout to ensure input is focused after being added to DOM
-    setTimeout(() => {
-      input.focus();
-    }, 0);
+    // Hand tool cursor reset and sync template position
+    if (tool === "hand") {
+      canvas.style.cursor = 'grab';
 
-    let textCreated = false;
-
-    input.onkeydown = ev => {
-      ev.stopPropagation(); // Prevent event bubbling
-      if (ev.key === "Enter" && input.value.trim()) {
-        const textElement = {
-          id: textId,
-          text: input.value,
-          x: pos.x,
-          y: pos.y,
-          color: color
-        };
-        
-        textElements.push(textElement);
-        socket.emit("text-add", textElement);
-        textCreated = true;
-        input.remove();
-        renderAllTexts();
-      } else if (ev.key === "Escape") {
-        input.remove();
+      // Sync template position with other users
+      if (window.BoardTemplates && window.BoardTemplates.socket && window.BoardTemplates.templateTransform) {
+        window.BoardTemplates.socket.emit('template-transform-update', window.BoardTemplates.templateTransform);
       }
-    };
-    
-    input.onblur = () => {
+    }
+
+    if (tool === "text") {
+      const e = event;
+      const pos = getPos(e);
+      const textId = Date.now() + '-' + Math.random();
+
+      const input = document.createElement("input");
+      input.className = "text-input";
+      input.style.left = e.clientX + "px";
+      input.style.top = e.clientY + "px";
+      input.style.color = color;
+      input.placeholder = "Type text here...";
+      document.body.appendChild(input);
+
+      input.oninput = () => {
+        socket.emit("user-activity", "is typing");
+      };
+
+      // Use setTimeout to ensure input is focused after being added to DOM
       setTimeout(() => {
-        if (!textCreated && input.parentElement) {
-          if (input.value.trim()) {
-            const textElement = {
-              id: textId,
-              text: input.value,
-              x: pos.x,
-              y: pos.y,
-              color: color
-            };
-            
-            textElements.push(textElement);
-            socket.emit("text-add", textElement);
-            renderAllTexts();
-          }
+        input.focus();
+      }, 0);
+
+      let textCreated = false;
+
+      input.onkeydown = ev => {
+        ev.stopPropagation(); // Prevent event bubbling
+        if (ev.key === "Enter" && input.value.trim()) {
+          const textElement = {
+            id: textId,
+            text: input.value,
+            x: pos.x,
+            y: pos.y,
+            color: color
+          };
+
+          textElements.push(textElement);
+          socket.emit("text-add", textElement);
+          textCreated = true;
+          input.remove();
+          renderAllTexts();
+        } else if (ev.key === "Escape") {
           input.remove();
         }
-      }, 100);
-    };
-    
-    return;
-  }
+      };
 
-  if (tool === "note") {
-    const e = event;
-    const noteId = Date.now() + '-' + Math.random();
-    const pos = getPos(e);
-    
-    const noteData = {
-      id: noteId,
-      x: pos.x,
-      y: pos.y,
-      content: "",
-      color: "#fff9c4"
-    };
-    
-    stickyNotes.push(noteData);
-    socket.emit("note-add", noteData);
-    renderAllNotes();
-    
-    // Focus the newly created note
-    setTimeout(() => {
-      const noteEl = document.querySelector(`[data-note-id="${noteId}"]`);
-      if (noteEl) noteEl.focus();
-    }, 50);
-    
-    return;
-  }
+      input.onblur = () => {
+        setTimeout(() => {
+          if (!textCreated && input.parentElement) {
+            if (input.value.trim()) {
+              const textElement = {
+                id: textId,
+                text: input.value,
+                x: pos.x,
+                y: pos.y,
+                color: color
+              };
 
-  if (!drawing) return;
-  const stroke = { tool, drawType, color, points: currentPath };
-  paths.push(stroke);
-  socket.emit("draw-stroke", stroke);
-  socket.emit("release-draw");
-  drawing = false;
-  currentPath = [];
-});
+              textElements.push(textElement);
+              socket.emit("text-add", textElement);
+              renderAllTexts();
+            }
+            input.remove();
+          }
+        }, 100);
+      };
+
+      return;
+    }
+
+    if (tool === "note") {
+      const e = event;
+      const noteId = Date.now() + '-' + Math.random();
+      const pos = getPos(e);
+
+      const noteData = {
+        id: noteId,
+        x: pos.x,
+        y: pos.y,
+        content: "",
+        color: "#fff9c4"
+      };
+
+      stickyNotes.push(noteData);
+      socket.emit("note-add", noteData);
+      renderAllNotes();
+
+      // Focus the newly created note
+      setTimeout(() => {
+        const noteEl = document.querySelector(`[data-note-id="${noteId}"]`);
+        if (noteEl) noteEl.focus();
+      }, 50);
+
+      return;
+    }
+
+    if (!drawing) return;
+    const stroke = { tool, drawType, color, size: brushSize, points: currentPath };
+    paths.push(stroke);
+    socket.emit("draw-stroke", stroke);
+    socket.emit("release-draw");
+    drawing = false;
+    currentPath = [];
+  });
 
   socket.on("draw-point", data => {
     paths.push({ ...data });
@@ -421,7 +446,7 @@ socket.emit("join-room", roomId, username);
 
     paths.forEach(drawStroke);
     if (currentPath.length)
-      drawStroke({ tool, drawType, color, points: currentPath });
+      drawStroke({ tool, drawType, color, size: brushSize, points: currentPath });
   }
 
   function drawStroke(p) {
@@ -430,13 +455,21 @@ socket.emit("join-room", roomId, username);
 
     if (p.tool === "eraser") {
       ctx.globalCompositeOperation = "destination-out";
-      ctx.lineWidth = 20 / scale;
+      ctx.lineWidth = (p.size || 20) / scale;
     } else {
       ctx.globalCompositeOperation = "source-over";
       ctx.strokeStyle = p.color;
-      ctx.lineWidth =
-        p.drawType === "pen" ? 3 :
-        p.drawType === "pencil" ? 1 : 8;
+
+      const baseSize = p.size || 5;
+      if (p.drawType === "pen") {
+        ctx.lineWidth = baseSize;
+      } else if (p.drawType === "pencil") {
+        ctx.lineWidth = Math.max(1, baseSize / 3);
+      } else if (p.drawType === "brush") {
+        ctx.lineWidth = baseSize * 2;
+      } else {
+        ctx.lineWidth = baseSize;
+      }
     }
 
     p.points.forEach((pt, i) =>
@@ -452,22 +485,22 @@ socket.emit("join-room", roomId, username);
     tool = "pen";
     updateToolButtons();
   };
-  
+
   eraserBtn.onclick = () => {
     tool = "eraser";
     updateToolButtons();
   };
-  
+
   handBtn.onclick = () => {
     tool = "hand";
     updateToolButtons();
   };
-  
+
   textBtn.onclick = () => {
     tool = "text";
     updateToolButtons();
   };
-  
+
   noteBtn.onclick = () => {
     tool = "note";
     updateToolButtons();
@@ -496,24 +529,108 @@ socket.emit("join-room", roomId, username);
     }
   };
 
+  function updateCursor() {
+    let cursorStyle = 'crosshair';
+
+    if (tool === 'pen') {
+      const isPencil = drawType === 'pencil';
+      const isBrush = drawType === 'brush';
+      let svg = '';
+
+      if (isPencil) {
+        // High-fidelity 3D Pencil SVG
+        svg = `<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M2 30L5 18L18 5L27 14L14 27L2 30Z" fill="#D1D5DB"/>
+          <path d="M18 5L22 2L30 10L27 14L18 5Z" fill="#FCA5A5"/>
+          <path d="M5 18L18 5L27 14L14 27L5 18Z" fill="${color}"/>
+          <path d="M2.5 29.5L14.5 27.5L5.5 18.5L2.5 29.5Z" fill="#4B5563"/>
+          <path d="M27 14L18 5L20 3L29 12L27 14Z" fill="white" fill-opacity="0.3"/>
+        </svg>`;
+      } else if (isBrush) {
+        // Exact Artist Brush from Image
+        svg = `<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Handle -->
+          <path d="M12 20L28 4L32 8L16 24L12 20Z" fill="${color}"/>
+          <!-- Ferrule -->
+          <path d="M8 24L16 24L12 20L8 20L8 24Z" fill="#D1D5DB"/>
+          <!-- Bristles -->
+          <path d="M2 30C2 30 2 26 4 24L8 24L12 28L12 30C10 32 2 30 2 30Z" fill="#FBBF24"/>
+          <!-- Shading -->
+          <path d="M12 20L28 4L30 6L14 22L12 20Z" fill="white" fill-opacity="0.2"/>
+        </svg>`;
+      } else {
+        // Refined Fountain Pen: Larger Nib, Shorter Handle
+        svg = `<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="nibGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#FFFFFF"/>
+              <stop offset="40%" stop-color="#D1D5DB"/>
+              <stop offset="100%" stop-color="#9CA3AF"/>
+            </linearGradient>
+          </defs>
+          <!-- Handle (Shortened) -->
+          <path d="M22 10L30 2L34 6L26 14L22 10Z" fill="${color}"/>
+          <!-- Ferrule (Gold) -->
+          <path d="M18 14L26 14L22 10L18 10L18 14Z" fill="#F59E0B" stroke="#B45309" stroke-width="0.5"/>
+          <!-- Large Professional Nib -->
+          <path d="M2 30C6 26 8 22 8 18L18 10L22 14L14 22C10 22 6 26 2 30Z" fill="url(#nibGrad)" stroke="#374151" stroke-width="0.5"/>
+          <!-- Slit and Breather Hole -->
+          <path d="M2 30L11 21" stroke="#374151" stroke-width="0.8" stroke-linecap="round"/>
+          <circle cx="11" cy="21" r="1.2" fill="#374151"/>
+          <!-- Shine -->
+          <path d="M4 28L10 22" stroke="white" stroke-opacity="0.5" stroke-width="0.5"/>
+        </svg>`;
+      }
+      cursorStyle = `url('data:image/svg+xml;utf8,${encodeURIComponent(svg)}') 2 30, auto`;
+    } else if (tool === 'eraser') {
+      const svg = `<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="4" y="8" width="24" height="16" rx="4" fill="#FBBF24"/>
+        <rect x="4" y="12" width="24" height="12" rx="4" fill="#F59E0B"/>
+        <circle cx="8" cy="12" r="1.5" fill="#D97706"/>
+        <circle cx="16" cy="16" r="1.5" fill="#D97706"/>
+        <circle cx="24" cy="14" r="1.5" fill="#D97706"/>
+      </svg>`;
+      cursorStyle = `url('data:image/svg+xml;utf8,${encodeURIComponent(svg)}') 16 16, auto`;
+    } else if (tool === 'hand') {
+      const svg = `<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M16 4C14 4 12 5 12 7V16L11 15C10 14 8 14 7 15C6 16 6 18 7 19L14 26C15 27 17 28 19 28H23C26 28 28 26 28 23V13C28 11 26 10 24 10C23 10 22 10.5 21.5 11C21 10 20 9.5 19 9.5C18 9.5 17 10 16.5 11C16 10 15 9.5 14 9.5C14 7 16 7 16 4Z" fill="#FBBF24"/>
+      </svg>`;
+      cursorStyle = `url('data:image/svg+xml;utf8,${encodeURIComponent(svg)}') 16 16, auto`;
+    } else if (tool === 'text') {
+      cursorStyle = 'text';
+    } else if (tool === 'note') {
+      const svg = `<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="4" y="4" width="24" height="24" rx="2" fill="#E5E7EB"/>
+        <path d="M8 10H24M8 16H24M8 22H18" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round"/>
+        <path d="M22 22L28 28L30 26L24 20L22 22Z" fill="#3B82F6"/>
+      </svg>`;
+      cursorStyle = `url('data:image/svg+xml;utf8,${encodeURIComponent(svg)}') 0 0, auto`;
+    }
+
+    canvas.style.cursor = cursorStyle;
+  }
+
   function updateToolButtons() {
     document.querySelectorAll('.tool').forEach(btn => btn.classList.remove('active'));
+
     if (tool === "pen") drawBtn.classList.add('active');
     else if (tool === "eraser") eraserBtn.classList.add('active');
     else if (tool === "hand") handBtn.classList.add('active');
     else if (tool === "text") textBtn.classList.add('active');
     else if (tool === "note") noteBtn.classList.add('active');
+
+    updateCursor();
   }
 
-  zoomInBtn.onclick = () => { 
-    scale *= 1.1; 
-    redraw(); 
+  zoomInBtn.onclick = () => {
+    scale *= 1.1;
+    redraw();
     updateAllElementPositions();
   };
-  
-  zoomOutBtn.onclick = () => { 
-    scale /= 1.1; 
-    redraw(); 
+
+  zoomOutBtn.onclick = () => {
+    scale /= 1.1;
+    redraw();
     updateAllElementPositions();
   };
 
@@ -529,7 +646,10 @@ socket.emit("join-room", roomId, username);
     b.onclick = () => {
       tool = "pen";
       drawType = b.dataset.draw;
-      
+
+      // Update main button icon
+      drawBtn.innerText = b.innerText;
+
       // Update active state
       document.querySelectorAll("[data-draw]").forEach(btn => btn.classList.remove('active'));
       b.classList.add('active');
@@ -537,21 +657,33 @@ socket.emit("join-room", roomId, username);
     };
   });
 
+  /* ================= SIZE ================= */
+  sizeBtn.onclick = () => {
+    document.getElementById("sizeMenu").classList.toggle("show");
+  };
+
+  sizeSlider.oninput = () => {
+    brushSize = parseInt(sizeSlider.value);
+    sizeValue.innerText = brushSize + "px";
+  };
+
   document.querySelectorAll("[data-color]").forEach(c => {
     c.onclick = () => {
       color = c.dataset.color;
-      
+
       // Update active state
       document.querySelectorAll("[data-color]").forEach(clr => clr.style.border = 'none');
       c.style.border = '2px solid #fff';
       c.style.boxShadow = '0 0 0 2px #3b82f6';
+
+      updateCursor();
     };
   });
 
   document.querySelectorAll("[data-shape-color]").forEach(c => {
     c.onclick = () => {
       shapeColor = c.dataset.shapeColor;
-      
+
       // Update active state
       document.querySelectorAll("[data-shape-color]").forEach(clr => clr.style.border = 'none');
       c.style.border = '2px solid #fff';
@@ -563,14 +695,14 @@ socket.emit("join-room", roomId, username);
     a.onclick = (e) => {
       e.stopPropagation();
       const targetMenu = document.getElementById(a.dataset.target);
-      
+
       // Close other menus
       document.querySelectorAll('.menu').forEach(menu => {
         if (menu !== targetMenu) {
           menu.classList.remove('show');
         }
       });
-      
+
       targetMenu.classList.toggle("show");
     };
   });
@@ -623,7 +755,7 @@ socket.emit("join-room", roomId, username);
     e.preventDefault();
     const shapeType = e.currentTarget.dataset.shape;
     const clone = e.currentTarget.cloneNode(true);
-    
+
     clone.style.position = 'fixed';
     clone.style.left = e.clientX - 30 + 'px';
     clone.style.top = e.clientY - 30 + 'px';
@@ -632,7 +764,7 @@ socket.emit("join-room", roomId, username);
     clone.style.pointerEvents = 'none';
     clone.style.opacity = '0.7';
     clone.style.zIndex = '999999';
-    
+
     document.body.appendChild(clone);
 
     function moveShape(moveE) {
@@ -647,10 +779,10 @@ socket.emit("join-room", roomId, username);
 
       const rect = canvas.getBoundingClientRect();
       if (dropE.clientX >= rect.left && dropE.clientX <= rect.right &&
-          dropE.clientY >= rect.top && dropE.clientY <= rect.bottom) {
-        
+        dropE.clientY >= rect.top && dropE.clientY <= rect.bottom) {
+
         const pos = getPos(dropE);
-        
+
         const shape = {
           id: Date.now() + '-' + Math.random(),
           type: shapeType,
@@ -675,7 +807,7 @@ socket.emit("join-room", roomId, username);
   // Render all shapes
   function renderAllShapes() {
     document.querySelectorAll('.shape-object').forEach(el => el.remove());
-    
+
     shapes.forEach(shape => {
       createShapeElement(shape);
     });
@@ -699,13 +831,13 @@ socket.emit("join-room", roomId, username);
   }
 
   function selectShape(e) {
-    if (e.target.classList.contains('resize-handle') || 
-        e.target.classList.contains('shape-delete')) {
+    if (e.target.classList.contains('resize-handle') ||
+      e.target.classList.contains('shape-delete')) {
       return;
     }
 
     e.stopPropagation();
-    
+
     document.querySelectorAll('.shape-object').forEach(el => {
       el.classList.remove('selected');
       el.querySelectorAll('.resize-handle, .shape-delete').forEach(h => h.remove());
@@ -739,10 +871,10 @@ socket.emit("join-room", roomId, username);
     function moveShape(moveE) {
       const dx = (moveE.clientX - startScreenX) / scale;
       const dy = (moveE.clientY - startScreenY) / scale;
-      
+
       selectedShape.x = startDataX + dx;
       selectedShape.y = startDataY + dy;
-      
+
       shapeEl.style.left = (selectedShape.x * scale + offsetX) + 'px';
       shapeEl.style.top = (selectedShape.y * scale + offsetY) + 'px';
     }
@@ -759,18 +891,18 @@ socket.emit("join-room", roomId, username);
 
   function startResize(e) {
     e.stopPropagation();
-    
+
     const handle = e.target;
     const shapeEl = handle.parentElement;
     const shape = shapes.find(s => s.id === shapeEl.dataset.shapeId);
-    
+
     const startScreenX = e.clientX;
     const startScreenY = e.clientY;
     const startWidth = shape.width;
     const startHeight = shape.height;
     const startX = shape.x;
     const startY = shape.y;
-    
+
     const handleClass = handle.className.split(' ')[1];
 
     function resize(moveE) {
@@ -813,10 +945,10 @@ socket.emit("join-room", roomId, username);
 
   function deleteShape(e) {
     e.stopPropagation();
-    
+
     const shapeEl = e.target.parentElement;
     const shapeId = shapeEl.dataset.shapeId;
-    
+
     shapes = shapes.filter(s => s.id !== shapeId);
     shapeEl.remove();
     socket.emit("shape-delete", shapeId);
@@ -837,7 +969,7 @@ socket.emit("join-room", roomId, username);
 
   function renderAllTexts() {
     document.querySelectorAll('.text-element').forEach(el => el.remove());
-    
+
     textElements.forEach(textEl => {
       createTextElement(textEl);
     });
@@ -859,7 +991,7 @@ socket.emit("join-room", roomId, username);
     textDiv.style.whiteSpace = 'nowrap';
     textDiv.style.zIndex = '10000';
     textDiv.innerText = textData.text;
-    
+
     // Add delete button
     const deleteBtn = document.createElement('span');
     deleteBtn.innerHTML = '×';
@@ -895,7 +1027,7 @@ socket.emit("join-room", roomId, username);
     textDiv.onmousedown = (e) => {
       if (e.target === deleteBtn) return;
       e.stopPropagation();
-      
+
       const startScreenX = e.clientX;
       const startScreenY = e.clientY;
       const startDataX = textData.x;
@@ -904,10 +1036,10 @@ socket.emit("join-room", roomId, username);
       function moveText(moveE) {
         const dx = (moveE.clientX - startScreenX) / scale;
         const dy = (moveE.clientY - startScreenY) / scale;
-        
+
         textData.x = startDataX + dx;
         textData.y = startDataY + dy;
-        
+
         textDiv.style.left = (textData.x * scale + offsetX) + 'px';
         textDiv.style.top = (textData.y * scale + offsetY) + 'px';
       }
@@ -927,7 +1059,7 @@ socket.emit("join-room", roomId, username);
 
   function renderAllNotes() {
     document.querySelectorAll('.note').forEach(el => el.remove());
-    
+
     stickyNotes.forEach(note => {
       createNoteElement(note);
     });
@@ -944,7 +1076,7 @@ socket.emit("join-room", roomId, username);
     note.style.transform = `scale(${scale})`;
     note.style.transformOrigin = 'top left';
     note.innerText = noteData.content;
-    
+
     // Add delete button
     const deleteBtn = document.createElement('span');
     deleteBtn.innerHTML = '×';
@@ -980,25 +1112,26 @@ socket.emit("join-room", roomId, username);
     note.oninput = () => {
       noteData.content = note.innerText;
       socket.emit("note-update", noteData);
+      socket.emit("user-activity", "is writing a note");
     };
 
     note.onmousedown = (ev) => {
       if (ev.target === deleteBtn || ev.target.isContentEditable && document.activeElement === note) return;
-      
+
       ev.preventDefault();
-      
+
       const startScreenX = ev.clientX;
       const startScreenY = ev.clientY;
       const startDataX = noteData.x;
       const startDataY = noteData.y;
-      
+
       function moveNote(m) {
         const dx = (m.clientX - startScreenX) / scale;
         const dy = (m.clientY - startScreenY) / scale;
-        
+
         noteData.x = startDataX + dx;
         noteData.y = startDataY + dy;
-        
+
         note.style.left = (noteData.x * scale + offsetX) + 'px';
         note.style.top = (noteData.y * scale + offsetY) + 'px';
       }

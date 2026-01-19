@@ -4,7 +4,8 @@
   box-sizing: border-box;
 }
 
-html, body {
+html,
+body {
   width: 100%;
   height: 100%;
   overflow: hidden;
@@ -25,19 +26,21 @@ html, body {
   color: white;
   font-size: 20px;
   cursor: pointer;
-  z-index: 999999; /* ðŸ"¥ INCREASED Z-INDEX - Now it's on top! */
+  z-index: 999999;
+  /* ðŸ"¥ INCREASED Z-INDEX - Now it's on top! */
   pointer-events: auto;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.25); /* ðŸ"¥ STRONGER SHADOW for visibility */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  /* ðŸ"¥ STRONGER SHADOW for visibility */
 }
 
 #home-btn:hover {
   background: #333;
   transform: scale(1.05);
-  box-shadow: 0 6px 16px rgba(0,0,0,0.35);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
 }
 
 #home-btn:active {
@@ -71,12 +74,13 @@ canvas {
   background: white;
   padding: 10px 14px;
   border-radius: 18px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
   z-index: 50000;
   pointer-events: auto;
 }
 
-.tool, .arrow {
+.tool,
+.arrow {
   width: 42px;
   height: 42px;
   border-radius: 12px;
@@ -124,7 +128,7 @@ canvas {
   background: white;
   padding: 6px;
   border-radius: 12px;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
   display: none;
   gap: 6px;
   z-index: 60000;
@@ -133,6 +137,28 @@ canvas {
 
 .menu.show {
   display: flex;
+}
+
+/* ================= SIZE CONTROLS ================= */
+
+.size-controls {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 140px;
+}
+
+#sizeSlider {
+  width: 100%;
+  cursor: pointer;
+}
+
+#sizeValue {
+  font-size: 12px;
+  font-weight: 600;
+  color: #4b5563;
 }
 
 .menu button {
@@ -173,22 +199,45 @@ canvas {
   transform: scale(1.2);
 }
 
-.menu span[data-color="#000"], 
-.menu span[data-shape-color="#000"] { background:#000 }
-.menu span[data-color="#ef4444"], 
-.menu span[data-shape-color="#ef4444"] { background:#ef4444 }
-.menu span[data-color="#3b82f6"], 
-.menu span[data-shape-color="#3b82f6"] { background:#3b82f6 }
-.menu span[data-color="#22c55e"], 
-.menu span[data-shape-color="#22c55e"] { background:#22c55e }
-.menu span[data-color="#f59e0b"], 
-.menu span[data-shape-color="#f59e0b"] { background:#f59e0b }
-.menu span[data-color="#a855f7"], 
-.menu span[data-shape-color="#a855f7"] { background:#a855f7 }
-.menu span[data-color="#ec4899"], 
-.menu span[data-shape-color="#ec4899"] { background:#ec4899 }
-.menu span[data-color="#8b5cf6"], 
-.menu span[data-shape-color="#8b5cf6"] { background:#8b5cf6 }
+.menu span[data-color="#000"],
+.menu span[data-shape-color="#000"] {
+  background: #000
+}
+
+.menu span[data-color="#ef4444"],
+.menu span[data-shape-color="#ef4444"] {
+  background: #ef4444
+}
+
+.menu span[data-color="#3b82f6"],
+.menu span[data-shape-color="#3b82f6"] {
+  background: #3b82f6
+}
+
+.menu span[data-color="#22c55e"],
+.menu span[data-shape-color="#22c55e"] {
+  background: #22c55e
+}
+
+.menu span[data-color="#f59e0b"],
+.menu span[data-shape-color="#f59e0b"] {
+  background: #f59e0b
+}
+
+.menu span[data-color="#a855f7"],
+.menu span[data-shape-color="#a855f7"] {
+  background: #a855f7
+}
+
+.menu span[data-color="#ec4899"],
+.menu span[data-shape-color="#ec4899"] {
+  background: #ec4899
+}
+
+.menu span[data-color="#8b5cf6"],
+.menu span[data-shape-color="#8b5cf6"] {
+  background: #8b5cf6
+}
 
 /* ================= DRAWER INDICATOR ================= */
 
@@ -247,7 +296,7 @@ canvas {
   background: #fff9c4;
   padding: 12px;
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   cursor: move;
   pointer-events: auto;
   font-family: 'Segoe UI', sans-serif;
@@ -259,7 +308,7 @@ canvas {
 }
 
 .note:hover {
-  box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
 }
 
 .note:focus {
@@ -310,7 +359,7 @@ canvas {
   height: 380px;
   background: white;
   border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
   display: flex;
   flex-direction: column;
   z-index: 99999;
@@ -373,7 +422,7 @@ canvas {
   max-height: 520px;
   background: white;
   border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
   z-index: 99999;
   pointer-events: auto;
   display: flex;
@@ -483,10 +532,29 @@ canvas {
   z-index: 10;
 }
 
-.resize-handle.nw { top: -6px; left: -6px; cursor: nw-resize; }
-.resize-handle.ne { top: -6px; right: -6px; cursor: ne-resize; }
-.resize-handle.sw { bottom: -6px; left: -6px; cursor: sw-resize; }
-.resize-handle.se { bottom: -6px; right: -6px; cursor: se-resize; }
+.resize-handle.nw {
+  top: -6px;
+  left: -6px;
+  cursor: nw-resize;
+}
+
+.resize-handle.ne {
+  top: -6px;
+  right: -6px;
+  cursor: ne-resize;
+}
+
+.resize-handle.sw {
+  bottom: -6px;
+  left: -6px;
+  cursor: sw-resize;
+}
+
+.resize-handle.se {
+  bottom: -6px;
+  right: -6px;
+  cursor: se-resize;
+}
 
 /* Delete button */
 .shape-delete {
@@ -527,8 +595,13 @@ canvas {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .template-selector {
@@ -546,6 +619,7 @@ canvas {
     opacity: 0;
     transform: translateY(30px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -642,7 +716,7 @@ body.board-brainstorm #template-overlay {
   cursor: pointer;
   z-index: 999999;
   pointer-events: auto;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -652,7 +726,7 @@ body.board-brainstorm #template-overlay {
 #change-board-btn:hover {
   background: #3b82f6 !important;
   transform: scale(1.1);
-  box-shadow: 0 6px 16px rgba(0,0,0,0.35);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
 }
 
 #change-board-btn:active {
@@ -673,7 +747,7 @@ body.board-brainstorm #template-overlay {
   cursor: pointer;
   z-index: 999999;
   pointer-events: auto;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -682,7 +756,7 @@ body.board-brainstorm #template-overlay {
 
 #interact-mode-btn:hover {
   transform: scale(1.05);
-  box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
 }
 
 #interact-mode-btn:active {

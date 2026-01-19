@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login / Register - SlateX</title>
   <link rel="stylesheet" href="/css/auth.css">
-  
+
   <style>
     /* Custom logo styles for auth page */
     .logo-section {
@@ -14,18 +15,19 @@
       justify-content: center;
       margin-bottom: 24px;
     }
-    
+
     .logo-image {
       height: 60px;
       width: auto;
       object-fit: contain;
       display: block;
-      filter: drop-shadow(0 2px 8px rgba(0,0,0,0.1));
+      filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.1));
     }
   </style>
 
- 
+
 </head>
+
 <body>
   <div class="auth-container">
     <div class="auth-box">
@@ -111,7 +113,7 @@
     toggleBtns.forEach(btn => {
       btn.addEventListener('click', () => {
         const formType = btn.dataset.form;
-        
+
         // Update active states
         toggleBtns.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
@@ -134,7 +136,7 @@
     // Login handler
     loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      
+
       const btn = loginForm.querySelector('.submit-btn');
       const btnText = btn.querySelector('.btn-text');
       const loader = btn.querySelector('.btn-loader');
@@ -159,7 +161,12 @@
         const data = await response.json();
 
         if (data.success) {
-          // Success - redirect to domain selection
+          // Success - store user data and redirect to domain selection
+          localStorage.setItem('currentUser', JSON.stringify({
+            username: data.user.username,
+            email: data.user.email,
+            id: data.user.id
+          }));
           window.location.href = '/room';
         } else {
           // Show error
@@ -179,7 +186,7 @@
     // Register handler
     registerForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      
+
       const btn = registerForm.querySelector('.submit-btn');
       const btnText = btn.querySelector('.btn-text');
       const loader = btn.querySelector('.btn-loader');
@@ -212,7 +219,12 @@
         const data = await response.json();
 
         if (data.success) {
-          // Success - redirect to domain selection
+          // Success - store user data and redirect to domain selection
+          localStorage.setItem('currentUser', JSON.stringify({
+            username: data.user.username,
+            email: data.user.email,
+            id: data.user.id
+          }));
           window.location.href = '/room';
         } else {
           // Show error
@@ -230,4 +242,5 @@
     });
   </script>
 </body>
+
 </html>

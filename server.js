@@ -23,8 +23,8 @@ const io = new Server(server);
 // =======================
 
 mongoose.connect(process.env.MONGODB_URI)
-.then(() => console.log('✅ MongoDB Connected'))
-.catch((err) => console.error('❌ MongoDB Connection Error:', err));
+  .then(() => console.log('✅ MongoDB Connected'))
+  .catch((err) => console.error('❌ MongoDB Connection Error:', err));
 
 // =======================
 // 🧠 WHITEBOARD STATE (Now Room-based)
@@ -100,7 +100,7 @@ app.use("/api/rooms", roomRoutes);
 
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
-  
+
   let currentRoom = null;
   let currentDrawer = null;
 
@@ -109,13 +109,13 @@ io.on("connection", (socket) => {
     try {
       currentRoom = roomId;
       socket.join(roomId);
-      
+
       // Initialize room if it doesn't exist in memory
       if (!activeRooms.has(roomId)) {
         // Load room state from MongoDB
         const Room = require('./models/Room');
         const room = await Room.findOne({ roomId: roomId.toUpperCase() });
-        
+
         if (room) {
           activeRooms.set(roomId, {
             currentDrawer: null,
@@ -137,19 +137,19 @@ io.on("connection", (socket) => {
           });
         }
       }
-      
+
       const roomData = activeRooms.get(roomId);
       roomData.users[socket.id] = username;
-      
+
       // Send current board state to new user
       socket.emit("init-board", roomData.boardState);
-      
+
       // Notify room of new user
-      io.to(roomId).emit("user-joined", { 
-        username, 
-        userCount: Object.keys(roomData.users).length 
+      io.to(roomId).emit("user-joined", {
+        username,
+        userCount: Object.keys(roomData.users).length
       });
-      
+
       console.log(`User ${username} joined room ${roomId}`);
     } catch (error) {
       console.error("Error joining room:", error);
@@ -161,6 +161,16 @@ io.on("connection", (socket) => {
   socket.on("chat-message", (msg) => {
     if (currentRoom) {
       io.to(currentRoom).emit("chat-message", msg);
+    }
+  });
+
+  // Activity indicator
+  socket.on("user-activity", (activity) => {
+    if (currentRoom) {
+      socket.to(currentRoom).emit("user-activity", {
+        username: activeRooms.get(currentRoom)?.users[socket.id] || "Someone",
+        activity: activity
+      });
     }
   });
 
@@ -375,7 +385,7 @@ io.on("connection", (socket) => {
 
     if (currentRoom) {
       const roomData = activeRooms.get(currentRoom);
-      
+
       if (roomData) {
         // Release drawing permissions
         if (roomData.currentDrawer === socket.id) {
@@ -389,9 +399,9 @@ io.on("connection", (socket) => {
         delete roomData.users[socket.id];
 
         // Notify room
-        io.to(currentRoom).emit("user-left", { 
-          username, 
-          userCount: Object.keys(roomData.users).length 
+        io.to(currentRoom).emit("user-left", {
+          username,
+          userCount: Object.keys(roomData.users).length
         });
 
         // Save board state to MongoDB before cleanup
@@ -399,7 +409,7 @@ io.on("connection", (socket) => {
           const Room = require('./models/Room');
           await Room.findOneAndUpdate(
             { roomId: currentRoom.toUpperCase() },
-            { 
+            {
               boardState: roomData.boardState,
               lastActivity: new Date()
             }

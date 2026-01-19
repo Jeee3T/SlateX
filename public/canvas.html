@@ -1,20 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <title>Whiteboard - SlateX</title>
   <link rel="stylesheet" href="/css/home.css">
   <link rel="stylesheet" href="/css/canvas.css">
- 
- 
+
+
 </head>
+
 <body>
 
   <!-- Go Home Button -->
   <button id="home-btn" title="Go to Home">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      <polyline points="9 22 9 12 15 12 15 22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" />
+      <polyline points="9 22 9 12 15 12 15 22" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        stroke-linejoin="round" />
     </svg>
   </button>
 
@@ -53,76 +57,141 @@
     </div>
     <div id="shapes-grid">
       <div class="shape-item" data-shape="rectangle" title="Rectangle">
-        <svg viewBox="0 0 60 60"><rect x="10" y="15" width="40" height="30" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        <svg viewBox="0 0 60 60">
+          <rect x="10" y="15" width="40" height="30" fill="none" stroke="currentColor" stroke-width="2" />
+        </svg>
       </div>
       <div class="shape-item" data-shape="circle" title="Circle">
-        <svg viewBox="0 0 60 60"><circle cx="30" cy="30" r="20" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        <svg viewBox="0 0 60 60">
+          <circle cx="30" cy="30" r="20" fill="none" stroke="currentColor" stroke-width="2" />
+        </svg>
       </div>
       <div class="shape-item" data-shape="triangle" title="Triangle">
-        <svg viewBox="0 0 60 60"><polygon points="30,10 50,45 10,45" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        <svg viewBox="0 0 60 60">
+          <polygon points="30,10 50,45 10,45" fill="none" stroke="currentColor" stroke-width="2" />
+        </svg>
       </div>
       <div class="shape-item" data-shape="star" title="Star">
-        <svg viewBox="0 0 60 60"><polygon points="30,10 37,25 52,27 41,38 44,52 30,45 16,52 19,38 8,27 23,25" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        <svg viewBox="0 0 60 60">
+          <polygon points="30,10 37,25 52,27 41,38 44,52 30,45 16,52 19,38 8,27 23,25" fill="none" stroke="currentColor"
+            stroke-width="2" />
+        </svg>
       </div>
       <div class="shape-item" data-shape="hexagon" title="Hexagon">
-        <svg viewBox="0 0 60 60"><polygon points="30,10 45,20 45,40 30,50 15,40 15,20" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        <svg viewBox="0 0 60 60">
+          <polygon points="30,10 45,20 45,40 30,50 15,40 15,20" fill="none" stroke="currentColor" stroke-width="2" />
+        </svg>
       </div>
       <div class="shape-item" data-shape="pentagon" title="Pentagon">
-        <svg viewBox="0 0 60 60"><polygon points="30,10 50,25 42,48 18,48 10,25" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        <svg viewBox="0 0 60 60">
+          <polygon points="30,10 50,25 42,48 18,48 10,25" fill="none" stroke="currentColor" stroke-width="2" />
+        </svg>
       </div>
       <div class="shape-item" data-shape="diamond" title="Diamond">
-        <svg viewBox="0 0 60 60"><polygon points="30,10 50,30 30,50 10,30" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        <svg viewBox="0 0 60 60">
+          <polygon points="30,10 50,30 30,50 10,30" fill="none" stroke="currentColor" stroke-width="2" />
+        </svg>
       </div>
       <div class="shape-item" data-shape="arrow-right" title="Arrow Right">
-        <svg viewBox="0 0 60 60"><path d="M10,25 L40,25 L40,15 L55,30 L40,45 L40,35 L10,35 Z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        <svg viewBox="0 0 60 60">
+          <path d="M10,25 L40,25 L40,15 L55,30 L40,45 L40,35 L10,35 Z" fill="none" stroke="currentColor"
+            stroke-width="2" />
+        </svg>
       </div>
       <div class="shape-item" data-shape="arrow-left" title="Arrow Left">
-        <svg viewBox="0 0 60 60"><path d="M50,25 L20,25 L20,15 L5,30 L20,45 L20,35 L50,35 Z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        <svg viewBox="0 0 60 60">
+          <path d="M50,25 L20,25 L20,15 L5,30 L20,45 L20,35 L50,35 Z" fill="none" stroke="currentColor"
+            stroke-width="2" />
+        </svg>
       </div>
       <div class="shape-item" data-shape="arrow-up" title="Arrow Up">
-        <svg viewBox="0 0 60 60"><path d="M25,50 L25,20 L15,20 L30,5 L45,20 L35,20 L35,50 Z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        <svg viewBox="0 0 60 60">
+          <path d="M25,50 L25,20 L15,20 L30,5 L45,20 L35,20 L35,50 Z" fill="none" stroke="currentColor"
+            stroke-width="2" />
+        </svg>
       </div>
       <div class="shape-item" data-shape="arrow-down" title="Arrow Down">
-        <svg viewBox="0 0 60 60"><path d="M25,10 L25,40 L15,40 L30,55 L45,40 L35,40 L35,10 Z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        <svg viewBox="0 0 60 60">
+          <path d="M25,10 L25,40 L15,40 L30,55 L45,40 L35,40 L35,10 Z" fill="none" stroke="currentColor"
+            stroke-width="2" />
+        </svg>
       </div>
       <div class="shape-item" data-shape="ellipse" title="Ellipse">
-        <svg viewBox="0 0 60 60"><ellipse cx="30" cy="30" rx="25" ry="15" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        <svg viewBox="0 0 60 60">
+          <ellipse cx="30" cy="30" rx="25" ry="15" fill="none" stroke="currentColor" stroke-width="2" />
+        </svg>
       </div>
       <div class="shape-item" data-shape="heart" title="Heart">
-        <svg viewBox="0 0 60 60"><path d="M30,50 C30,50 10,35 10,22 C10,15 15,10 20,10 C25,10 30,15 30,15 C30,15 35,10 40,10 C45,10 50,15 50,22 C50,35 30,50 30,50 Z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        <svg viewBox="0 0 60 60">
+          <path
+            d="M30,50 C30,50 10,35 10,22 C10,15 15,10 20,10 C25,10 30,15 30,15 C30,15 35,10 40,10 C45,10 50,15 50,22 C50,35 30,50 30,50 Z"
+            fill="none" stroke="currentColor" stroke-width="2" />
+        </svg>
       </div>
       <div class="shape-item" data-shape="cloud" title="Cloud">
-        <svg viewBox="0 0 60 60"><path d="M45,30 C45,25 42,20 37,20 C36,15 32,12 27,12 C20,12 15,17 15,24 C10,24 7,28 7,32 C7,36 10,40 15,40 L45,40 C50,40 53,36 53,32 C53,28 50,30 45,30 Z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        <svg viewBox="0 0 60 60">
+          <path
+            d="M45,30 C45,25 42,20 37,20 C36,15 32,12 27,12 C20,12 15,17 15,24 C10,24 7,28 7,32 C7,36 10,40 15,40 L45,40 C50,40 53,36 53,32 C53,28 50,30 45,30 Z"
+            fill="none" stroke="currentColor" stroke-width="2" />
+        </svg>
       </div>
       <div class="shape-item" data-shape="trapezoid" title="Trapezoid">
-        <svg viewBox="0 0 60 60"><polygon points="20,15 40,15 50,45 10,45" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        <svg viewBox="0 0 60 60">
+          <polygon points="20,15 40,15 50,45 10,45" fill="none" stroke="currentColor" stroke-width="2" />
+        </svg>
       </div>
       <div class="shape-item" data-shape="parallelogram" title="Parallelogram">
-        <svg viewBox="0 0 60 60"><polygon points="15,35 35,35 45,15 25,15" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        <svg viewBox="0 0 60 60">
+          <polygon points="15,35 35,35 45,15 25,15" fill="none" stroke="currentColor" stroke-width="2" />
+        </svg>
       </div>
       <div class="shape-item" data-shape="octagon" title="Octagon">
-        <svg viewBox="0 0 60 60"><polygon points="22,10 38,10 50,22 50,38 38,50 22,50 10,38 10,22" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        <svg viewBox="0 0 60 60">
+          <polygon points="22,10 38,10 50,22 50,38 38,50 22,50 10,38 10,22" fill="none" stroke="currentColor"
+            stroke-width="2" />
+        </svg>
       </div>
       <div class="shape-item" data-shape="cross" title="Cross">
-        <svg viewBox="0 0 60 60"><path d="M25,10 L35,10 L35,25 L50,25 L50,35 L35,35 L35,50 L25,50 L25,35 L10,35 L10,25 L25,25 Z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        <svg viewBox="0 0 60 60">
+          <path d="M25,10 L35,10 L35,25 L50,25 L50,35 L35,35 L35,50 L25,50 L25,35 L10,35 L10,25 L25,25 Z" fill="none"
+            stroke="currentColor" stroke-width="2" />
+        </svg>
       </div>
       <div class="shape-item" data-shape="rounded-rect" title="Rounded Rectangle">
-        <svg viewBox="0 0 60 60"><rect x="10" y="15" width="40" height="30" rx="5" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        <svg viewBox="0 0 60 60">
+          <rect x="10" y="15" width="40" height="30" rx="5" fill="none" stroke="currentColor" stroke-width="2" />
+        </svg>
       </div>
       <div class="shape-item" data-shape="speech-bubble" title="Speech Bubble">
-        <svg viewBox="0 0 60 60"><rect x="10" y="10" width="40" height="30" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M25,40 L20,50 L30,40" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        <svg viewBox="0 0 60 60">
+          <rect x="10" y="10" width="40" height="30" rx="5" fill="none" stroke="currentColor" stroke-width="2" />
+          <path d="M25,40 L20,50 L30,40" fill="none" stroke="currentColor" stroke-width="2" />
+        </svg>
       </div>
       <div class="shape-item" data-shape="lightning" title="Lightning">
-        <svg viewBox="0 0 60 60"><polygon points="35,10 15,30 28,30 25,50 45,28 32,28" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        <svg viewBox="0 0 60 60">
+          <polygon points="35,10 15,30 28,30 25,50 45,28 32,28" fill="none" stroke="currentColor" stroke-width="2" />
+        </svg>
       </div>
       <div class="shape-item" data-shape="moon" title="Moon">
-        <svg viewBox="0 0 60 60"><path d="M40,15 C35,15 30,18 27,23 C24,28 24,35 27,40 C30,45 35,48 40,48 C35,48 30,45 27,40 C24,35 24,28 27,23 C30,18 35,15 40,15 M40,10 C30,10 20,18 20,30 C20,42 30,50 40,50 C45,50 48,47 48,42 C48,37 45,35 42,35 C44,32 45,28 45,25 C45,18 43,10 40,10 Z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        <svg viewBox="0 0 60 60">
+          <path
+            d="M40,15 C35,15 30,18 27,23 C24,28 24,35 27,40 C30,45 35,48 40,48 C35,48 30,45 27,40 C24,35 24,28 27,23 C30,18 35,15 40,15 M40,10 C30,10 20,18 20,30 C20,42 30,50 40,50 C45,50 48,47 48,42 C48,37 45,35 42,35 C44,32 45,28 45,25 C45,18 43,10 40,10 Z"
+            fill="none" stroke="currentColor" stroke-width="2" />
+        </svg>
       </div>
       <div class="shape-item" data-shape="cylinder" title="Cylinder">
-        <svg viewBox="0 0 60 60"><ellipse cx="30" cy="15" rx="20" ry="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10,15 L10,45 M50,15 L50,45" stroke="currentColor" stroke-width="2"/><ellipse cx="30" cy="45" rx="20" ry="8" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        <svg viewBox="0 0 60 60">
+          <ellipse cx="30" cy="15" rx="20" ry="8" fill="none" stroke="currentColor" stroke-width="2" />
+          <path d="M10,15 L10,45 M50,15 L50,45" stroke="currentColor" stroke-width="2" />
+          <ellipse cx="30" cy="45" rx="20" ry="8" fill="none" stroke="currentColor" stroke-width="2" />
+        </svg>
       </div>
       <div class="shape-item" data-shape="cube" title="Cube">
-        <svg viewBox="0 0 60 60"><path d="M20,25 L30,20 L40,25 L40,40 L30,45 L20,40 Z M30,20 L30,35 M20,25 L30,35 L40,25" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        <svg viewBox="0 0 60 60">
+          <path d="M20,25 L30,20 L40,25 L40,40 L30,45 L20,40 Z M30,20 L30,35 M20,25 L30,35 L40,25" fill="none"
+            stroke="currentColor" stroke-width="2" />
+        </svg>
       </div>
     </div>
   </div>
@@ -133,21 +202,21 @@
       <button class="tool active" id="drawBtn">✏️</button>
       <button class="arrow" data-target="drawMenu">▾</button>
       <div class="menu" id="drawMenu">
-        <button data-draw="pen">✏️</button>
-        <button data-draw="pencil">✒️</button>
+        <button data-draw="pencil">✏️</button>
+        <button data-draw="pen">✒️</button>
         <button data-draw="brush">🖌️</button>
       </div>
     </div>
 
     <button class="tool" id="eraser">🧽</button>
-    
+
     <!-- Shapes Button with proper icon -->
     <div class="tool-wrapper">
       <button class="tool" id="shapesBtn">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="3"/>
-          <rect x="3" y="3" width="7" height="7" rx="1"/>
-          <polygon points="20,3 23,8 17,8"/>
+          <circle cx="12" cy="12" r="3" />
+          <rect x="3" y="3" width="7" height="7" rx="1" />
+          <polygon points="20,3 23,8 17,8" />
         </svg>
       </button>
       <button class="arrow" data-target="shapeColorMenu">▾</button>
@@ -162,10 +231,24 @@
         <span data-shape-color="#8b5cf6"></span>
       </div>
     </div>
-    
+
     <button class="tool" id="text">T</button>
     <button class="tool" id="note">📝</button>
     <button class="tool" id="hand">✋</button>
+
+    <div class="divider"></div>
+
+    <!-- Size Adjustment -->
+    <div class="tool-wrapper">
+      <button class="tool" id="sizeBtn">📏</button>
+      <button class="arrow" data-target="sizeMenu">▾</button>
+      <div class="menu" id="sizeMenu">
+        <div class="size-controls">
+          <input type="range" id="sizeSlider" min="1" max="50" value="5">
+          <span id="sizeValue">5px</span>
+        </div>
+      </div>
+    </div>
 
     <div class="divider"></div>
 
@@ -207,7 +290,7 @@
 
   <!-- Socket.IO client (MUST come first) -->
   <script src="/socket.io/socket.io.js"></script>
-  
+
   <script src="/js/board-templates.js"></script>
 
   <!-- Your existing whiteboard logic -->
@@ -223,4 +306,5 @@
   </script>
 
 </body>
+
 </html>
