@@ -8,30 +8,30 @@ const BoardTemplates = {
       description: "Structured, logical, interview-oriented",
       color: "#1e293b",
       sections: [
-        { 
-          id: "problem", 
-          label: "Problem Statement", 
+        {
+          id: "problem",
+          label: "Problem Statement",
           x: 5, y: 5, width: 90, height: 15,
           textStyle: { fontFamily: 'Arial, sans-serif', fontSize: '16px', lineHeight: '1.6' },
           placeholder: "Click to write the problem statement..."
         },
-        { 
-          id: "logic", 
-          label: "Logic / Pseudocode", 
+        {
+          id: "logic",
+          label: "Logic / Pseudocode",
           x: 5, y: 22, width: 60, height: 35,
           textStyle: { fontFamily: '"Courier New", monospace', fontSize: '14px', lineHeight: '1.5', color: '#059669' },
           placeholder: "Click to write pseudocode..."
         },
-        { 
-          id: "notes", 
-          label: "Notes", 
+        {
+          id: "notes",
+          label: "Notes",
           x: 67, y: 22, width: 28, height: 35,
           textStyle: { fontFamily: 'Arial, sans-serif', fontSize: '13px', lineHeight: '1.5', color: '#6366f1' },
           placeholder: "Click to add notes..."
         },
-        { 
-          id: "code", 
-          label: "Code Area", 
+        {
+          id: "code",
+          label: "Code Area",
           x: 5, y: 59, width: 90, height: 36,
           textStyle: { fontFamily: '"Courier New", monospace', fontSize: '14px', lineHeight: '1.4', color: '#000' },
           placeholder: "Click to write your code..."
@@ -43,16 +43,16 @@ const BoardTemplates = {
       description: "Focused, diagram-first, observational",
       color: "#dc2626",
       sections: [
-        { 
-          id: "diagram", 
-          label: "Diagram Area", 
+        {
+          id: "diagram",
+          label: "Diagram Area",
           x: 5, y: 5, width: 90, height: 65,
           textStyle: { fontFamily: 'Arial, sans-serif', fontSize: '14px', lineHeight: '1.5' },
           placeholder: "Draw diagrams here..."
         },
-        { 
-          id: "observations", 
-          label: "Observations / Notes", 
+        {
+          id: "observations",
+          label: "Observations / Notes",
           x: 5, y: 72, width: 90, height: 23,
           textStyle: { fontFamily: 'Georgia, serif', fontSize: '14px', lineHeight: '1.7', color: '#dc2626' },
           placeholder: "Click to add medical observations..."
@@ -64,23 +64,23 @@ const BoardTemplates = {
       description: "Analytical, tabular, decision-focused",
       color: "#16a34a",
       sections: [
-        { 
-          id: "data", 
-          label: "Numbers / Data", 
+        {
+          id: "data",
+          label: "Numbers / Data",
           x: 5, y: 5, width: 43, height: 55,
           textStyle: { fontFamily: '"Courier New", monospace', fontSize: '14px', lineHeight: '1.5', color: '#16a34a' },
           placeholder: "Click to add financial data..."
         },
-        { 
-          id: "calculations", 
-          label: "Calculations", 
+        {
+          id: "calculations",
+          label: "Calculations",
           x: 50, y: 5, width: 45, height: 55,
           textStyle: { fontFamily: '"Courier New", monospace', fontSize: '14px', lineHeight: '1.5', color: '#0891b2' },
           placeholder: "Click to add calculations..."
         },
-        { 
-          id: "summary", 
-          label: "Summary / Decisions", 
+        {
+          id: "summary",
+          label: "Summary / Decisions",
           x: 5, y: 62, width: 90, height: 33,
           textStyle: { fontFamily: 'Arial, sans-serif', fontSize: '15px', lineHeight: '1.6', fontWeight: 'bold' },
           placeholder: "Click to add summary and decisions..."
@@ -92,23 +92,23 @@ const BoardTemplates = {
       description: "Workflow-driven, Kanban style",
       color: "#9333ea",
       sections: [
-        { 
-          id: "todo", 
-          label: "To Do", 
+        {
+          id: "todo",
+          label: "To Do",
           x: 5, y: 5, width: 28, height: 90,
           textStyle: { fontFamily: 'Arial, sans-serif', fontSize: '14px', lineHeight: '1.5' },
           placeholder: "Click to add tasks..."
         },
-        { 
-          id: "inprogress", 
-          label: "In Progress", 
+        {
+          id: "inprogress",
+          label: "In Progress",
           x: 36, y: 5, width: 28, height: 90,
           textStyle: { fontFamily: 'Arial, sans-serif', fontSize: '14px', lineHeight: '1.5', color: '#f59e0b' },
           placeholder: "Click to add tasks..."
         },
-        { 
-          id: "done", 
-          label: "Done", 
+        {
+          id: "done",
+          label: "Done",
           x: 67, y: 5, width: 28, height: 90,
           textStyle: { fontFamily: 'Arial, sans-serif', fontSize: '14px', lineHeight: '1.5', color: '#22c55e' },
           placeholder: "Click to add completed tasks..."
@@ -127,7 +127,7 @@ const BoardTemplates = {
   socket: null,
   interactMode: false,
   templateTransform: { x: 0, y: 0, scale: 1 },
-  
+
   // Store template texts
   templateTexts: [],
 
@@ -142,7 +142,7 @@ const BoardTemplates = {
     this.socket.on("init-board", (data) => {
       this.templateTexts = data.templateTexts || [];
       this.templateTransform = data.templateTransform || { x: 0, y: 0, scale: 1 };
-      
+
       // Restore texts after template is applied
       setTimeout(() => {
         this.restoreAllTexts();
@@ -208,9 +208,9 @@ const BoardTemplates = {
   selectTemplate(key) {
     this.currentTemplate = key;
     const template = this.templates[key];
-    
+
     localStorage.setItem('boardTemplate', key);
-    
+
     this.applyTemplate(template);
     this.addInteractButton();
     this.addChangeButton();
@@ -290,7 +290,7 @@ const BoardTemplates = {
 
     dragHandle.addEventListener('mousedown', (e) => {
       if (!this.interactMode) return;
-      
+
       isDragging = true;
       startX = e.clientX - this.templateTransform.x;
       startY = e.clientY - this.templateTransform.y;
@@ -303,7 +303,7 @@ const BoardTemplates = {
 
       this.templateTransform.x = e.clientX - startX;
       this.templateTransform.y = e.clientY - startY;
-      
+
       this.applyTransform();
       this.socket.emit('template-transform-update', this.templateTransform);
     });
@@ -327,7 +327,7 @@ const BoardTemplates = {
     const div = document.createElement('div');
     div.className = 'template-section';
     div.dataset.sectionId = section.id;
-    
+
     div.style.cssText = `
       position: absolute;
       left: ${section.x}%;
@@ -385,7 +385,7 @@ const BoardTemplates = {
       font-weight: 600;
       transition: all 0.2s;
     `;
-    
+
     writeBtn.onmouseenter = () => {
       writeBtn.style.background = themeColor;
       writeBtn.style.color = 'white';
@@ -413,7 +413,7 @@ const BoardTemplates = {
 
   addTextToSection(section, sectionDiv, themeColor) {
     const textId = Date.now() + '-' + Math.random();
-    
+
     let textContainer = sectionDiv.querySelector('.section-text-container');
     if (!textContainer) {
       textContainer = document.createElement('div');
@@ -441,7 +441,7 @@ const BoardTemplates = {
 
     this.templateTexts.push(textData);
     this.socket.emit('template-text-add', textData);
-    this.renderTextElement(textData); 
+    this.renderTextElement(textData);
 
     setTimeout(() => {
       const elem = document.querySelector(`[data-template-text-id="${textId}"]`);
@@ -474,11 +474,11 @@ const BoardTemplates = {
     textarea.dataset.templateTextId = textData.id;
     textarea.placeholder = textData.placeholder;
     textarea.value = textData.content;
-    
+
     const styleStr = Object.entries(textData.textStyle)
       .map(([key, val]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${val}`)
       .join('; ');
-    
+
     textarea.style.cssText = `
       width: 100%;
       min-height: 60px;
@@ -495,6 +495,10 @@ const BoardTemplates = {
     textarea.oninput = () => {
       textData.content = textarea.value;
       this.socket.emit('template-text-update', textData);
+
+      // 🆕 Emit template-specific activity
+      const activity = this.currentTemplate === 'coding' ? 'is coding' : 'is typing';
+      this.socket.emit('user-activity', activity);
     };
 
     textarea.onfocus = () => {
@@ -532,15 +536,15 @@ const BoardTemplates = {
 
     handle.onmousedown = (e) => {
       if (!this.interactMode) return;
-      
+
       isDragging = true;
       startX = e.clientX;
       startY = e.clientY;
-      
+
       const rect = div.getBoundingClientRect();
       const overlay = document.getElementById('template-overlay');
       const overlayRect = overlay.getBoundingClientRect();
-      
+
       startLeft = ((rect.left - overlayRect.left) / overlayRect.width) * 100;
       startTop = ((rect.top - overlayRect.top) / overlayRect.height) * 100;
 
@@ -553,7 +557,7 @@ const BoardTemplates = {
 
       const overlay = document.getElementById('template-overlay');
       const overlayRect = overlay.getBoundingClientRect();
-      
+
       const dx = ((e.clientX - startX) / overlayRect.width) * 100;
       const dy = ((e.clientY - startY) / overlayRect.height) * 100;
 
@@ -593,18 +597,18 @@ const BoardTemplates = {
 
     resizeHandle.onmousedown = (e) => {
       if (!this.interactMode) return;
-      
+
       isResizing = true;
       startX = e.clientX;
       startY = e.clientY;
-      
+
       const rect = div.getBoundingClientRect();
       const overlay = document.getElementById('template-overlay');
       const overlayRect = overlay.getBoundingClientRect();
-      
+
       startWidth = (rect.width / overlayRect.width) * 100;
       startHeight = (rect.height / overlayRect.height) * 100;
-      
+
       e.stopPropagation();
       e.preventDefault();
     };
@@ -614,7 +618,7 @@ const BoardTemplates = {
 
       const overlay = document.getElementById('template-overlay');
       const overlayRect = overlay.getBoundingClientRect();
-      
+
       const dx = ((e.clientX - startX) / overlayRect.width) * 100;
       const dy = ((e.clientY - startY) / overlayRect.height) * 100;
 
@@ -637,18 +641,18 @@ const BoardTemplates = {
     btn.id = 'interact-mode-btn';
     btn.innerHTML = '🔧';
     btn.title = 'Interact Mode: OFF (Click to turn ON)';
-    
+
     // 🔥 FIXED: Use class instead of inline styles so CSS takes priority
     btn.className = 'tool';
-    
+
     btn.addEventListener('click', () => {
       this.interactMode = !this.interactMode;
-      
+
       if (this.interactMode) {
         btn.style.background = '#3b82f6';
         btn.style.color = 'white';
         btn.title = 'Interact Mode: ON (Drag/resize sections)';
-        
+
         // Enable pointer events on template
         const overlay = document.getElementById('template-overlay');
         if (overlay) {
@@ -658,12 +662,12 @@ const BoardTemplates = {
         btn.style.background = 'white';
         btn.style.color = '#111';
         btn.title = 'Interact Mode: OFF (Draw freely)';
-        
+
         // Disable pointer events except for write buttons
         const overlay = document.getElementById('template-overlay');
         if (overlay) {
           overlay.style.pointerEvents = 'none';
-          
+
           // But keep write buttons and text areas clickable
           overlay.querySelectorAll('.section-write-btn, .section-textarea, .template-header').forEach(el => {
             el.style.pointerEvents = 'auto';
@@ -671,9 +675,9 @@ const BoardTemplates = {
         }
       }
     });
-    
+
     document.body.appendChild(btn);
-    
+
     // Initialize with interact mode OFF - keep write buttons active
     const overlay = document.getElementById('template-overlay');
     if (overlay) {
@@ -692,21 +696,21 @@ const BoardTemplates = {
     btn.id = 'change-board-btn';
     btn.innerHTML = '🔄';
     btn.title = 'Change Board Type';
-    
+
     // 🔥 FIXED: Removed inline styles that override CSS
     // The CSS file now handles all the styling
-    
+
     btn.addEventListener('click', () => {
       this.showSelector();
     });
-    
+
     document.body.appendChild(btn);
   },
 
   loadSaved(socketInstance) {
     this.socket = socketInstance;
     this.setupSocketListeners();
-    
+
     const saved = localStorage.getItem('boardTemplate');
     if (saved && this.templates[saved]) {
       // Auto-select saved template
