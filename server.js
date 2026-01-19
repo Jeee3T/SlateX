@@ -204,6 +204,16 @@ io.on("connection", (socket) => {
     }
   });
 
+  socket.on("stroke-delete", (strokeId) => {
+    if (currentRoom) {
+      const roomData = activeRooms.get(currentRoom);
+      if (roomData) {
+        roomData.boardState.paths = roomData.boardState.paths.filter(p => p.id !== strokeId);
+      }
+      socket.to(currentRoom).emit("stroke-deleted", strokeId);
+    }
+  });
+
   socket.on("release-draw", () => {
     if (currentRoom) {
       const roomData = activeRooms.get(currentRoom);
