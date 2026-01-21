@@ -12,41 +12,93 @@
 
 <body>
 
-  <!-- Go Home Button -->
-  <button id="home-btn" title="Go to Home">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke="currentColor" stroke-width="2"
-        stroke-linecap="round" stroke-linejoin="round" />
-      <polyline points="9 22 9 12 15 12 15 22" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-        stroke-linejoin="round" />
-    </svg>
-  </button>
+  <!-- Top Header Bar -->
+  <header id="top-header" class="glass">
+    <div class="header-left">
+      <div class="brand">
+        <img src="/assets/logo/title-logo.png" alt="SlateX Logo" style="height: 32px;">
+      </div>
+      <div class="divider-v"></div>
+      <div class="board-info">
+        <span id="board-name">Untitled Board</span>
+        <button id="info-btn" title="Room Information" class="header-icon-btn">ℹ️</button>
+        <button id="home-btn" title="Go to Home" class="header-icon-btn">🏠</button>
+      </div>
+    </div>
 
-  <!-- current drawer indicator label -->
-  <div id="drawer-indicator"></div>
+    <div class="header-right">
+      <div class="header-participants" title="Who's joined"
+        style="display:flex; align-items:center; gap:8px; cursor:pointer;" id="participants-avatars">
+        <span
+          style="font-size: 11px; font-weight: 700; color: var(--miro-navy); background: rgba(0,0,0,0.05); padding: 4px 8px; border-radius: 4px;">Who's
+          Online</span>
+        <div id="avatars-list" style="display:flex; align-items:center; gap: 4px;">
+          <!-- Avatars will be injected here -->
+        </div>
+      </div>
+      <button id="ai-btn" class="header-action-btn" title="AI Assistant">✨ AI</button>
+      <button id="exit-btn" class="header-action-btn"
+        style="color: #ef4444; border-color: rgba(239, 68, 68, 0.2); background: rgba(239, 68, 68, 0.05);">Exit
+        Board</button>
+      <button id="share-btn" class="header-primary-btn">Share</button>
+      <button id="chat-toggle" class="header-icon-btn" title="Open Chat">💬</button>
 
-  <!-- AI Button -->
-  <button id="ai-btn">✨</button>
+      <!-- Participant List Panel -->
+      <div id="participants-panel" class="participants-panel glass hidden">
+        <div class="panel-header">
+          <span>Participants</span>
+          <button id="close-participants" style="background:none;border:none;cursor:pointer;font-size:18px;">×</button>
+        </div>
+        <div id="full-participant-list">
+          <!-- List will be injected here -->
+        </div>
+      </div>
+    </div>
+  </header>
 
-  <!-- AI Loader Overlay (hidden by default) -->
+  <!-- Room Info Panel -->
+  <div id="room-info-panel" class="settings-panel hidden glass">
+    <div class="panel-header"
+      style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--miro-border);">
+      <span style="font-weight: 700; color: var(--miro-navy);">Room Details</span>
+      <button id="close-room-info"
+        style="background: none; border: none; cursor: pointer; font-size: 18px; color: #666;">×</button>
+    </div>
+    <div class="panel-section">
+      <label>Room ID</label>
+      <div
+        style="display: flex; gap: 8px; align-items: center; background: #f8f8f8; padding: 10px; border-radius: 6px; border: 1px solid #eee;">
+        <span id="display-room-id"
+          style="font-family: monospace; font-weight: 600; font-size: 13px; color: var(--miro-navy);">---</span>
+        <button onclick="copyToClipboard('display-room-id')"
+          style="background: var(--miro-blue); color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; margin-left: auto;">Copy</button>
+      </div>
+    </div>
+    <div class="panel-section">
+      <label>Room Password</label>
+      <div
+        style="display: flex; gap: 8px; align-items: center; background: #f8f8f8; padding: 10px; border-radius: 6px; border: 1px solid #eee;">
+        <span id="display-room-pass"
+          style="font-family: monospace; font-weight: 600; font-size: 13px; color: var(--miro-navy);">---</span>
+        <button onclick="copyToClipboard('display-room-pass')"
+          style="background: var(--miro-blue); color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; margin-left: auto;">Copy</button>
+      </div>
+    </div>
+  </div>
+
   <div id="ai-overlay" class="ai-hidden">
     <div class="loader-wrapper">
-      <span class="loader-letter">G</span>
-      <span class="loader-letter">e</span>
-      <span class="loader-letter">n</span>
-      <span class="loader-letter">e</span>
-      <span class="loader-letter">r</span>
-      <span class="loader-letter">a</span>
-      <span class="loader-letter">t</span>
-      <span class="loader-letter">i</span>
-      <span class="loader-letter">n</span>
-      <span class="loader-letter">g</span>
+      <img src="/assets/logo/title-logo.png" alt="SlateX"
+        style="height: 64px; margin-bottom: 24px; animation: pulse-sparkle 2s infinite ease-in-out;">
       <div class="loader"></div>
     </div>
   </div>
 
   <div id="board-container">
     <canvas id="board"></canvas>
+    <div id="drawer-indicator" class="glass"
+      style="display:none; position:fixed; bottom: 24px; left: 50%; transform: translateX(-50%); padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; z-index: 1000; box-shadow: var(--miro-shadow);">
+    </div>
   </div>
 
   <!-- Shapes Panel -->
@@ -196,94 +248,203 @@
     </div>
   </div>
 
-  <div class="toolbar">
-    <!-- Draw -->
+  <!-- Miro-style Left Toolbar -->
+  <div class="miro-toolbar glass">
+    <!-- Select / Hand -->
     <div class="tool-wrapper">
-      <button class="tool active" id="drawBtn">✏️</button>
-      <button class="arrow" data-target="drawMenu">▾</button>
-      <div class="menu" id="drawMenu">
-        <button data-draw="pencil">✏️</button>
-        <button data-draw="pen">✒️</button>
-        <button data-draw="brush">🖌️</button>
-      </div>
+      <button class="tool" id="hand" title="Select / Hand">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M5 9V7a5 5 0 0 1 10 0v2"></path>
+          <path d="M9 9V5a3 3 0 0 1 6 0v4"></path>
+          <path d="M13 9V3a3 3 0 1 1 6 0v10a6 6 0 0 1-12 0V9"></path>
+          <path d="M17 9V7a3 3 0 0 1 6 0v10a10 10 0 0 1-20 0V9a3 3 0 0 1 6 0"></path>
+        </svg>
+      </button>
     </div>
 
-    <button class="tool" id="eraser">🧽</button>
+    <div class="toolbar-divider"></div>
 
-    <!-- Shapes Button with proper icon -->
+    <!-- Templates -->
     <div class="tool-wrapper">
-      <button class="tool" id="shapesBtn">
+      <button class="tool" id="change-board-btn" title="Templates">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="3" y1="9" x2="21" y2="9"></line>
+          <line x1="9" y1="21" x2="9" y2="9"></line>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Text -->
+    <div class="tool-wrapper">
+      <button class="tool" id="text" title="Text">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="4 7 4 4 20 4 20 7"></polyline>
+          <line x1="9" y1="20" x2="15" y2="20"></line>
+          <line x1="12" y1="4" x2="12" y2="20"></line>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Sticky Note -->
+    <div class="tool-wrapper">
+      <button class="tool" id="note" title="Sticky Note">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M15.5 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-10.5L15.5 3z"></path>
+          <polyline points="15 3 15 9 21 9"></polyline>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Shapes -->
+    <div class="tool-wrapper">
+      <button class="tool" id="shapesBtn" title="Shapes">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="3" />
           <rect x="3" y="3" width="7" height="7" rx="1" />
           <polygon points="20,3 23,8 17,8" />
         </svg>
       </button>
-      <button class="arrow" data-target="shapeColorMenu">▾</button>
-      <div class="menu" id="shapeColorMenu">
-        <span data-shape-color="#000"></span>
-        <span data-shape-color="#ef4444"></span>
-        <span data-shape-color="#3b82f6"></span>
-        <span data-shape-color="#22c55e"></span>
-        <span data-shape-color="#f59e0b"></span>
-        <span data-shape-color="#a855f7"></span>
-        <span data-shape-color="#ec4899"></span>
-        <span data-shape-color="#8b5cf6"></span>
-      </div>
-    </div>
-
-    <button class="tool" id="text">T</button>
-    <button class="tool" id="note">📝</button>
-    <button class="tool" id="hand">✋</button>
-
-    <div class="divider"></div>
-
-    <!-- Size Adjustment -->
-    <div class="tool-wrapper">
-      <button class="tool" id="sizeBtn">📏</button>
-      <button class="arrow" data-target="sizeMenu">▾</button>
-      <div class="menu" id="sizeMenu">
-        <div class="size-controls">
-          <input type="range" id="sizeSlider" min="1" max="50" value="5">
-          <span id="sizeValue">5px</span>
+      <button class="tool-arrow" data-target="shapeColorMenu">▾</button>
+      <div class="context-menu" id="shapeColorMenu">
+        <div class="color-grid">
+          <span class="color-swatch" data-shape-color="#000" style="background: #000"></span>
+          <span class="color-swatch" data-shape-color="#ef4444" style="background: #ef4444"></span>
+          <span class="color-swatch" data-shape-color="#3b82f6" style="background: #3b82f6"></span>
+          <span class="color-swatch" data-shape-color="#22c55e" style="background: #22c55e"></span>
+          <span class="color-swatch" data-shape-color="#f59e0b" style="background: #f59e0b"></span>
+          <span class="color-swatch" data-shape-color="#a855f7" style="background: #a855f7"></span>
+          <span class="color-swatch" data-shape-color="#ec4899" style="background: #ec4899"></span>
+          <span class="color-swatch" data-shape-color="#8b5cf6" style="background: #8b5cf6"></span>
         </div>
       </div>
     </div>
 
-    <div class="divider"></div>
-
-    <!-- Drawing Color -->
+    <!-- Draw / Pen -->
     <div class="tool-wrapper">
-      <button class="tool" id="colorBtn">🎨</button>
-      <button class="arrow" data-target="colorMenu">▾</button>
-      <div class="menu" id="colorMenu">
-        <span data-color="#000"></span>
-        <span data-color="#ef4444"></span>
-        <span data-color="#3b82f6"></span>
-        <span data-color="#22c55e"></span>
-        <span data-color="#f59e0b"></span>
-        <span data-color="#a855f7"></span>
-        <span data-color="#ec4899"></span>
-        <span data-color="#8b5cf6"></span>
+      <button class="tool active" id="drawBtn" title="Pen">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
+          <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
+          <path d="M2 2l1.5 1.5"></path>
+          <circle cx="21" cy="21" r="2"></circle>
+        </svg>
+      </button>
+      <button class="tool-arrow" data-target="drawMenu">▾</button>
+      <div class="context-menu" id="drawMenu">
+        <button data-draw="pencil" class="sub-tool" title="Pencil">✏️ Pencil</button>
+        <button data-draw="pen" class="sub-tool active" title="Pen">✒️ Pen</button>
+        <button data-draw="brush" class="sub-tool" title="Brush">🖌️ Brush</button>
+        <div class="color-grid">
+          <span class="color-swatch" data-draw-color="#000" style="background: #000"></span>
+          <span class="color-swatch" data-draw-color="#ef4444" style="background: #ef4444"></span>
+          <span class="color-swatch" data-draw-color="#3b82f6" style="background: #3b82f6"></span>
+          <span class="color-swatch" data-draw-color="#22c55e" style="background: #22c55e"></span>
+          <span class="color-swatch" data-draw-color="#f59e0b" style="background: #f59e0b"></span>
+          <span class="color-swatch" data-draw-color="#a855f7" style="background: #a855f7"></span>
+          <span class="color-swatch" data-draw-color="#ec4899" style="background: #ec4899"></span>
+          <span class="color-swatch" data-draw-color="#8b5cf6" style="background: #8b5cf6"></span>
+        </div>
       </div>
     </div>
 
-    <div class="divider"></div>
+    <!-- Eraser -->
+    <div class="tool-wrapper">
+      <button class="tool" id="eraser" title="Eraser">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 20H7L3 16C2 15 2 13 3 12L13 2C14 1 16 1 17 2L22 7C23 8 23 10 22 11L20 13V20Z"></path>
+          <line x1="6" y1="11" x2="11" y2="16"></line>
+        </svg>
+      </button>
+    </div>
 
-    <div class="divider"></div>
+    <div class="toolbar-divider"></div>
 
-    <button class="tool" id="undoBtn" title="Undo">↩️</button>
-    <button class="tool" id="redoBtn" title="Redo">↪️</button>
+    <!-- History / Undo Redo -->
+    <div class="tool-wrapper">
+      <button class="tool" id="undoBtn" title="Undo">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="1 4 1 10 7 10"></polyline>
+          <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+        </svg>
+      </button>
+    </div>
+    <div class="tool-wrapper">
+      <button class="tool" id="redoBtn" title="Redo">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <path d="M20.49 15a9 9 0 1 1-2.13-9.36L23 10"></path>
+        </svg>
+      </button>
+    </div>
 
-    <div class="divider"></div>
+    <!-- Tools Section -->
+    <div class="tool-wrapper">
+      <button class="tool" id="sizeBtn" title="Stroke Size (PX)">
+        <span id="btnSizeDisplay"
+          style="font-size: 10px; font-weight: 800; background: var(--miro-navy); color: white; padding: 2px 4px; border-radius: 3px;">5px</span>
+      </button>
+    </div>
 
-    <button class="tool" id="zoomIn">＋</button>
-    <button class="tool" id="zoomOut">－</button>
-    <button class="tool" id="clearAll" title="Clear All">🗑️</button>
-    <button class="tool" id="download">⬇️</button>
+    <div class="toolbar-divider"></div>
+
+    <!-- More Tools -->
+    <div class="tool-wrapper">
+      <button class="tool" id="clearAll" title="Clear All">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          <line x1="10" y1="11" x2="10" y2="17"></line>
+          <line x1="14" y1="11" x2="14" y2="17"></line>
+        </svg>
+      </button>
+    </div>
+
+    <div class="tool-wrapper">
+      <button class="tool" id="download" title="Download Image">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+      </button>
+    </div>
   </div>
 
-  <button id="chat-toggle">💬</button>
+  <!-- Zoom & Navigation Controls (Bottom Right) -->
+  <div class="zoom-controls glass">
+    <button id="zoomOut" title="Zoom Out">−</button>
+    <div class="zoom-divider"></div>
+    <span id="zoom-level">100%</span>
+    <div class="zoom-divider"></div>
+    <button id="zoomIn" title="Zoom In">＋</button>
+    <div class="zoom-divider"></div>
+    <button id="reset-view" title="Reset View">⟲</button>
+  </div>
+
+  <!-- Style / Settings Panel (Contextual) -->
+  <div class="settings-panel glass hidden" id="style-panel">
+    <div class="panel-section">
+      <label>Size</label>
+      <div class="size-slider-wrapper">
+        <input type="range" id="sizeSlider" min="1" max="50" value="5">
+        <span id="sizeValue">5px</span>
+      </div>
+    </div>
+    <div class="panel-section">
+      <label>Color</label>
+      <div class="color-grid">
+        <span class="color-swatch" data-color="#000" style="background: #000"></span>
+        <span class="color-swatch" data-color="#ef4444" style="background: #ef4444"></span>
+        <span class="color-swatch" data-color="#3b82f6" style="background: #3b82f6"></span>
+        <span class="color-swatch" data-color="#22c55e" style="background: #22c55e"></span>
+        <span class="color-swatch" data-color="#f59e0b" style="background: #f59e0b"></span>
+        <span class="color-swatch" data-color="#a855f7" style="background: #a855f7"></span>
+        <span class="color-swatch" data-color="#ec4899" style="background: #ec4899"></span>
+        <span class="color-swatch" data-color="#8b5cf6" style="background: #8b5cf6"></span>
+      </div>
+    </div>
+  </div>
 
   <!-- Chat Panel -->
   <div id="chat-panel" class="chat-hidden">
@@ -294,6 +455,7 @@
       <button id="chat-send">Send</button>
     </div>
   </div>
+
 
   <!-- Socket.IO client (MUST come first) -->
   <script src="/socket.io/socket.io.js"></script>

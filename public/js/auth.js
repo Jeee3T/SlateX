@@ -61,7 +61,7 @@ function handleSignIn(email, password) {
 
         showSuccess('Successfully signed in! Redirecting...');
         setTimeout(() => {
-            window.location.href = '/';
+            window.location.href = '/room';
         }, 1500);
     } catch (err) {
         showError('An unexpected error occurred. Please try again.');
@@ -97,7 +97,7 @@ function handleSignUp(email, password) {
 
         showSuccess('Account created successfully! Redirecting...');
         setTimeout(() => {
-            window.location.href = '/';
+            window.location.href = '/room';
         }, 1500);
     } catch (err) {
         showError('An unexpected error occurred. Please try again.');
@@ -164,7 +164,7 @@ window.addEventListener('load', () => {
     if (user) {
         const userData = JSON.parse(user);
         if (userData.signedIn) {
-            window.location.href = '/';
+            window.location.href = '/room';
         }
     }
 });
