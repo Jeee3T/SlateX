@@ -42,6 +42,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const sizeSlider = document.getElementById("sizeSlider");
   const sizeValue = document.getElementById("sizeValue");
   const sizeBtn = document.getElementById("sizeBtn");
+  const exitBtn = document.getElementById("exit-btn");
+  const infoBtn = document.getElementById("info-btn");
+  const roomInfoPanel = document.getElementById("room-info-panel");
+  const closeRoomInfo = document.getElementById("close-room-info");
 
   /* ================= SHAPES ================= */
   const shapesPanel = document.getElementById("shapes-panel");
@@ -67,6 +71,130 @@ document.addEventListener("DOMContentLoaded", () => {
   chatToggle.addEventListener("click", (e) => {
     e.stopPropagation();
     chatPanel.classList.toggle("chat-hidden");
+    // Close other panels if opening chat
+    if (!chatPanel.classList.contains("chat-hidden")) {
+      const shapesPanel = document.getElementById("shapes-panel");
+      if (shapesPanel) shapesPanel.classList.add("shapes-hidden");
+    }
+  });
+
+  // Close everything when clicking canvas
+  canvas.addEventListener("mousedown", () => {
+    chatPanel.classList.add("chat-hidden");
+    shapesPanel.classList.add("shapes-hidden");
+    const stylePanel = document.getElementById("style-panel");
+    if (stylePanel) stylePanel.classList.add("hidden");
+    if (roomInfoPanel) roomInfoPanel.classList.add("hidden");
+  });
+
+  /* ================= ROOM INFO ================= */
+  if (infoBtn && roomInfoPanel) {
+    // Populate data from localStorage on load
+    const currentRoom = JSON.parse(localStorage.getItem('currentRoom') || '{}');
+    const displayId = document.getElementById('display-room-id');
+    const displayPass = document.getElementById('display-room-pass');
+
+    if (displayId) displayId.innerText = currentRoom.id || '---';
+    if (displayPass) displayPass.innerText = currentRoom.password || '---';
+
+    infoBtn.onclick = (e) => {
+      e.stopPropagation();
+      roomInfoPanel.classList.toggle('hidden');
+      // Close other panels if opening info
+      if (!roomInfoPanel.classList.contains('hidden')) {
+        if (chatPanel) chatPanel.classList.add('chat-hidden');
+        if (shapesPanel) shapesPanel.classList.add('shapes-hidden');
+        const stylePanel = document.getElementById('style-panel');
+        if (stylePanel) stylePanel.classList.add('hidden');
+      }
+    };
+
+    if (closeRoomInfo) {
+      closeRoomInfo.onclick = () => roomInfoPanel.classList.add('hidden');
+    }
+  }
+
+  // Global utility for copy buttons in canvas.html
+  window.copyToClipboard = (elementId) => {
+    const textElement = document.getElementById(elementId);
+    if (!textElement) return;
+
+    const text = textElement.innerText;
+    navigator.clipboard.writeText(text).then(() => {
+      // Provide visual feedback on the button that was clicked
+      if (event && event.target) {
+        const btn = event.target.closest('button');
+        if (btn) {
+          const originalText = btn.innerText;
+          btn.innerText = "Copied!";
+          btn.style.background = "#22c55e";
+          setTimeout(() => {
+            btn.innerText = originalText;
+            btn.style.background = "";
+          }, 2000);
+        }
+      }
+    }).catch(err => {
+      console.error('Failed to copy: ', err);
+    });
+  };
+
+  function renderUserList(users) {
+    const avatarContainer = document.getElementById("avatars-list");
+    if (!avatarContainer) return;
+    avatarContainer.innerHTML = "";
+
+    // Update the full participant panel if it exists
+    const fullList = document.getElementById("full-participant-list");
+    if (fullList) {
+      fullList.innerHTML = users.map(u => `
+        <div class="participant-item">
+          <div class="participant-avatar">${u[0].toUpperCase()}</div>
+          <span class="participant-name">${u}</span>
+        </div>
+      `).join('');
+    }
+
+    // Show up to 4 avatars, then a count
+    users.slice(0, 4).forEach(u => {
+      const initials = u.split(" ").map(n => n[0]).join("").toUpperCase().substring(0, 2);
+      const div = document.createElement("div");
+      div.className = "participant-avatar";
+      div.innerText = initials;
+      div.title = u;
+      // Random Miro-like background colors for avatars
+      const colors = ['#FF7043', '#42A5F5', '#66BB6A', '#FFA726', '#AB47BC'];
+      div.style.background = colors[Math.floor(Math.random() * colors.length)];
+      avatarContainer.appendChild(div);
+    });
+
+    if (users.length > 4) {
+      const more = document.createElement("div");
+      more.className = "participant-avatar more";
+      more.innerText = `+${users.length - 4}`;
+      avatarContainer.appendChild(more);
+    }
+  }
+
+  // Toggle Participant Panel
+  document.getElementById("participants-avatars").addEventListener('click', (e) => {
+    e.stopPropagation();
+    const panel = document.getElementById("participants-panel");
+    panel.classList.toggle("hidden");
+  });
+
+  document.getElementById("close-participants").onclick = () => {
+    document.getElementById("participants-panel").classList.add("hidden");
+  };
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.participants-panel') && !e.target.closest('#participants-avatars')) {
+      document.getElementById("participants-panel").classList.add("hidden");
+    }
+  });
+
+  socket.on("user-list", users => {
+    renderUserList(users);
   });
 
   chatSend.addEventListener("click", sendMessage);
@@ -152,26 +280,47 @@ document.addEventListener("DOMContentLoaded", () => {
 
   socket.on("draw-released", () => drawing = false);
 
-  socket.on("active-drawer", name => {
-    indicator.innerText = `${name} is drawing…`;
-    indicator.style.display = "block";
+  socket.on("user-joined", data => {
+    if (indicator) {
+      indicator.innerText = `${data.username} joined!`;
+      indicator.style.display = "block";
+      setTimeout(() => indicator.style.display = "none", 3000);
+    }
+    renderUserList(data.users);
   });
 
-  socket.on("drawer-cleared", () => {
-    // 🆕 Don't hide the indicator immediately if it's a generic activity
-    if (!indicator.innerText.includes("is drawing")) return;
-    indicator.style.display = "none";
+  socket.on("user-left", data => {
+    if (indicator) {
+      indicator.innerText = `${data.username} left!`;
+      indicator.style.display = "block";
+      setTimeout(() => indicator.style.display = "none", 3000);
+    }
+    renderUserList(data.users);
   });
 
   socket.on("user-activity", data => {
-    indicator.innerText = `${data.username} ${data.activity}...`;
-    indicator.style.display = "block";
+    if (indicator) {
+      indicator.innerText = `${data.username} ${data.activity}...`;
+      indicator.style.display = "block";
 
-    // Clear after 3 seconds of inactivity
-    if (window.activityTimeout) clearTimeout(window.activityTimeout);
-    window.activityTimeout = setTimeout(() => {
+      if (window.activityTimeout) clearTimeout(window.activityTimeout);
+      window.activityTimeout = setTimeout(() => {
+        indicator.style.display = "none";
+      }, 3000);
+    }
+  });
+
+  socket.on("active-drawer", name => {
+    if (indicator) {
+      indicator.innerText = `${name} is drawing...`;
+      indicator.style.display = "block";
+    }
+  });
+
+  socket.on("drawer-cleared", () => {
+    if (indicator) {
       indicator.style.display = "none";
-    }, 3000);
+    }
   });
 
   /* ================= SHAPES SOCKET ================= */
@@ -305,7 +454,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!drawing) return;
     const p = getPos(e);
     currentPath.push(p);
-    socket.emit("draw-point", { tool, drawType, color, points: [p] });
+    socket.emit("draw-point", { tool, drawType, color, size: brushSize, points: [p] });
     redraw();
   });
 
@@ -728,13 +877,27 @@ document.addEventListener("DOMContentLoaded", () => {
     scale *= 1.1;
     redraw();
     updateAllElementPositions();
+    updateZoomDisplay();
   };
 
   zoomOutBtn.onclick = () => {
     scale /= 1.1;
     redraw();
     updateAllElementPositions();
+    updateZoomDisplay();
   };
+
+  const resetViewBtn = document.getElementById("reset-view");
+  if (resetViewBtn) {
+    resetViewBtn.onclick = () => {
+      scale = 1;
+      offsetX = 0;
+      offsetY = 0;
+      redraw();
+      updateAllElementPositions();
+      updateZoomDisplay();
+    };
+  }
 
   downloadBtn.onclick = () => {
     const a = document.createElement("a");
@@ -745,61 +908,144 @@ document.addEventListener("DOMContentLoaded", () => {
 
   /* ================= MENUS ================= */
   document.querySelectorAll("[data-draw]").forEach(b => {
-    b.onclick = () => {
+    b.onclick = (e) => {
+      e.stopPropagation();
       tool = "pen";
       drawType = b.dataset.draw;
-
-      // Update main button icon
-      drawBtn.innerText = b.innerText;
 
       // Update active state
       document.querySelectorAll("[data-draw]").forEach(btn => btn.classList.remove('active'));
       b.classList.add('active');
+
+      // Close menu
+      b.closest('.context-menu').classList.remove('show');
+
       updateToolButtons();
     };
   });
 
   /* ================= SIZE ================= */
-  sizeBtn.onclick = () => {
-    document.getElementById("sizeMenu").classList.toggle("show");
-  };
+  if (sizeBtn) {
+    sizeBtn.onclick = (e) => {
+      e.stopPropagation();
+      const panel = document.getElementById("style-panel");
+      if (panel) panel.classList.toggle("hidden");
+    };
+  }
+
+  /* ================= EXIT ================= */
+  if (exitBtn) {
+    exitBtn.onclick = () => {
+      if (confirm("Are you sure you want to leave this board?")) {
+        localStorage.removeItem('currentRoom');
+        window.location.href = "/room";
+      }
+    };
+  }
 
   sizeSlider.oninput = () => {
     brushSize = parseInt(sizeSlider.value);
     sizeValue.innerText = brushSize + "px";
+
+    // Update the PX button on the toolbar
+    const btnDisplay = document.getElementById("btnSizeDisplay");
+    if (btnDisplay) {
+      btnDisplay.innerText = brushSize + "px";
+    }
+
+    console.log("Brush size changed to:", brushSize);
+    updateCursor();
   };
 
-  document.querySelectorAll("[data-color]").forEach(c => {
-    c.onclick = () => {
-      color = c.dataset.color;
+  // Initial PX Display update
+  const initialBtnDisplay = document.getElementById("btnSizeDisplay");
+  if (initialBtnDisplay) {
+    initialBtnDisplay.innerText = brushSize + "px";
+  }
+  if (indicator) {
+    indicator.style.display = "none";
+  }
 
-      // Update active state
-      document.querySelectorAll("[data-color]").forEach(clr => clr.style.border = 'none');
-      c.style.border = '2px solid #fff';
-      c.style.boxShadow = '0 0 0 2px #3b82f6';
+  function selectDrawColor(newColor) {
+    color = newColor;
+    ctx.strokeStyle = color;
 
-      updateCursor();
+    // Update ALL sub-menu swatches
+    document.querySelectorAll("[data-draw-color]").forEach(clr => {
+      if (clr.dataset.drawColor === color) {
+        clr.style.boxShadow = '0 0 0 2px var(--miro-blue)';
+        clr.style.border = '2px solid #fff';
+      } else {
+        clr.style.boxShadow = 'none';
+        clr.style.border = '1px solid rgba(0,0,0,0.1)';
+      }
+    });
+
+    // Update main panel swatches
+    document.querySelectorAll(".color-swatch[data-color]").forEach(sw => {
+      if (sw.dataset.color === color) {
+        sw.classList.add('active');
+        sw.style.border = '2px solid #fff';
+        sw.style.boxShadow = '0 0 0 2px var(--miro-blue)';
+      } else {
+        sw.classList.remove('active');
+        sw.style.border = '1px solid rgba(0,0,0,0.1)';
+        sw.style.boxShadow = 'none';
+      }
+    });
+
+    updateCursor();
+  }
+
+  document.querySelectorAll("[data-draw-color]").forEach(c => {
+    c.onclick = (e) => {
+      e.stopPropagation();
+      selectDrawColor(c.dataset.drawColor);
+      c.closest('.context-menu').classList.remove('show');
+    };
+  });
+
+  document.querySelectorAll(".color-swatch[data-color]").forEach(sw => {
+    sw.onclick = (e) => {
+      e.stopPropagation();
+      selectDrawColor(sw.dataset.color);
     };
   });
 
   document.querySelectorAll("[data-shape-color]").forEach(c => {
-    c.onclick = () => {
+    c.onclick = (e) => {
+      e.stopPropagation();
       shapeColor = c.dataset.shapeColor;
 
       // Update active state
-      document.querySelectorAll("[data-shape-color]").forEach(clr => clr.style.border = 'none');
+      document.querySelectorAll("[data-shape-color]").forEach(clr => {
+        clr.style.border = '1px solid rgba(0,0,0,0.1)';
+        clr.style.boxShadow = 'none';
+      });
       c.style.border = '2px solid #fff';
-      c.style.boxShadow = '0 0 0 2px #3b82f6';
+      c.style.boxShadow = '0 0 0 2px var(--miro-blue)';
+
+      // Close menu
+      c.closest('.context-menu').classList.remove('show');
     };
   });
 
-  document.querySelectorAll(".arrow").forEach(a => {
+  // Zoom Level Display
+  const zoomLevelSpan = document.getElementById("zoom-level");
+  function updateZoomDisplay() {
+    if (zoomLevelSpan) {
+      zoomLevelSpan.innerText = Math.round(scale * 100) + "%";
+    }
+  }
+
+  // Miro-style Arrow Menus
+  document.querySelectorAll(".tool-arrow").forEach(a => {
     a.onclick = (e) => {
       e.stopPropagation();
       const targetMenu = document.getElementById(a.dataset.target);
 
       // Close other menus
-      document.querySelectorAll('.menu').forEach(menu => {
+      document.querySelectorAll('.context-menu').forEach(menu => {
         if (menu !== targetMenu) {
           menu.classList.remove('show');
         }
@@ -812,11 +1058,20 @@ document.addEventListener("DOMContentLoaded", () => {
   // Close menus when clicking outside
   document.addEventListener('click', (e) => {
     if (!e.target.closest('.tool-wrapper')) {
-      document.querySelectorAll('.menu').forEach(menu => {
+      document.querySelectorAll('.context-menu').forEach(menu => {
         menu.classList.remove('show');
       });
     }
   });
+
+  // Home Button functionality
+  document.getElementById('home-btn').addEventListener('click', () => {
+    if (confirm('Are you sure you want to go home?')) {
+      window.location.href = '/';
+    }
+  });
+
+  // Style Panel Logic removed, handled by sizeBtn and unified color listeners
 
   /* ================= SHAPES FUNCTIONALITY ================= */
 

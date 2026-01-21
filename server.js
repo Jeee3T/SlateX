@@ -147,7 +147,7 @@ io.on("connection", (socket) => {
       // Notify room of new user
       io.to(roomId).emit("user-joined", {
         username,
-        userCount: Object.keys(roomData.users).length
+        users: Object.values(roomData.users)
       });
 
       console.log(`User ${username} joined room ${roomId}`);
@@ -411,7 +411,7 @@ io.on("connection", (socket) => {
         // Notify room
         io.to(currentRoom).emit("user-left", {
           username,
-          userCount: Object.keys(roomData.users).length
+          users: Object.values(roomData.users)
         });
 
         // Save board state to MongoDB before cleanup

@@ -178,6 +178,7 @@ const BoardTemplates = {
   },
 
   showSelector() {
+    console.log("Opening template selector...");
     const overlay = document.createElement('div');
     overlay.id = 'template-selector-overlay';
     overlay.innerHTML = `
@@ -206,6 +207,7 @@ const BoardTemplates = {
   },
 
   selectTemplate(key) {
+    console.log("Selecting template:", key);
     this.currentTemplate = key;
     const template = this.templates[key];
 
@@ -634,17 +636,10 @@ const BoardTemplates = {
   },
 
   addInteractButton() {
-    const existing = document.getElementById('interact-mode-btn');
-    if (existing) existing.remove();
+    const btn = document.getElementById('interact-mode-btn');
+    if (!btn || btn.hasListener) return;
 
-    const btn = document.createElement('button');
-    btn.id = 'interact-mode-btn';
-    btn.innerHTML = '🔧';
-    btn.title = 'Interact Mode: OFF (Click to turn ON)';
-
-    // 🔥 FIXED: Use class instead of inline styles so CSS takes priority
-    btn.className = 'tool';
-
+    btn.hasListener = true;
     btn.addEventListener('click', () => {
       this.interactMode = !this.interactMode;
 
@@ -653,58 +648,34 @@ const BoardTemplates = {
         btn.style.color = 'white';
         btn.title = 'Interact Mode: ON (Drag/resize sections)';
 
-        // Enable pointer events on template
         const overlay = document.getElementById('template-overlay');
         if (overlay) {
           overlay.style.pointerEvents = 'auto';
         }
       } else {
         btn.style.background = 'white';
-        btn.style.color = '#111';
+        btn.style.color = '#050038';
         btn.title = 'Interact Mode: OFF (Draw freely)';
 
-        // Disable pointer events except for write buttons
         const overlay = document.getElementById('template-overlay');
         if (overlay) {
           overlay.style.pointerEvents = 'none';
-
-          // But keep write buttons and text areas clickable
           overlay.querySelectorAll('.section-write-btn, .section-textarea, .template-header').forEach(el => {
             el.style.pointerEvents = 'auto';
           });
         }
       }
     });
-
-    document.body.appendChild(btn);
-
-    // Initialize with interact mode OFF - keep write buttons active
-    const overlay = document.getElementById('template-overlay');
-    if (overlay) {
-      overlay.style.pointerEvents = 'none';
-      overlay.querySelectorAll('.section-write-btn, .section-textarea, .template-header').forEach(el => {
-        el.style.pointerEvents = 'auto';
-      });
-    }
   },
 
   addChangeButton() {
-    const existing = document.getElementById('change-board-btn');
-    if (existing) existing.remove();
+    const btn = document.getElementById('change-board-btn');
+    if (!btn || btn.hasListener) return;
 
-    const btn = document.createElement('button');
-    btn.id = 'change-board-btn';
-    btn.innerHTML = '🔄';
-    btn.title = 'Change Board Type';
-
-    // 🔥 FIXED: Removed inline styles that override CSS
-    // The CSS file now handles all the styling
-
+    btn.hasListener = true;
     btn.addEventListener('click', () => {
       this.showSelector();
     });
-
-    document.body.appendChild(btn);
   },
 
   loadSaved(socketInstance) {
