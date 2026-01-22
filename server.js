@@ -114,13 +114,14 @@ io.on("connection", (socket) => {
       if (!activeRooms.has(roomId)) {
         // Load room state from MongoDB
         const Room = require('./models/Room');
-        const room = await Room.findOne({ roomId: roomId.toUpperCase() });
+        const room = await Room.findOne({ roomId: roomId.toUpperCase() }).populate('creator');
 
         if (room) {
           activeRooms.set(roomId, {
             currentDrawer: null,
-            users: {},
-            boardState: room.boardState
+            users: {}, // { socketId: { username, isAdmin, hasAccess } }
+            boardState: room.boardState,
+            creatorUsername: room.creator.username
           });
         } else {
           activeRooms.set(roomId, {
@@ -132,19 +133,32 @@ io.on("connection", (socket) => {
               textElements: [],
               stickyNotes: [],
               templateTexts: [],
-              templateTransform: { x: 0, y: 0, scale: 1 }
-            }
+              templateTransform: { x: 0, y: 0, scale: 1 },
+              templateKey: null
+            },
+            creatorUsername: null
           });
         }
       }
 
       const roomData = activeRooms.get(roomId);
-      roomData.users[socket.id] = username;
 
-      // Send current board state to new user
+      // Admin check: if first user or if username matches creator
+      const isAdmin = (username === roomData.creatorUsername) || Object.keys(roomData.users).length === 0;
+      // Default access: Admin always has access, others don't
+      const hasAccess = isAdmin;
+
+      roomData.users[socket.id] = {
+        username,
+        isAdmin,
+        hasAccess
+      };
+
+      // Send current board state and local status to new user
       socket.emit("init-board", roomData.boardState);
+      socket.emit("user-permissions", { isAdmin, hasAccess });
 
-      // Notify room of new user
+      // Notify room of new user - send full user objects
       io.to(roomId).emit("user-joined", {
         username,
         users: Object.values(roomData.users)
@@ -168,7 +182,7 @@ io.on("connection", (socket) => {
   socket.on("user-activity", (activity) => {
     if (currentRoom) {
       socket.to(currentRoom).emit("user-activity", {
-        username: activeRooms.get(currentRoom)?.users[socket.id] || "Someone",
+        username: activeRooms.get(currentRoom)?.users[socket.id]?.username || "Someone",
         activity: activity
       });
     }
@@ -178,10 +192,12 @@ io.on("connection", (socket) => {
   socket.on("request-draw", () => {
     if (currentRoom) {
       const roomData = activeRooms.get(currentRoom);
-      if (roomData && roomData.currentDrawer === null) {
+      const userData = roomData?.users[socket.id];
+
+      if (roomData && userData && userData.hasAccess && roomData.currentDrawer === null) {
         roomData.currentDrawer = socket.id;
         socket.emit("draw-allowed", true);
-        io.to(currentRoom).emit("active-drawer", roomData.users[socket.id] || "Someone");
+        io.to(currentRoom).emit("active-drawer", userData.username || "Someone");
       } else {
         socket.emit("draw-allowed", false);
       }
@@ -190,27 +206,30 @@ io.on("connection", (socket) => {
 
   socket.on("draw-point", (data) => {
     if (currentRoom) {
-      socket.to(currentRoom).emit("draw-point", data);
+      const roomData = activeRooms.get(currentRoom);
+      if (roomData && roomData.users[socket.id]?.hasAccess) {
+        socket.to(currentRoom).emit("draw-point", data);
+      }
     }
   });
 
   socket.on("draw-stroke", (stroke) => {
     if (currentRoom) {
       const roomData = activeRooms.get(currentRoom);
-      if (roomData) {
+      if (roomData && roomData.users[socket.id]?.hasAccess) {
         roomData.boardState.paths.push(stroke);
+        socket.to(currentRoom).emit("draw-stroke", stroke);
       }
-      socket.to(currentRoom).emit("draw-stroke", stroke);
     }
   });
 
   socket.on("stroke-delete", (strokeId) => {
     if (currentRoom) {
       const roomData = activeRooms.get(currentRoom);
-      if (roomData) {
+      if (roomData && roomData.users[socket.id]?.hasAccess) {
         roomData.boardState.paths = roomData.boardState.paths.filter(p => p.id !== strokeId);
+        socket.to(currentRoom).emit("stroke-deleted", strokeId);
       }
-      socket.to(currentRoom).emit("stroke-deleted", strokeId);
     }
   });
 
@@ -229,50 +248,51 @@ io.on("connection", (socket) => {
   socket.on("shape-add", (shape) => {
     if (currentRoom) {
       const roomData = activeRooms.get(currentRoom);
-      if (roomData) {
+      if (roomData && roomData.users[socket.id]?.hasAccess) {
         roomData.boardState.shapes.push(shape);
+        socket.to(currentRoom).emit("shape-added", shape);
       }
-      socket.to(currentRoom).emit("shape-added", shape);
     }
   });
 
   socket.on("shape-update", (updatedShape) => {
     if (currentRoom) {
       const roomData = activeRooms.get(currentRoom);
-      if (roomData) {
+      if (roomData && roomData.users[socket.id]?.hasAccess) {
         const idx = roomData.boardState.shapes.findIndex(s => s.id === updatedShape.id);
         if (idx !== -1) {
           roomData.boardState.shapes[idx] = updatedShape;
         }
+        socket.to(currentRoom).emit("shape-updated", updatedShape);
       }
-      socket.to(currentRoom).emit("shape-updated", updatedShape);
     }
   });
 
   socket.on("shape-delete", (shapeId) => {
     if (currentRoom) {
       const roomData = activeRooms.get(currentRoom);
-      if (roomData) {
+      if (roomData && roomData.users[socket.id]?.hasAccess) {
         roomData.boardState.shapes = roomData.boardState.shapes.filter(s => s.id !== shapeId);
+        socket.to(currentRoom).emit("shape-deleted", shapeId);
       }
-      socket.to(currentRoom).emit("shape-deleted", shapeId);
     }
   });
 
   socket.on("clear-all", () => {
     if (currentRoom) {
       const roomData = activeRooms.get(currentRoom);
-      if (roomData) {
+      if (roomData && roomData.users[socket.id]?.isAdmin) { // Only Admin can clear
         roomData.boardState = {
           paths: [],
           shapes: [],
           textElements: [],
           stickyNotes: [],
           templateTexts: [],
-          templateTransform: { x: 0, y: 0, scale: 1 }
+          templateTransform: { x: 0, y: 0, scale: 1 },
+          templateKey: roomData.boardState.templateKey // Keep template on clear
         };
+        io.to(currentRoom).emit("clear-all");
       }
-      io.to(currentRoom).emit("clear-all");
     }
   });
 
@@ -280,33 +300,33 @@ io.on("connection", (socket) => {
   socket.on("text-add", (textElement) => {
     if (currentRoom) {
       const roomData = activeRooms.get(currentRoom);
-      if (roomData) {
+      if (roomData && roomData.users[socket.id]?.hasAccess) {
         roomData.boardState.textElements.push(textElement);
+        socket.to(currentRoom).emit("text-added", textElement);
       }
-      socket.to(currentRoom).emit("text-added", textElement);
     }
   });
 
   socket.on("text-update", (updatedText) => {
     if (currentRoom) {
       const roomData = activeRooms.get(currentRoom);
-      if (roomData) {
+      if (roomData && roomData.users[socket.id]?.hasAccess) {
         const idx = roomData.boardState.textElements.findIndex(t => t.id === updatedText.id);
         if (idx !== -1) {
           roomData.boardState.textElements[idx] = updatedText;
         }
+        socket.to(currentRoom).emit("text-updated", updatedText);
       }
-      socket.to(currentRoom).emit("text-updated", updatedText);
     }
   });
 
   socket.on("text-delete", (textId) => {
     if (currentRoom) {
       const roomData = activeRooms.get(currentRoom);
-      if (roomData) {
+      if (roomData && roomData.users[socket.id]?.hasAccess) {
         roomData.boardState.textElements = roomData.boardState.textElements.filter(t => t.id !== textId);
+        socket.to(currentRoom).emit("text-deleted", textId);
       }
-      socket.to(currentRoom).emit("text-deleted", textId);
     }
   });
 
@@ -314,33 +334,33 @@ io.on("connection", (socket) => {
   socket.on("note-add", (note) => {
     if (currentRoom) {
       const roomData = activeRooms.get(currentRoom);
-      if (roomData) {
+      if (roomData && roomData.users[socket.id]?.hasAccess) {
         roomData.boardState.stickyNotes.push(note);
+        socket.to(currentRoom).emit("note-added", note);
       }
-      socket.to(currentRoom).emit("note-added", note);
     }
   });
 
   socket.on("note-update", (updatedNote) => {
     if (currentRoom) {
       const roomData = activeRooms.get(currentRoom);
-      if (roomData) {
+      if (roomData && roomData.users[socket.id]?.hasAccess) {
         const idx = roomData.boardState.stickyNotes.findIndex(n => n.id === updatedNote.id);
         if (idx !== -1) {
           roomData.boardState.stickyNotes[idx] = updatedNote;
         }
+        socket.to(currentRoom).emit("note-updated", updatedNote);
       }
-      socket.to(currentRoom).emit("note-updated", updatedNote);
     }
   });
 
   socket.on("note-delete", (noteId) => {
     if (currentRoom) {
       const roomData = activeRooms.get(currentRoom);
-      if (roomData) {
+      if (roomData && roomData.users[socket.id]?.hasAccess) {
         roomData.boardState.stickyNotes = roomData.boardState.stickyNotes.filter(n => n.id !== noteId);
+        socket.to(currentRoom).emit("note-deleted", noteId);
       }
-      socket.to(currentRoom).emit("note-deleted", noteId);
     }
   });
 
@@ -348,33 +368,101 @@ io.on("connection", (socket) => {
   socket.on("template-text-add", (textData) => {
     if (currentRoom) {
       const roomData = activeRooms.get(currentRoom);
-      if (roomData) {
+      if (roomData && roomData.users[socket.id]?.hasAccess) {
         roomData.boardState.templateTexts.push(textData);
+        socket.to(currentRoom).emit("template-text-added", textData);
       }
-      socket.to(currentRoom).emit("template-text-added", textData);
     }
   });
 
   socket.on("template-text-update", (updatedText) => {
     if (currentRoom) {
       const roomData = activeRooms.get(currentRoom);
-      if (roomData) {
+      if (roomData && roomData.users[socket.id]?.hasAccess) {
         const idx = roomData.boardState.templateTexts.findIndex(t => t.id === updatedText.id);
         if (idx !== -1) {
           roomData.boardState.templateTexts[idx] = updatedText;
         }
+        socket.to(currentRoom).emit("template-text-updated", updatedText);
       }
-      socket.to(currentRoom).emit("template-text-updated", updatedText);
     }
   });
 
   socket.on("template-text-delete", (textId) => {
     if (currentRoom) {
       const roomData = activeRooms.get(currentRoom);
-      if (roomData) {
+      if (roomData && roomData.users[socket.id]?.isAdmin) {
         roomData.boardState.templateTexts = roomData.boardState.templateTexts.filter(t => t.id !== textId);
+        socket.to(currentRoom).emit("template-text-deleted", textId);
       }
-      socket.to(currentRoom).emit("template-text-deleted", textId);
+    }
+  });
+
+  // Admin Actions
+  socket.on("give-access", (targetUsername) => {
+    if (currentRoom) {
+      const roomData = activeRooms.get(currentRoom);
+      if (roomData && roomData.users[socket.id]?.isAdmin) {
+        // Find target user
+        const targetSocketId = Object.keys(roomData.users).find(id => roomData.users[id].username === targetUsername);
+        if (targetSocketId) {
+          roomData.users[targetSocketId].hasAccess = true;
+          // Notify target user
+          io.to(targetSocketId).emit("permissions-updated", { hasAccess: true });
+          // Notify everyone to refresh participant list
+          io.to(currentRoom).emit("user-list-updated", Object.values(roomData.users));
+        }
+      }
+    }
+  });
+
+  socket.on("revoke-access", (targetUsername) => {
+    if (currentRoom) {
+      const roomData = activeRooms.get(currentRoom);
+      if (roomData && roomData.users[socket.id]?.isAdmin) {
+        const targetSocketId = Object.keys(roomData.users).find(id => roomData.users[id].username === targetUsername);
+        if (targetSocketId) {
+          roomData.users[targetSocketId].hasAccess = false;
+          // If they were drawing, release it
+          if (roomData.currentDrawer === targetSocketId) {
+            roomData.currentDrawer = null;
+            io.to(currentRoom).emit("draw-released");
+            io.to(currentRoom).emit("drawer-cleared");
+          }
+          // Notify target user
+          io.to(targetSocketId).emit("permissions-updated", { hasAccess: false });
+          // Notify everyone to refresh participant list
+          io.to(currentRoom).emit("user-list-updated", Object.values(roomData.users));
+        }
+      }
+    }
+  });
+
+  socket.on("kick-user", (targetUsername) => {
+    if (currentRoom) {
+      const roomData = activeRooms.get(currentRoom);
+      if (roomData && roomData.users[socket.id]?.isAdmin) {
+        // Find target user
+        const targetSocketId = Object.keys(roomData.users).find(id => roomData.users[id].username === targetUsername);
+        if (targetSocketId) {
+          // Notify target user they are kicked
+          io.to(targetSocketId).emit("user-kicked");
+          // The disconnect event will handle cleanup
+        }
+      }
+    }
+  });
+
+  // Template selection synchronization
+  socket.on("template-select", (templateKey) => {
+    if (currentRoom) {
+      const roomData = activeRooms.get(currentRoom);
+      if (roomData && roomData.users[socket.id]?.isAdmin) {
+        roomData.boardState.templateKey = templateKey;
+        // Optionally clear current template texts if template changed? 
+        // For now, just sync the key
+        io.to(currentRoom).emit("template-selected", templateKey);
+      }
     }
   });
 
@@ -382,10 +470,10 @@ io.on("connection", (socket) => {
   socket.on("template-transform-update", (transform) => {
     if (currentRoom) {
       const roomData = activeRooms.get(currentRoom);
-      if (roomData) {
+      if (roomData && roomData.users[socket.id]?.isAdmin) {
         roomData.boardState.templateTransform = transform;
+        socket.to(currentRoom).emit("template-transform-updated", transform);
       }
-      socket.to(currentRoom).emit("template-transform-updated", transform);
     }
   });
 
@@ -405,7 +493,8 @@ io.on("connection", (socket) => {
         }
 
         // Remove user
-        const username = roomData.users[socket.id];
+        const userData = roomData.users[socket.id];
+        const username = userData?.username;
         delete roomData.users[socket.id];
 
         // Notify room
