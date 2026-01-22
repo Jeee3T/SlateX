@@ -143,6 +143,12 @@ const BoardTemplates = {
       this.templateTexts = data.templateTexts || [];
       this.templateTransform = data.templateTransform || { x: 0, y: 0, scale: 1 };
 
+      // Restore template if one was active
+      if (data.templateKey && this.templates[data.templateKey]) {
+        this.currentTemplate = data.templateKey;
+        this.applyTemplate(this.templates[data.templateKey]);
+      }
+
       // Restore texts after template is applied
       setTimeout(() => {
         this.restoreAllTexts();
@@ -174,6 +180,24 @@ const BoardTemplates = {
     this.socket.on("template-transform-updated", (transform) => {
       this.templateTransform = transform;
       this.applyTransform();
+    });
+
+    this.socket.on("template-selected", (templateKey) => {
+      console.log("Template sync received:", templateKey);
+      if (this.templates[templateKey]) {
+        this.currentTemplate = templateKey;
+        localStorage.setItem('boardTemplate', templateKey);
+        this.applyTemplate(this.templates[templateKey]);
+        this.restoreAllTexts();
+
+        // Show notification
+        const indicator = document.getElementById("drawer-indicator");
+        if (indicator) {
+          indicator.innerText = `Admin changed template to ${this.templates[templateKey].name}`;
+          indicator.style.display = "block";
+          setTimeout(() => indicator.style.display = "none", 3000);
+        }
+      }
     });
   },
 
@@ -207,11 +231,17 @@ const BoardTemplates = {
   },
 
   selectTemplate(key) {
-    console.log("Selecting template:", key);
+    console.log("Admin selecting template:", key, "isAdmin:", window.isAdmin);
     this.currentTemplate = key;
     const template = this.templates[key];
 
     localStorage.setItem('boardTemplate', key);
+
+    // If Admin, sync with others
+    if (window.isAdmin) {
+      console.log("Emitting template-select:", key);
+      this.socket.emit('template-select', key);
+    }
 
     this.applyTemplate(template);
     this.addInteractButton();

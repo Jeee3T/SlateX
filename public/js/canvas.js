@@ -25,6 +25,42 @@ document.addEventListener("DOMContentLoaded", () => {
   // THEN: Join the room (which triggers init-board)
   socket.emit("join-room", roomId, username);
 
+  /* ================= PERMISSIONS ================= */
+  window.isAdmin = false;
+  window.hasAccess = false;
+
+  function updatePermissionsUI() {
+    const toolbar = document.querySelector('.miro-toolbar');
+    const templateBtn = document.getElementById('change-board-btn');
+
+    if (window.hasAccess) {
+      if (toolbar) toolbar.classList.remove('hidden');
+    } else {
+      if (toolbar) toolbar.classList.add('hidden');
+    }
+
+    // Only admin can see/use template button
+    if (window.isAdmin) {
+      if (templateBtn) templateBtn.classList.remove('hidden');
+    } else {
+      if (templateBtn) templateBtn.classList.add('hidden');
+    }
+  }
+
+  window.giveAccess = (targetUsername) => {
+    socket.emit("give-access", targetUsername);
+  };
+
+  window.revokeAccess = (targetUsername) => {
+    socket.emit("revoke-access", targetUsername);
+  };
+
+  window.kickUser = (targetUsername) => {
+    if (confirm(`Are you sure you want to kick ${targetUsername}?`)) {
+      socket.emit("kick-user", targetUsername);
+    }
+  };
+
   /* ================= CANVAS ================= */
   const canvas = document.getElementById("board");
   const ctx = canvas.getContext("2d");
@@ -147,21 +183,45 @@ document.addEventListener("DOMContentLoaded", () => {
     // Update the full participant panel if it exists
     const fullList = document.getElementById("full-participant-list");
     if (fullList) {
-      fullList.innerHTML = users.map(u => `
-        <div class="participant-item">
-          <div class="participant-avatar">${u[0].toUpperCase()}</div>
-          <span class="participant-name">${u}</span>
-        </div>
-      `).join('');
+      fullList.innerHTML = users.map(u => {
+        const isTargetAdmin = u.isAdmin;
+        const targetHasAccess = u.hasAccess;
+        const isMe = u.username === username;
+
+        let actions = '';
+        if (window.isAdmin && !isMe) {
+          actions = `
+            <div class="participant-actions">
+              ${!targetHasAccess ?
+              `<button class="action-btn access-btn" onclick="giveAccess('${u.username}')">Grant Access</button>` :
+              `<button class="action-btn revoke-btn" onclick="revokeAccess('${u.username}')" style="background:#ef4444; color:white;">Revoke Access</button>`
+            }
+              <button class="action-btn kick-btn" onclick="kickUser('${u.username}')">Kick</button>
+            </div>
+          `;
+        }
+
+        return `
+          <div class="participant-item">
+            <div class="participant-avatar">${u.username[0].toUpperCase()}</div>
+            <div class="participant-info">
+              <span class="participant-name" style="font-weight:600;">${u.username} ${isTargetAdmin ? '<span class="admin-badge">Admin</span>' : ''} ${isMe ? '(You)' : ''}</span>
+              ${!targetHasAccess ? '<span class="status-badge error">No Access</span>' : '<span class="status-badge success">Has Access</span>'}
+            </div>
+            ${actions}
+          </div>
+        `;
+      }).join('');
     }
 
     // Show up to 4 avatars, then a count
     users.slice(0, 4).forEach(u => {
-      const initials = u.split(" ").map(n => n[0]).join("").toUpperCase().substring(0, 2);
+      const uName = u.username;
+      const initials = uName.split(" ").map(n => n[0]).join("").toUpperCase().substring(0, 2);
       const div = document.createElement("div");
       div.className = "participant-avatar";
       div.innerText = initials;
-      div.title = u;
+      div.title = uName;
       // Random Miro-like background colors for avatars
       const colors = ['#FF7043', '#42A5F5', '#66BB6A', '#FFA726', '#AB47BC'];
       div.style.background = colors[Math.floor(Math.random() * colors.length)];
@@ -193,7 +253,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  socket.on("user-list", users => {
+  socket.on("user-list-updated", users => {
     renderUserList(users);
   });
 
@@ -217,8 +277,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   socket.on("chat-message", msg => {
     const div = document.createElement("div");
-    div.className = "chat-message";
-    div.innerHTML = `<span class="chat-user">${msg.user}:</span> ${msg.content}`;
+    div.className = `chat-message ${msg.user === username ? 'own-message' : ''}`;
+    div.innerHTML = `
+      <div class="message-bubble">
+        <span class="chat-user">${msg.user}</span>
+        <div class="chat-content">${msg.content}</div>
+        <span class="chat-time">${new Date(msg.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+      </div>
+    `;
     chatMessages.appendChild(div);
     chatMessages.scrollTop = chatMessages.scrollHeight;
   });
@@ -279,6 +345,47 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   socket.on("draw-released", () => drawing = false);
+
+  socket.on("user-permissions", data => {
+    window.isAdmin = data.isAdmin;
+    window.hasAccess = data.hasAccess;
+    updatePermissionsUI();
+  });
+
+  socket.on("permissions-updated", data => {
+    window.hasAccess = data.hasAccess;
+    updatePermissionsUI();
+
+    // Safety: Reset tool and stop any active drawing session
+    if (!window.hasAccess) {
+      tool = "hand";
+      drawing = false;
+      pendingDraw = false;
+
+      // Update local tool UI
+      document.querySelectorAll(".tool").forEach(t => t.classList.remove("active"));
+      const handBtn = document.getElementById("hand");
+      if (handBtn) handBtn.classList.add("active");
+    }
+
+    if (indicator) {
+      if (window.hasAccess) {
+        indicator.innerText = "Admin gave you access!";
+        indicator.style.display = "block";
+        setTimeout(() => indicator.style.display = "none", 3000);
+      } else {
+        indicator.innerText = "Admin revoked your access.";
+        indicator.style.display = "block";
+        setTimeout(() => indicator.style.display = "none", 3000);
+      }
+    }
+  });
+
+  socket.on("user-kicked", () => {
+    alert("You have been kicked from the room by the admin.");
+    localStorage.removeItem('currentRoom');
+    window.location.href = "/room";
+  });
 
   socket.on("user-joined", data => {
     if (indicator) {
@@ -701,8 +808,11 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function drawStroke(p) {
+    if (!p.points || p.points.length === 0) return;
+
     ctx.beginPath();
     ctx.lineCap = "round";
+    ctx.lineJoin = "round";
 
     if (p.tool === "eraser") {
       ctx.globalCompositeOperation = "destination-out";
@@ -723,9 +833,29 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
-    p.points.forEach((pt, i) =>
-      i ? ctx.lineTo(pt.x, pt.y) : ctx.moveTo(pt.x, pt.y)
-    );
+    if (p.points.length < 3) {
+      // For small strokes, use simple lines
+      p.points.forEach((pt, i) =>
+        i ? ctx.lineTo(pt.x, pt.y) : ctx.moveTo(pt.x, pt.y)
+      );
+    } else {
+      // Quadratic Bezier curves for smooth strokes
+      ctx.moveTo(p.points[0].x, p.points[0].y);
+
+      for (let i = 1; i < p.points.length - 2; i++) {
+        const xc = (p.points[i].x + p.points[i + 1].x) / 2;
+        const yc = (p.points[i].y + p.points[i + 1].y) / 2;
+        ctx.quadraticCurveTo(p.points[i].x, p.points[i].y, xc, yc);
+      }
+
+      // For the last 2 points
+      ctx.quadraticCurveTo(
+        p.points[p.points.length - 2].x,
+        p.points[p.points.length - 2].y,
+        p.points[p.points.length - 1].x,
+        p.points[p.points.length - 1].y
+      );
+    }
 
     ctx.stroke();
     ctx.globalCompositeOperation = "source-over";
