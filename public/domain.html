@@ -1,13 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Choose Your Workspace</title>
   <link rel="stylesheet" href="/css/domain.css">
-  
- 
+
+
 </head>
+
 <body>
   <div class="domain-container">
     <header class="domain-header">
@@ -21,7 +23,7 @@
         <div class="card-icon">💻</div>
         <h2>Coding Board</h2>
         <p class="card-description">Structured, logical, interview-oriented</p>
-        
+
         <div class="card-preview">
           <div class="preview-section" style="height: 20%;">
             <span>Problem Statement</span>
@@ -53,7 +55,7 @@
         <div class="card-icon">🏥</div>
         <h2>Medical Board</h2>
         <p class="card-description">Focused, diagram-first, observational</p>
-        
+
         <div class="card-preview">
           <div class="preview-section" style="height: 70%;">
             <span>Diagram Area</span>
@@ -77,7 +79,7 @@
         <div class="card-icon">💰</div>
         <h2>Finance & Accounting</h2>
         <p class="card-description">Analytical, tabular, decision-focused</p>
-        
+
         <div class="card-preview">
           <div class="preview-row">
             <div class="preview-section" style="width: 48%; height: 60%;">
@@ -106,7 +108,7 @@
         <div class="card-icon">📅</div>
         <h2>Project Planning</h2>
         <p class="card-description">Workflow-driven, Kanban style</p>
-        
+
         <div class="card-preview">
           <div class="preview-row">
             <div class="preview-section" style="width: 31%; height: 100%;">
@@ -135,7 +137,7 @@
         <div class="card-icon">💡</div>
         <h2>Brainstorming</h2>
         <p class="card-description">Open, free, creative canvas</p>
-        
+
         <div class="card-preview brainstorm-preview">
           <div class="floating-element" style="top: 15%; left: 20%;">💭</div>
           <div class="floating-element" style="top: 40%; left: 60%;">✨</div>
@@ -177,11 +179,20 @@
       const selectDomain = () => {
         // Save selection to localStorage
         localStorage.setItem('boardTemplate', template);
-        
+
+        // CRITICAL FIX: Preserve currentRoom data (especially isOwner flag)
+        const currentRoom = JSON.parse(localStorage.getItem('currentRoom') || '{}');
+        if (currentRoom && currentRoom.id) {
+          // Add template to currentRoom object
+          currentRoom.templateKey = template;
+          localStorage.setItem('currentRoom', JSON.stringify(currentRoom));
+          console.log('[DEBUG] Preserved currentRoom with template:', currentRoom);
+        }
+
         // Add selection animation
         card.style.transform = 'scale(0.95)';
         card.style.opacity = '0.7';
-        
+
         // Redirect to canvas
         setTimeout(() => {
           window.location.href = '/canvas';
@@ -197,4 +208,5 @@
     });
   </script>
 </body>
+
 </html>

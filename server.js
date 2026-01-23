@@ -232,6 +232,13 @@ io.on("connection", (socket) => {
     }
   });
 
+  // Handle room name updates
+  socket.on('update-room-name', (data) => {
+    if (data.roomId && data.name) {
+      io.to(data.roomId.toUpperCase()).emit('room-name-updated', { name: data.name });
+    }
+  });
+
   // Activity indicator
   socket.on("user-activity", (activity) => {
     if (currentRoom) {

@@ -146,7 +146,12 @@ const BoardTemplates = {
       // Restore template if one was active
       if (data.templateKey && this.templates[data.templateKey]) {
         this.currentTemplate = data.templateKey;
+        localStorage.setItem('boardTemplate', data.templateKey);
         this.applyTemplate(this.templates[data.templateKey]);
+
+        // Add UI buttons for template interaction
+        this.addInteractButton();
+        this.addChangeButton();
       }
 
       // Restore texts after template is applied
@@ -712,12 +717,24 @@ const BoardTemplates = {
     this.socket = socketInstance;
     this.setupSocketListeners();
 
+    // Check if we're creating a NEW room (coming from /domain) or REJOINING an existing room
+    const currentRoom = JSON.parse(localStorage.getItem('currentRoom') || '{}');
+    const isRejoiningRoom = currentRoom && currentRoom.joinedAt; // joinedAt is set when clicking recent rooms
+
+    if (isRejoiningRoom) {
+      // Rejoining an existing room - wait for server to send the template via init-board
+      console.log('Rejoining existing room - waiting for server state...');
+      // Don't apply template from localStorage, let init-board handle it
+      return;
+    }
+
+    // Creating a new room - use localStorage template if available
     const saved = localStorage.getItem('boardTemplate');
     if (saved && this.templates[saved]) {
-      // Auto-select saved template
+      // Auto-select saved template for new rooms
       this.selectTemplate(saved);
     } else {
-      // No template selected, redirect to domain page
+      // No template selected for new room, redirect to domain page
       window.location.href = '/domain';
     }
   }

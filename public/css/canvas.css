@@ -258,9 +258,54 @@ canvas {
     gap: 8px;
 }
 
+.board-name-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.2s;
+    cursor: text;
+}
+
+.board-name-wrapper:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
 #board-name {
-    font-weight: 500;
+    font-weight: 600;
     font-size: 14px;
+    color: var(--miro-navy);
+    outline: none;
+    border: 1px solid transparent;
+    padding: 2px 4px;
+    border-radius: 4px;
+    max-width: 250px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#board-name:focus {
+    background: white;
+    border-color: var(--miro-blue);
+    box-shadow: 0 0 0 2px rgba(66, 98, 255, 0.1);
+    max-width: none;
+}
+
+.edit-icon {
+    font-size: 12px;
+    opacity: 0;
+    transition: opacity 0.2s;
+    cursor: pointer;
+}
+
+.board-name-wrapper:hover .edit-icon {
+    opacity: 0.6;
+}
+
+.edit-icon:hover {
+    opacity: 1 !important;
 }
 
 .header-icon-btn {

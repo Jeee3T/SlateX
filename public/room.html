@@ -262,6 +262,24 @@
     });
 
     // Load recent rooms from API
+    // Helper for relative time (e.g., "2 min ago")
+    function timeSince(date) {
+      if (!date) return "N/A";
+      const seconds = Math.floor((new Date() - new Date(date)) / 1000);
+      let interval = seconds / 31536000;
+      if (interval > 1) return Math.floor(interval) + " years ago";
+      interval = seconds / 2592000;
+      if (interval > 1) return Math.floor(interval) + " months ago";
+      interval = seconds / 86400;
+      if (interval > 1) return Math.floor(interval) + " days ago";
+      interval = seconds / 3600;
+      if (interval > 1) return Math.floor(interval) + " hours ago";
+      interval = seconds / 60;
+      if (interval > 1) return Math.floor(interval) + " min ago";
+      return "just now";
+    }
+
+    // Load recent rooms from API
     async function loadRecentRooms() {
       try {
         const response = await fetch('/api/rooms/user/list');
@@ -272,7 +290,14 @@
           const roomsList = document.getElementById('rooms-list');
 
           roomsList.innerHTML = data.rooms.map(room => `
-            <div class="room-item" onclick="quickRejoin('${room.id}', '${room.name}', ${room.isOwner})" style="cursor: pointer; display: flex; flex-direction: column; gap: 8px;">
+            <div class="room-item" onclick="quickRejoin('${room.id}', '${room.name}', ${room.isOwner})" style="cursor: pointer; display: flex; flex-direction: column; gap: 8px; position: relative;">
+              ${room.isOwner ? `
+              <div class="room-options" onclick="event.stopPropagation()">
+                <button class="delete-icon-only" onclick="confirmDelete('${room.id}', '${room.name}')" title="Delete Room">
+                  🗑️
+                </button>
+              </div>` : ''}
+              
               ${room.previewImage ?
               `<div class="room-preview" style="width: 100%; height: 120px; border-radius: 6px; overflow: hidden; border: 1px solid #eee; background: #f8f9fa;">
                    <img src="${room.previewImage}" style="width: 100%; height: 100%; object-fit: cover;" alt="Preview">
@@ -281,24 +306,61 @@
                    🎨
                  </div>`
             }
-              <div class="room-info" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                <div style="display: flex; flex-direction: column;">
-                  <strong style="color: #050038;">${room.name}</strong>
-                  <span style="font-size: 11px; color: #64748b;">${room.id} • ${room.isOwner ? 'Owner' : 'Participant'}</span>
-                  <span style="font-size: 10px; color: #94a3b8; margin-top: 2px;">⏳ ${room.timeSpent || 0} mins spent</span>
+              <div class="room-info" style="display: flex; flex-direction: column; gap: 4px; width: 100%;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <strong style="color: #050038; font-size: 15px;">${room.name}</strong>
+                  <div class="room-arrow" style="color: #3b82f6;">→</div>
                 </div>
-                <div class="room-arrow" style="color: #3b82f6;">→</div>
+                
+                <div style="display: flex; flex-direction: column; gap: 2px;">
+                  <div style="font-size: 13px; color: #1e293b; display: flex; align-items: center; gap: 4px;">
+                    <span style="opacity: 0.6">👤</span> <strong>${room.creator}</strong>
+                  </div>
+                  <div style="font-size: 11px; color: #64748b; font-family: monospace;">
+                    ID: ${room.id}
+                  </div>
+                  <div style="font-size: 11px; color: #64748b;">
+                    👥 ${room.participants} total participants joined
+                  </div>
+                  <div style="font-size: 10px; color: #3b82f6; font-weight: 600; margin-top: 2px;">
+                    🕒 Accessed ${timeSince(room.lastOpenedAt)}
+                  </div>
+                </div>
               </div>
             </div>
           `).join('');
-
-          // Add some grid styling for the rooms list if not already present
-          roomsList.style.display = 'grid';
-          roomsList.style.gridTemplateColumns = 'repeat(auto-fill, minmax(200px, 1fr))';
-          roomsList.style.gap = '16px';
+        } else {
+          document.getElementById('recent-rooms').style.display = 'none';
         }
       } catch (error) {
         console.error('Error loading recent rooms:', error);
+      }
+    }
+
+    // Confirm deletion
+    function confirmDelete(id, name) {
+      if (confirm(`Are you sure you want to delete "${name}"? This action cannot be undone.`)) {
+        deleteRoom(id);
+      }
+    }
+
+    // Call deletion API
+    async function deleteRoom(roomId) {
+      try {
+        const response = await fetch(`/api/rooms/${roomId}`, {
+          method: 'DELETE'
+        });
+        const result = await response.json();
+
+        if (result.success) {
+          showToast('Room deleted successfully', 'success');
+          loadRecentRooms(); // Refresh the list
+        } else {
+          showToast(result.message || 'Failed to delete room', 'error');
+        }
+      } catch (error) {
+        console.error('Error deleting room:', error);
+        showToast('Error connecting to server', 'error');
       }
     }
 
@@ -309,6 +371,7 @@
         name: name,
         isOwner: isOwner,
         password: '', // We don't have password, but session auth handles access
+        joinedAt: new Date().toISOString() // Mark as rejoining existing room
       };
 
       localStorage.setItem('currentRoom', JSON.stringify(roomData));

@@ -182,20 +182,21 @@ router.get('/user/list', async (req, res) => {
   try {
     const userId = req.session.userId;
 
-    // Find all rooms where user is a participant
+    // Find all rooms where user is a participant and has a preview image (not a "false" blank room)
     const rooms = await Room.find({
       participants: userId,
-      isActive: true
+      isActive: true,
+      previewImage: { $ne: null }
     })
       .populate('creator', 'username')
       .sort({ lastOpenedAt: -1 })
-      .limit(10);
+      .limit(5);
 
     const roomsList = rooms.map(room => ({
       id: room.roomId,
       name: room.name,
       creator: room.creator.username,
-      isOwner: room.creator._id.toString() === userId,
+      isOwner: room.creator._id.toString() === userId?.toString(),
       participants: room.participants.length,
       template: room.template,
       previewImage: room.previewImage,
@@ -290,8 +291,17 @@ router.post('/:roomId/save-on-exit', async (req, res) => {
       });
     }
 
+    console.log(`[DEBUG] save-on-exit called for ${roomId}`);
+    console.log(`[DEBUG] Received canvasState:`, {
+      paths: canvasState.paths?.length || 0,
+      shapes: canvasState.shapes?.length || 0,
+      templateKey: canvasState.templateKey
+    });
+
     // Save full room state
     await room.saveOnExit(canvasState, previewImage);
+
+    console.log(`[DEBUG] Saved to database for ${roomId}`);
 
     res.json({
       success: true,
@@ -373,6 +383,54 @@ router.delete('/:roomId', async (req, res) => {
     res.json({
       success: false,
       message: 'Failed to delete room'
+    });
+  }
+});
+
+// Rename room (only creator can rename)
+router.put('/:roomId/rename', async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const { name } = req.body;
+
+    if (!name || name.trim().length === 0) {
+      return res.json({
+        success: false,
+        message: 'Room name cannot be empty'
+      });
+    }
+
+    const room = await Room.findOne({ roomId: roomId.toUpperCase() });
+
+    if (!room) {
+      return res.json({
+        success: false,
+        message: 'Room not found'
+      });
+    }
+
+    // Check if user is the creator
+    if (room.creator.toString() !== req.session.userId) {
+      return res.json({
+        success: false,
+        message: 'Only the room creator can rename the room'
+      });
+    }
+
+    room.name = name.trim();
+    await room.save();
+
+    res.json({
+      success: true,
+      message: 'Room renamed successfully',
+      name: room.name
+    });
+
+  } catch (error) {
+    console.error('Error renaming room:', error);
+    res.json({
+      success: false,
+      message: 'Failed to rename room'
     });
   }
 });
