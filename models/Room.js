@@ -1,4 +1,4 @@
- 
+
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
@@ -65,42 +65,46 @@ const roomSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
-  lastActivity: {
+  previewImage: {
+    type: String,  // base64 encoded PNG
+    default: null
+  },
+  lastOpenedAt: {
     type: Date,
     default: Date.now
   },
   createdAt: {
     type: Date,
     default: Date.now
+  },
+  timeSpent: {
+    type: Number, // Total minutes spent
+    default: 0
   }
 });
 
 // Hash password before saving
-roomSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
-  
-  try {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
-  } catch (error) {
-    next(error);
-  }
+// Hash password before saving
+roomSchema.pre('save', async function () {
+  if (!this.isModified('password')) return;
+
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
 });
 
 // Method to compare passwords
-roomSchema.methods.comparePassword = async function(candidatePassword) {
+roomSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
 // Update last activity
-roomSchema.methods.updateActivity = function() {
-  this.lastActivity = new Date();
+roomSchema.methods.updateActivity = function () {
+  this.lastOpenedAt = new Date();
   return this.save();
 };
 
 // Add participant to room
-roomSchema.methods.addParticipant = function(userId) {
+roomSchema.methods.addParticipant = function (userId) {
   if (!this.participants.includes(userId)) {
     this.participants.push(userId);
     return this.save();
@@ -109,7 +113,7 @@ roomSchema.methods.addParticipant = function(userId) {
 };
 
 // Remove participant from room
-roomSchema.methods.removeParticipant = function(userId) {
+roomSchema.methods.removeParticipant = function (userId) {
   this.participants = this.participants.filter(
     id => id.toString() !== userId.toString()
   );
@@ -117,9 +121,29 @@ roomSchema.methods.removeParticipant = function(userId) {
 };
 
 // Update board state
-roomSchema.methods.updateBoardState = function(boardState) {
+roomSchema.methods.updateBoardState = function (boardState) {
   this.boardState = { ...this.boardState, ...boardState };
-  this.lastActivity = new Date();
+  this.lastOpenedAt = new Date();
+  return this.save();
+};
+
+// Save full room state on exit (for room owner only)
+roomSchema.methods.saveOnExit = function (canvasState, previewImage) {
+  this.boardState = canvasState;
+  this.previewImage = previewImage;
+
+  // Calculate duration of this session (since lastOpenedAt)
+  const now = new Date();
+  const lastOpened = this.lastOpenedAt || now;
+  const durationMs = now.getTime() - lastOpened.getTime();
+  const durationMinutes = Math.max(0, Math.floor(durationMs / 60000));
+
+  // Accumulate time (if session was reasonably long, e.g. < 24 hours to avoid anomalies)
+  if (durationMinutes < 1440) {
+    this.timeSpent = (this.timeSpent || 0) + durationMinutes;
+  }
+
+  this.lastOpenedAt = now;
   return this.save();
 };
 
