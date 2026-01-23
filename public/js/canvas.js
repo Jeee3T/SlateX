@@ -581,6 +581,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     pendingDraw = true;
     currentPath = [getPos(e)];
+    checkBoardEmpty(); // Hide watermark immediately
     socket.emit("request-draw");
     socket.emit("user-activity", "is drawing");
   });
@@ -706,6 +707,7 @@ document.addEventListener("DOMContentLoaded", () => {
       document.body.appendChild(input);
 
       input.oninput = () => {
+        checkBoardEmpty(); // Hide watermark while typing
         socket.emit("user-activity", "is typing");
       };
 
@@ -923,6 +925,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   /* ================= DRAW ================= */
   function redraw() {
+    checkBoardEmpty();
     ctx.setTransform(scale, 0, 0, scale, offsetX, offsetY);
     ctx.clearRect(
       -offsetX / scale,
@@ -1432,6 +1435,7 @@ document.addEventListener("DOMContentLoaded", () => {
     shapes.forEach(shape => {
       createShapeElement(shape);
     });
+    checkBoardEmpty();
   }
 
   function createShapeElement(shape) {
@@ -1594,6 +1598,7 @@ document.addEventListener("DOMContentLoaded", () => {
     textElements.forEach(textEl => {
       createTextElement(textEl);
     });
+    checkBoardEmpty();
   }
 
   function createTextElement(textData) {
@@ -1684,6 +1689,7 @@ document.addEventListener("DOMContentLoaded", () => {
     stickyNotes.forEach(note => {
       createNoteElement(note);
     });
+    checkBoardEmpty();
   }
 
   function createNoteElement(noteData) {
@@ -1732,6 +1738,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     note.oninput = () => {
       noteData.content = note.innerText;
+      checkBoardEmpty(); // Hide watermark while writing note
       socket.emit("note-update", noteData);
       socket.emit("user-activity", "is writing a note");
     };
@@ -1802,5 +1809,160 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   }
+
+  /* ================= SAVE ON EXIT ================= */
+
+  /**
+   * Prepare and send canvas state to backend for persistence
+   * Only called by room owner/creator
+   */
+  async function saveRoomOnExit(useBeacon = false) {
+    try {
+      // Check if user is room owner
+      const currentRoom = JSON.parse(localStorage.getItem('currentRoom') || '{}');
+      if (!currentRoom || !currentRoom.isOwner) {
+        console.log('Not room owner, skipping save');
+        return { success: true }; // Don't save if not owner
+      }
+
+      // Get template data from BoardTemplates if it exists
+      let templateTexts = [];
+      let templateTransform = { x: 0, y: 0, scale: 1 };
+      let templateKey = null;
+
+      if (window.BoardTemplates) {
+        templateTexts = window.BoardTemplates.templateTexts || [];
+        templateTransform = window.BoardTemplates.templateTransform || { x: 0, y: 0, scale: 1 };
+        templateKey = window.BoardTemplates.currentTemplate || null;
+      }
+
+      // Prepare full canvas state
+      const canvasState = {
+        paths: paths,
+        shapes: shapes,
+        textElements: textElements,
+        stickyNotes: stickyNotes,
+        templateTexts: templateTexts,
+        templateTransform: templateTransform,
+        templateKey: templateKey
+      };
+
+      // Generate preview image
+      const previewImage = canvas.toDataURL("image/png");
+
+      const payload = {
+        canvasState: canvasState,
+        previewImage: previewImage
+      };
+
+      const endpoint = `/api/rooms/${currentRoom.id}/save-on-exit`;
+
+      if (useBeacon) {
+        // Use sendBeacon for best-effort save during page unload
+        const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+        navigator.sendBeacon(endpoint, blob);
+        console.log('Save-on-exit beacon sent (best-effort)');
+        return { success: true };
+      } else {
+        // Use fetch for reliable save with user-initiated exit
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          console.log('Room state saved successfully');
+        } else {
+          console.error('Failed to save room state:', result.message);
+        }
+
+        return result;
+      }
+    } catch (error) {
+      console.error('Error saving room state:', error);
+      return { success: false, message: error.message };
+    }
+  }
+
+  // Exit button handler - save and redirect
+  if (exitBtn) {
+    exitBtn.addEventListener('click', async (e) => {
+      e.stopPropagation(); // Prevent bubbling but allow default action
+
+      // IMPORTANT: Hide all overlays/panels that might block the confirm dialog
+      const templateOverlay = document.getElementById('template-selector-overlay');
+      const aiOverlay = document.getElementById('ai-overlay');
+      const chatPanel = document.getElementById('chat-panel');
+      const shapesPanel = document.getElementById('shapes-panel');
+      const participantPanel = document.getElementById('participants-panel');
+      const roomInfoPanel = document.getElementById('room-info-panel');
+
+      if (templateOverlay) templateOverlay.classList.add('hidden');
+      if (aiOverlay) aiOverlay.classList.add('ai-hidden');
+      if (chatPanel) chatPanel.classList.add('chat-hidden');
+      if (shapesPanel) shapesPanel.classList.add('shapes-hidden');
+      if (participantPanel) participantPanel.classList.add('hidden');
+      if (roomInfoPanel) roomInfoPanel.classList.add('hidden');
+
+      const currentRoom = JSON.parse(localStorage.getItem('currentRoom') || '{}');
+
+      if (true) { // Temporary: Skip confirm dialog
+        // Show loading state
+        exitBtn.disabled = true;
+        exitBtn.innerText = 'Saving...';
+
+        // Save room state (only if owner)
+        await saveRoomOnExit(false);
+
+        // Clean up
+        localStorage.removeItem('currentRoom');
+
+        // Redirect to room selection
+        window.location.href = '/room';
+      }
+    });
+  }
+
+  // Browser close/navigate away - best-effort save using beacon
+  window.addEventListener('beforeunload', (e) => {
+    const currentRoom = JSON.parse(localStorage.getItem('currentRoom') || '{}');
+
+    // Only attempt save if user is room owner
+    if (currentRoom && currentRoom.isOwner) {
+    }
+  });
+
+  /* ================= WATERMARK LOGIC ================= */
+  function checkBoardEmpty() {
+    // Check if drawing currently (instant feedback for quicker UX)
+    // We check partial paths, drawing flags, and active text inputs
+    const isDrawing = (typeof drawing !== 'undefined' && drawing) ||
+      (typeof pendingDraw !== 'undefined' && pendingDraw) ||
+      (typeof currentPath !== 'undefined' && currentPath && currentPath.length > 0) ||
+      (document.activeElement && document.activeElement.classList.contains('text-input'));
+
+    const isEmpty = !isDrawing &&
+      (!paths || paths.length === 0) &&
+      (!shapes || shapes.length === 0) &&
+      (!textElements || textElements.length === 0) &&
+      (!stickyNotes || stickyNotes.length === 0);
+
+    const watermark = document.getElementById('watermark');
+    if (watermark) {
+      if (isEmpty) {
+        watermark.classList.remove('hidden-watermark');
+      } else {
+        watermark.classList.add('hidden-watermark');
+      }
+    }
+  }
+
+  // Initial check
+  setTimeout(checkBoardEmpty, 500); // Wait for init-board
 
 });

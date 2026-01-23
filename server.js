@@ -558,19 +558,8 @@ io.on("connection", (socket) => {
           users: Object.values(roomData.users)
         });
 
-        // Save board state to MongoDB before cleanup
-        try {
-          const Room = require('./models/Room');
-          await Room.findOneAndUpdate(
-            { roomId: currentRoom.toUpperCase() },
-            {
-              boardState: roomData.boardState,
-              lastActivity: new Date()
-            }
-          );
-        } catch (error) {
-          console.error("Error saving room state:", error);
-        }
+        // NOTE: Save is now handled explicitly via API call on room exit
+        // No auto-save on disconnect per requirements
 
         // Clean up empty rooms
         if (Object.keys(roomData.users).length === 0) {
