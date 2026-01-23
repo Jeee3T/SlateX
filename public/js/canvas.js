@@ -1,16 +1,33 @@
+console.log('[DEBUG] script execution started');
 document.addEventListener("DOMContentLoaded", () => {
+  console.log('[DEBUG] DOMContentLoaded fired');
+  const rawRoom = localStorage.getItem('currentRoom');
+  console.log('[DEBUG] raw currentRoom from localStorage:', rawRoom);
 
   /* ================= GET ROOM INFO ================= */
   // 🔥 CRITICAL FIX: Get room data from localStorage
-  const currentRoom = JSON.parse(localStorage.getItem('currentRoom') || 'null');
+  const currentRoom = JSON.parse(rawRoom || 'null');
   if (!currentRoom || !currentRoom.id) {
+    console.error('[DEBUG] No room data! currentRoom:', currentRoom);
     alert('No room selected! Redirecting to room selection...');
     window.location.href = '/room';
     return;
   }
 
   const roomId = currentRoom.id;
-  console.log('Joining room:', roomId);
+  console.log('[DEBUG] Active room ID:', roomId);
+  console.log('[DEBUG] currentRoom.isOwner:', currentRoom.isOwner);
+
+  // Set initial room name UI
+  const boardNameEl = document.getElementById('board-name');
+  if (boardNameEl && currentRoom.name) {
+    boardNameEl.innerText = currentRoom.name;
+
+    // Only allow editing if user is the owner
+    if (currentRoom.isOwner) {
+      boardNameEl.contentEditable = "true";
+    }
+  }
 
   /* ================= SOCKET ================= */
   const socket = io();
@@ -23,17 +40,17 @@ document.addEventListener("DOMContentLoaded", () => {
   const username = user.username || user.email || "Anonymous";
   const userId = user.id || user._id || null;
 
+  /* ================= PERMISSIONS ================= */
+  // CRITICAL: Set permissions BEFORE loading templates so template selection works
+  window.isAdmin = currentRoom.isOwner || false;
+  window.hasAccess = currentRoom.isOwner || false;
+  let lastUsersList = []; // Cache list for re-rendering
+
   // FIRST: Set up BoardTemplates listeners
   window.BoardTemplates.loadSaved(socket);
 
   // THEN: Join the room (which triggers init-board)
   socket.emit("join-room", roomId, username, userId);
-
-  /* ================= PERMISSIONS ================= */
-  // Optimization: Use local ownership info as a hint for immediate UI feedback
-  window.isAdmin = currentRoom.isOwner || false;
-  window.hasAccess = currentRoom.isOwner || false;
-  let lastUsersList = []; // Cache list for re-rendering
 
   updatePermissionsUI(); // Apply hints immediately
 
@@ -356,6 +373,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   /* ================= SOCKET DRAW ================= */
   socket.on("init-board", data => {
+    console.log('[DEBUG] Received init-board:', data);
+    console.log('[DEBUG] - paths:', data.paths?.length || 0);
+    console.log('[DEBUG] - shapes:', data.shapes?.length || 0);
+    console.log('[DEBUG] - templateKey:', data.templateKey);
+
     paths = data.paths || [];
     shapes = data.shapes || [];
     textElements = data.textElements || [];
@@ -1816,14 +1838,27 @@ document.addEventListener("DOMContentLoaded", () => {
    * Prepare and send canvas state to backend for persistence
    * Only called by room owner/creator
    */
+  let isSaving = false;
+
   async function saveRoomOnExit(useBeacon = false) {
+    if (isSaving && !useBeacon) {
+      console.log('[DEBUG] Save already in progress, skipping...');
+      return { success: true };
+    }
+
+    console.log('[DEBUG] saveRoomOnExit called, useBeacon:', useBeacon);
     try {
-      // Check if user is room owner
-      const currentRoom = JSON.parse(localStorage.getItem('currentRoom') || '{}');
+      if (!useBeacon) isSaving = true;
+
+      // Use the currentRoom variable from page load
       if (!currentRoom || !currentRoom.isOwner) {
-        console.log('Not room owner, skipping save');
-        return { success: true }; // Don't save if not owner
+        console.log('[DEBUG] Not room owner or no room data, skipping save. currentRoom:', currentRoom);
+        if (!useBeacon) isSaving = false;
+        return { success: true };
       }
+
+      const activeRoomId = currentRoom.id || roomId;
+      console.log('[DEBUG] Saving state for room:', activeRoomId);
 
       // Get template data from BoardTemplates if it exists
       let templateTexts = [];
@@ -1844,8 +1879,13 @@ document.addEventListener("DOMContentLoaded", () => {
         stickyNotes: stickyNotes,
         templateTexts: templateTexts,
         templateTransform: templateTransform,
-        templateKey: templateKey
+        templateKey: templateKey || currentRoom.templateKey || null
       };
+
+      console.log('[DEBUG] Saving canvas state:');
+      console.log('[DEBUG] - paths:', paths.length);
+      console.log('[DEBUG] - shapes:', shapes.length);
+      console.log('[DEBUG] - templateKey:', canvasState.templateKey);
 
       // Generate preview image
       const previewImage = canvas.toDataURL("image/png");
@@ -1886,8 +1926,76 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (error) {
       console.error('Error saving room state:', error);
       return { success: false, message: error.message };
+    } finally {
+      if (!useBeacon) isSaving = false;
     }
   }
+
+  /* ================= ROOM RENAMING ================= */
+  if (currentRoom.isOwner) {
+    const boardNameEl = document.getElementById('board-name');
+
+    // Prevent newlines in board name
+    boardNameEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        boardNameEl.blur(); // Trigger blur to save
+      }
+    });
+
+    // Save on blur
+    boardNameEl.addEventListener('blur', async () => {
+      const newName = boardNameEl.innerText.trim();
+
+      if (!newName || newName === currentRoom.name) {
+        boardNameEl.innerText = currentRoom.name; // Revert if empty or unchanged
+        return;
+      }
+
+      console.log('[DEBUG] Renaming room to:', newName);
+
+      try {
+        const response = await fetch(`/api/rooms/${roomId}/rename`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: newName })
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          console.log('[DEBUG] Room renamed successfully');
+          // Update local state
+          currentRoom.name = newName;
+          localStorage.setItem('currentRoom', JSON.stringify(currentRoom));
+          // Emit event to inform others if necessary (optional improvement)
+          socket.emit('update-room-name', { roomId, name: newName });
+        } else {
+          console.error('[DEBUG] Rename failed:', result.message);
+          alert(result.message);
+          boardNameEl.innerText = currentRoom.name; // Revert
+        }
+      } catch (error) {
+        console.error('[DEBUG] Error renaming room:', error);
+        boardNameEl.innerText = currentRoom.name; // Revert
+      }
+    });
+  }
+
+  // Socket listener for room name updates from others
+  socket.on('room-name-updated', (data) => {
+    if (data.name) {
+      const boardNameEl = document.getElementById('board-name');
+      if (boardNameEl) {
+        boardNameEl.innerText = data.name;
+        // Also update local storage if they happen to return to room list
+        const roomData = JSON.parse(localStorage.getItem('currentRoom') || '{}');
+        if (roomData.id === roomId) {
+          roomData.name = data.name;
+          localStorage.setItem('currentRoom', JSON.stringify(roomData));
+        }
+      }
+    }
+  });
 
   // Exit button handler - save and redirect
   if (exitBtn) {
@@ -1917,11 +2025,17 @@ document.addEventListener("DOMContentLoaded", () => {
         exitBtn.innerText = 'Saving...';
 
         // Save room state (only if owner)
-        await saveRoomOnExit(false);
+        console.log('[DEBUG] Exit button clicked, about to save...');
+        const saveResult = await saveRoomOnExit(false);
+        console.log('[DEBUG] Save completed, result:', saveResult);
+
+        // Wait a bit to ensure save fully completes
+        await new Promise(resolve => setTimeout(resolve, 500));
 
         // Clean up
         localStorage.removeItem('currentRoom');
 
+        console.log('[DEBUG] About to redirect to /room');
         // Redirect to room selection
         window.location.href = '/room';
       }
@@ -1934,6 +2048,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Only attempt save if user is room owner
     if (currentRoom && currentRoom.isOwner) {
+      saveRoomOnExit(true); // Call with backup=true to use sendBeacon
     }
   });
 

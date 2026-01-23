@@ -54,6 +54,10 @@ const roomSchema = new mongoose.Schema({
     templateTransform: {
       type: Object,
       default: { x: 0, y: 0, scale: 1 }
+    },
+    templateKey: {
+      type: String,
+      default: null
     }
   },
   template: {
