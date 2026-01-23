@@ -105,8 +105,9 @@ io.on("connection", (socket) => {
   let currentDrawer = null;
 
   // Join a room
-  socket.on("join-room", async (roomId, username) => {
+  socket.on("join-room", async (rawRoomId, username, userId) => {
     try {
+      const roomId = rawRoomId.toUpperCase();
       currentRoom = roomId;
       socket.join(roomId);
 
@@ -114,13 +115,14 @@ io.on("connection", (socket) => {
       if (!activeRooms.has(roomId)) {
         // Load room state from MongoDB
         const Room = require('./models/Room');
-        const room = await Room.findOne({ roomId: roomId.toUpperCase() }).populate('creator');
+        const room = await Room.findOne({ roomId }).populate('creator');
 
         if (room) {
           activeRooms.set(roomId, {
             currentDrawer: null,
             users: {}, // { socketId: { username, isAdmin, hasAccess } }
             boardState: room.boardState,
+            creatorId: room.creator._id.toString(),
             creatorUsername: room.creator.username
           });
         } else {
@@ -136,35 +138,87 @@ io.on("connection", (socket) => {
               templateTransform: { x: 0, y: 0, scale: 1 },
               templateKey: null
             },
+            creatorId: null,
             creatorUsername: null
           });
+        }
+      } else {
+        // Enrichment: If room exists in memory but lacks metadata (due to previous code version), re-fetch it
+        const roomData = activeRooms.get(roomId);
+        if (roomData && (!roomData.creatorUsername || !roomData.creatorId)) {
+          const Room = require('./models/Room');
+          const room = await Room.findOne({ roomId }).populate('creator');
+          if (room) {
+            roomData.creatorId = room.creator._id.toString();
+            roomData.creatorUsername = room.creator.username;
+          }
         }
       }
 
       const roomData = activeRooms.get(roomId);
 
-      // Admin check: if first user or if username matches creator
-      const isAdmin = (username === roomData.creatorUsername) || Object.keys(roomData.users).length === 0;
-      // Default access: Admin always has access, others don't
-      const hasAccess = isAdmin;
+      // --- 🛡️ DEFINITIVE ADMIN & IDENTITY LOGIC ---
 
+      const normalizedUsername = username.trim().toLowerCase();
+      const creatorUsernameInput = (roomData.creatorUsername || "").trim().toLowerCase();
+      const dbCreatorId = roomData.creatorId ? String(roomData.creatorId) : null;
+      const clientUserId = userId ? String(userId) : null;
+
+      // 1. Find if this user was already in the room (Session Handover)
+      let inheritedAdmin = false;
+      let inheritedAccess = false;
+
+      const userSocketIds = Object.keys(roomData.users);
+      for (const oldSocketId of userSocketIds) {
+        const u = roomData.users[oldSocketId];
+        const isSameByUserId = (clientUserId && u.userId && String(u.userId) === clientUserId);
+        const isSameByUsername = (u.username.trim().toLowerCase() === normalizedUsername);
+
+        if (isSameByUserId || isSameByUsername) {
+          inheritedAdmin = u.isAdmin;
+          inheritedAccess = u.hasAccess;
+          delete roomData.users[oldSocketId]; // Wipe old session to prevent ID conflicts
+          console.log(`[SlateX] Handover: ${username} (Socket ${oldSocketId} -> ${socket.id})`);
+        }
+      }
+
+      // 2. Definitive Creator Check (Source of Truth)
+      // We use String() to ensure ObjectIds and Strings compare correctly
+      const isCreator = (clientUserId && dbCreatorId && clientUserId === dbCreatorId) ||
+        (normalizedUsername === creatorUsernameInput && creatorUsernameInput !== "");
+
+      // 3. Admin Designation
+      // FORCE Admin if they are the creator OR if they inherited it OR if they are the first joiner
+      const isAdmin = isCreator || inheritedAdmin || (Object.keys(roomData.users).length === 0);
+
+      // 4. Access Designation
+      // Admins ALWAYS have access. Others inherit it.
+      const hasAccess = isAdmin || inheritedAccess;
+
+      // --- DIAGNOSTICS ---
+      console.log(`[SlateX] ${username} re-joined ${roomId}: isAdmin=${isAdmin}, isCreator=${isCreator}, inherited=${inheritedAdmin}`);
+
+      // 5. Register New Session
       roomData.users[socket.id] = {
+        userId: clientUserId,
         username,
         isAdmin,
         hasAccess
       };
 
-      // Send current board state and local status to new user
+      // Sync state
       socket.emit("init-board", roomData.boardState);
       socket.emit("user-permissions", { isAdmin, hasAccess });
 
-      // Notify room of new user - send full user objects
-      io.to(roomId).emit("user-joined", {
-        username,
-        users: Object.values(roomData.users)
-      });
-
-      console.log(`User ${username} joined room ${roomId}`);
+      // Notify others
+      if (inheritedAdmin || inheritedAccess) {
+        io.to(roomId).emit("user-list-updated", Object.values(roomData.users));
+      } else {
+        io.to(roomId).emit("user-joined", {
+          username,
+          users: Object.values(roomData.users)
+        });
+      }
     } catch (error) {
       console.error("Error joining room:", error);
       socket.emit("room-error", "Failed to join room");
@@ -445,8 +499,9 @@ io.on("connection", (socket) => {
         // Find target user
         const targetSocketId = Object.keys(roomData.users).find(id => roomData.users[id].username === targetUsername);
         if (targetSocketId) {
+          const adminUsername = roomData.users[socket.id]?.username || "the Administrator";
           // Notify target user they are kicked
-          io.to(targetSocketId).emit("user-kicked");
+          io.to(targetSocketId).emit("user-kicked", { by: adminUsername });
           // The disconnect event will handle cleanup
         }
       }

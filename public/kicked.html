@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Access Revoked - SlateX</title>
+    <link rel="stylesheet" href="/css/kicked.css">
+</head>
+
+<body>
+    <div class="kicked-container">
+        <div class="kicked-card">
+            <div class="logo-section">
+                <img src="./assets/logo/title-logo.png" alt="SlateX" class="header-logo">
+            </div>
+
+            <span class="badge">Session Ended</span>
+
+            <div class="icon-warning">🚪</div>
+
+            <h1>Access Revoked</h1>
+            <p id="kicked-message">You have been removed from the session by the room administrator. This may be due to
+                a session reset or a
+                manual removal.</p>
+
+            <div class="actions">
+                <a href="/room" class="btn primary-btn">
+                    Join / Create Another Room
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+                </a>
+                <a href="/" class="btn secondary-btn">
+                    Return to Home
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Parse the admin's name from the URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const adminName = urlParams.get('by') || 'the administrator';
+
+        const messageEl = document.getElementById('kicked-message');
+        if (messageEl && adminName) {
+            messageEl.innerText = `You have been removed from the session by ${adminName}. This may be due to a session reset or a manual removal.`;
+        }
+
+        // Clear room data from local storage since user is kicked
+        localStorage.removeItem('currentRoom');
+    </script>
+</body>
+
+</html>

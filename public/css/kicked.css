@@ -1,0 +1,140 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+    --miro-navy: #050038;
+    --miro-blue: #4262ff;
+    --miro-blue-hover: #3652e1;
+    --miro-bg: #f2f2f2;
+    --miro-white: #ffffff;
+    --miro-border: rgba(0, 0, 0, 0.1);
+    --miro-shadow-heavy: 0 12px 32px rgba(0, 0, 0, 0.15);
+    --miro-radius-lg: 16px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--miro-bg);
+    background-image:
+        linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+    background-size: 30px 30px;
+    font-family: 'Inter', sans-serif;
+    color: var(--miro-navy);
+}
+
+.kicked-container {
+    padding: 20px;
+}
+
+.kicked-card {
+    background: var(--miro-white);
+    padding: 48px;
+    border-radius: var(--miro-radius-lg);
+    box-shadow: var(--miro-shadow-heavy);
+    max-width: 480px;
+    width: 100%;
+    text-align: center;
+    border: 1px solid var(--miro-border);
+    animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.logo-section {
+    margin-bottom: 32px;
+}
+
+.header-logo {
+    height: 48px;
+    width: auto;
+}
+
+.icon-warning {
+    font-size: 64px;
+    margin-bottom: 24px;
+    display: block;
+}
+
+h1 {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: var(--miro-navy);
+}
+
+p {
+    font-size: 16px;
+    line-height: 1.6;
+    color: #4b5563;
+    margin-bottom: 32px;
+}
+
+.actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.btn {
+    padding: 14px 24px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.primary-btn {
+    background: var(--miro-blue);
+    color: white;
+}
+
+.primary-btn:hover {
+    background: var(--miro-blue-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.secondary-btn {
+    background: #f3f4f6;
+    color: var(--miro-navy);
+}
+
+.secondary-btn:hover {
+    background: #e5e7eb;
+}
+
+.badge {
+    display: inline-block;
+    padding: 4px 12px;
+    background: #fee2e2;
+    color: #ef4444;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 16px;
+}
