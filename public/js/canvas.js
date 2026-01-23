@@ -15,19 +15,27 @@ document.addEventListener("DOMContentLoaded", () => {
   /* ================= SOCKET ================= */
   const socket = io();
 
-  // Get username from localStorage
-  const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
-  const username = user.username || "Anonymous";
+  // Get username and ID from local storage (real auth) OR fallback to simulated auth
+  const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+  const simUser = JSON.parse(localStorage.getItem('user') || 'null');
+
+  const user = currentUser || simUser || {};
+  const username = user.username || user.email || "Anonymous";
+  const userId = user.id || user._id || null;
 
   // FIRST: Set up BoardTemplates listeners
   window.BoardTemplates.loadSaved(socket);
 
   // THEN: Join the room (which triggers init-board)
-  socket.emit("join-room", roomId, username);
+  socket.emit("join-room", roomId, username, userId);
 
   /* ================= PERMISSIONS ================= */
-  window.isAdmin = false;
-  window.hasAccess = false;
+  // Optimization: Use local ownership info as a hint for immediate UI feedback
+  window.isAdmin = currentRoom.isOwner || false;
+  window.hasAccess = currentRoom.isOwner || false;
+  let lastUsersList = []; // Cache list for re-rendering
+
+  updatePermissionsUI(); // Apply hints immediately
 
   function updatePermissionsUI() {
     const toolbar = document.querySelector('.miro-toolbar');
@@ -44,6 +52,11 @@ document.addEventListener("DOMContentLoaded", () => {
       if (templateBtn) templateBtn.classList.remove('hidden');
     } else {
       if (templateBtn) templateBtn.classList.add('hidden');
+    }
+
+    // 🔥 Re-render user list whenever permissions change to show/hide admin buttons
+    if (lastUsersList.length > 0) {
+      renderUserList(lastUsersList);
     }
   }
 
@@ -94,12 +107,20 @@ document.addEventListener("DOMContentLoaded", () => {
   let resizingShape = null;
   let resizeHandle = null;
 
+  /* ================= SHAPE PLACEMENT STATE ================= */
+  let pendingShape = null; // Stores the type of shape to be placed
+  let isDrawingShape = false;
+  let shapeStartX = 0;
+  let shapeStartY = 0;
+  let shapePreviewEl = null;
+
   /* ================= CHAT ================= */
   const chatToggle = document.getElementById("chat-toggle");
   const chatPanel = document.getElementById("chat-panel");
   const chatInput = document.getElementById("chat-input");
   const chatSend = document.getElementById("chat-send");
   const chatMessages = document.getElementById("chat-messages");
+  const closeChat = document.getElementById("close-chat");
 
   chatPanel.classList.add("chat-hidden");
   shapesPanel.classList.add("shapes-hidden");
@@ -113,6 +134,12 @@ document.addEventListener("DOMContentLoaded", () => {
       if (shapesPanel) shapesPanel.classList.add("shapes-hidden");
     }
   });
+
+  if (closeChat) {
+    closeChat.addEventListener("click", () => {
+      chatPanel.classList.add("chat-hidden");
+    });
+  }
 
   // Close everything when clicking canvas
   canvas.addEventListener("mousedown", () => {
@@ -176,6 +203,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   function renderUserList(users) {
+    lastUsersList = users; // Cache for re-renders
     const avatarContainer = document.getElementById("avatars-list");
     if (!avatarContainer) return;
     avatarContainer.innerHTML = "";
@@ -304,6 +332,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let paths = [];
   let currentPath = [];
+  let activeRemotePaths = {}; // Stores paths being drawn by others: { socketId: strokeObject }
   let px = 0, py = 0;
 
   let textElements = [];
@@ -381,10 +410,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  socket.on("user-kicked", () => {
-    alert("You have been kicked from the room by the admin.");
-    localStorage.removeItem('currentRoom');
-    window.location.href = "/room";
+  socket.on("user-kicked", (data) => {
+    // Redirect to the professional kicked page with admin info
+    const adminName = data?.by || "Administrator";
+    window.location.href = `/kicked.html?by=${encodeURIComponent(adminName)}`;
   });
 
   socket.on("user-joined", data => {
@@ -526,6 +555,30 @@ document.addEventListener("DOMContentLoaded", () => {
       return; // Don't process note here, handle it on mouseup
     }
 
+    if (pendingShape || tool === "shapes") {
+      isDrawingShape = true;
+      const pos = getPos(e);
+      shapeStartX = pos.x;
+      shapeStartY = pos.y;
+
+      // Create a temporary preview element
+      shapePreviewEl = document.createElement('div');
+      shapePreviewEl.className = 'shape-object preview';
+      shapePreviewEl.style.left = e.clientX + 'px';
+      shapePreviewEl.style.top = e.clientY + 'px';
+      shapePreviewEl.style.width = '0px';
+      shapePreviewEl.style.height = '0px';
+      shapePreviewEl.style.border = `2px dashed ${shapeColor}`;
+      shapePreviewEl.style.pointerEvents = 'none';
+      shapePreviewEl.style.zIndex = '1000000';
+
+      const svgTemplate = shapeTemplates[pendingShape].replace(/COLOR/g, 'transparent');
+      shapePreviewEl.innerHTML = `<svg viewBox="0 0 100 100" style="width:100%; height:100%;">${svgTemplate}</svg>`;
+
+      document.body.appendChild(shapePreviewEl);
+      return;
+    }
+
     pendingDraw = true;
     currentPath = [getPos(e)];
     socket.emit("request-draw");
@@ -558,14 +611,46 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    if (isDrawingShape && shapePreviewEl) {
+      const pos = getPos(e);
+      const width = pos.x - shapeStartX;
+      const height = pos.y - shapeStartY;
+
+      const left = Math.min(pos.x, shapeStartX);
+      const top = Math.min(pos.y, shapeStartY);
+      const absWidth = Math.abs(width);
+      const absHeight = Math.abs(height);
+
+      shapePreviewEl.style.left = (left * scale + offsetX) + 'px';
+      shapePreviewEl.style.top = (top * scale + offsetY) + 'px';
+      shapePreviewEl.style.width = (absWidth * scale) + 'px';
+      shapePreviewEl.style.height = (absHeight * scale) + 'px';
+      return;
+    }
+
     if (!drawing) return;
     const p = getPos(e);
+
+    // SMOTHING: Only add point if it's far enough from the last point
+    if (currentPath.length > 0) {
+      const last = currentPath[currentPath.length - 1];
+      const dist = Math.sqrt(Math.pow(p.x - last.x, 2) + Math.pow(p.y - last.y, 2));
+      if (dist < 2) return; // Ignore very small movements for smoothness
+    }
+
     currentPath.push(p);
-    socket.emit("draw-point", { tool, drawType, color, size: brushSize, points: [p] });
+    socket.emit("draw-point", {
+      socketId: socket.id, // Include socketId for buffer management
+      tool,
+      drawType,
+      color,
+      size: brushSize,
+      points: [p]
+    });
     redraw();
   });
 
-  canvas.addEventListener("mouseup", () => {
+  canvas.addEventListener("mouseup", (e) => {
     // Hand tool cursor reset and sync template position
     if (tool === "hand") {
       canvas.style.cursor = 'grab';
@@ -576,8 +661,39 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
+    if (isDrawingShape && shapePreviewEl) {
+      const pos = getPos(e);
+      const x = Math.min(pos.x, shapeStartX);
+      const y = Math.min(pos.y, shapeStartY);
+      const width = Math.abs(pos.x - shapeStartX);
+      const height = Math.abs(pos.y - shapeStartY);
+
+      // Only create if it has some size
+      if (width > 5 && height > 5) {
+        const shape = {
+          id: Date.now() + '-' + Math.random(),
+          type: pendingShape,
+          x: x,
+          y: y,
+          width: width,
+          height: height,
+          color: shapeColor,
+          rotation: 0
+        };
+
+        shapes.push(shape);
+        addToHistory({ type: 'add', objectType: 'shape', data: shape });
+        socket.emit("shape-add", shape);
+        renderAllShapes();
+      }
+
+      shapePreviewEl.remove();
+      shapePreviewEl = null;
+      isDrawingShape = false;
+      return;
+    }
+
     if (tool === "text") {
-      const e = event;
       const pos = getPos(e);
       const textId = Date.now() + '-' + Math.random();
 
@@ -648,7 +764,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (tool === "note") {
-      const e = event;
       const noteId = Date.now() + '-' + Math.random();
       const pos = getPos(e);
 
@@ -677,7 +792,15 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!drawing) return;
     // ADD ID TO STROKE
     const strokeId = Date.now() + '-' + Math.random();
-    const stroke = { id: strokeId, tool, drawType, color, size: brushSize, points: currentPath };
+    const stroke = {
+      id: strokeId,
+      socketId: socket.id, // Attach socketId for remote buffer cleanup
+      tool,
+      drawType,
+      color,
+      size: brushSize,
+      points: currentPath
+    };
     paths.push(stroke);
     addToHistory({ type: 'add', objectType: 'stroke', data: stroke });
     socket.emit("draw-stroke", stroke);
@@ -687,25 +810,31 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   socket.on("draw-point", data => {
-    // Current path being drawn by someone else, handled by their mouse move
-    // We just update the view? Actually draw-point pushes to paths in the original code? 
-    // Wait, original code:
-    // socket.on("draw-point", data => { paths.push({ ...data }); redraw(); });
-    // This looks wrong in original code if it pushes EVERY point as a stroke?
-    // Checking original code...
-    // Line 427: socket.on("draw-point", data => { paths.push({ ...data }); redraw(); });
-    // This seems to interpret 'data' as a stroke-like object?
-    // But 'draw-point' emitter (line 308) sends: { tool, drawType, color, points: [p] }
-    // So distinct points are added as mini-strokes during live drawing?
-    // And then 'draw-stroke' sends the full stroke at the end?
-    // If so, we might have duplicates or provisional strokes.
-    // Let's leave 'draw-point' as is for now, assuming it's for live preview.
-    // But we should NOT add these to history.
-    paths.push({ ...data }); // Provisional stroke segment
+    const sId = data.socketId;
+    if (!sId || sId === socket.id) return;
+
+    if (!activeRemotePaths[sId]) {
+      activeRemotePaths[sId] = {
+        tool: data.tool,
+        drawType: data.drawType,
+        color: data.color,
+        size: data.size,
+        points: []
+      };
+    }
+
+    activeRemotePaths[sId].points.push(...data.points);
     redraw();
   });
 
   socket.on("draw-stroke", stroke => {
+    // If this stroke was in our active buffer, remove it first
+    // We should ideally have a way to identify which socket sent it if not already in stroke
+    // For now, we'll try to match by properties or just clear when we get a full stroke
+    // Actually, the server can include the sender's socketId
+    if (stroke.socketId && activeRemotePaths[stroke.socketId]) {
+      delete activeRemotePaths[stroke.socketId];
+    }
     paths.push(stroke);
     redraw();
   });
@@ -803,6 +932,10 @@ document.addEventListener("DOMContentLoaded", () => {
     );
 
     paths.forEach(drawStroke);
+
+    // Draw remote active paths
+    Object.values(activeRemotePaths).forEach(drawStroke);
+
     if (currentPath.length)
       drawStroke({ tool, drawType, color, size: brushSize, points: currentPath });
   }
@@ -863,33 +996,50 @@ document.addEventListener("DOMContentLoaded", () => {
 
   /* ================= TOOLS ================= */
   drawBtn.onclick = () => {
-    tool = "pen";
-    updateToolButtons();
+    setTool("pen");
   };
 
   eraserBtn.onclick = () => {
-    tool = "eraser";
-    updateToolButtons();
+    setTool("eraser");
   };
 
   handBtn.onclick = () => {
-    tool = "hand";
-    updateToolButtons();
+    setTool("hand");
   };
 
   textBtn.onclick = () => {
-    tool = "text";
-    updateToolButtons();
+    setTool("text");
   };
 
   noteBtn.onclick = () => {
-    tool = "note";
-    updateToolButtons();
+    setTool("note");
   };
 
   shapesBtn.onclick = () => {
     shapesPanel.classList.toggle("shapes-hidden");
+    // If we're opening the panel and NOT currently in shapes tool, switch to it?
+    // Actually, just toggle the UI. The user selects the shape inside.
   };
+
+  /**
+   * Centralized tool state management
+   */
+  function setTool(newTool) {
+    tool = newTool;
+
+    // Reset shape-related states if switching TO a drawing tool and AWAY from shapes
+    if (newTool !== "shapes" && !pendingShape) {
+      // Keep pendingShape if we just clicked the button but haven't selected one yet?
+      // No, if user clicks "Pen", they want to draw with pen.
+    }
+
+    if (newTool !== "shapes") {
+      pendingShape = null;
+      document.querySelectorAll(".shape-item").forEach(i => i.classList.remove("active"));
+    }
+
+    updateToolButtons();
+  }
 
   shapesClose.onclick = () => {
     shapesPanel.classList.add("shapes-hidden");
@@ -986,6 +1136,14 @@ document.addEventListener("DOMContentLoaded", () => {
         <path d="M22 22L28 28L30 26L24 20L22 22Z" fill="#3B82F6"/>
       </svg>`;
       cursorStyle = `url('data:image/svg+xml;utf8,${encodeURIComponent(svg)}') 0 0, auto`;
+    } else if (pendingShape) {
+      // Shape placement cursor: Show a crosshair with a small shape icon
+      const svg = `<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="16" cy="16" r="14" fill="white" fill-opacity="0.3" stroke="${shapeColor}" stroke-width="2" stroke-dasharray="4 2"/>
+        <path d="M16 8V24M8 16H24" stroke="${shapeColor}" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="16" cy="16" r="4" fill="${shapeColor}"/>
+      </svg>`;
+      cursorStyle = `url('data:image/svg+xml;utf8,${encodeURIComponent(svg)}') 16 16, auto`;
     }
 
     canvas.style.cursor = cursorStyle;
@@ -999,6 +1157,7 @@ document.addEventListener("DOMContentLoaded", () => {
     else if (tool === "hand") handBtn.classList.add('active');
     else if (tool === "text") textBtn.classList.add('active');
     else if (tool === "note") noteBtn.classList.add('active');
+    else if (tool === "shapes") shapesBtn.classList.add('active');
 
     updateCursor();
   }
@@ -1233,64 +1392,38 @@ document.addEventListener("DOMContentLoaded", () => {
     cube: '<path d="M30,40 L50,30 L70,40 L70,70 L50,80 L30,70 Z M50,30 L50,60 M30,40 L50,60 L70,40" fill="COLOR" stroke="#333" stroke-width="2"/>'
   };
 
-  // Drag shapes from panel to canvas
+  // Shape selection from panel
+  shapeItems.forEach(item => {
+    item.addEventListener("click", (e) => {
+      const shapeType = e.currentTarget.dataset.shape;
+
+      // Toggle off if clicking the same one, or switch
+      if (pendingShape === shapeType) {
+        pendingShape = null;
+        item.classList.remove("active");
+        tool = "pen"; // Revert to pen
+      } else {
+        pendingShape = shapeType;
+        tool = "shapes";
+
+        // Visual feedback
+        document.querySelectorAll(".shape-item").forEach(i => i.classList.remove("active"));
+        item.classList.add("active");
+      }
+
+      updateToolButtons();
+    });
+  });
+
+  // Maintain old drag functionality as a secondary option if desired, 
+  // but the user specifically asked to change it. I will keep it but it might conflict.
+  // Actually, let's keep it but make sure "click" doesn't trigger "drag" too much.
+  // The user says "instead of that [drag]", so I'll disable drag.
+  /*
   shapeItems.forEach(item => {
     item.addEventListener("mousedown", startShapeDrag);
   });
-
-  function startShapeDrag(e) {
-    e.preventDefault();
-    const shapeType = e.currentTarget.dataset.shape;
-    const clone = e.currentTarget.cloneNode(true);
-
-    clone.style.position = 'fixed';
-    clone.style.left = e.clientX - 30 + 'px';
-    clone.style.top = e.clientY - 30 + 'px';
-    clone.style.width = '60px';
-    clone.style.height = '60px';
-    clone.style.pointerEvents = 'none';
-    clone.style.opacity = '0.7';
-    clone.style.zIndex = '999999';
-
-    document.body.appendChild(clone);
-
-    function moveShape(moveE) {
-      clone.style.left = moveE.clientX - 30 + 'px';
-      clone.style.top = moveE.clientY - 30 + 'px';
-    }
-
-    function dropShape(dropE) {
-      document.removeEventListener('mousemove', moveShape);
-      document.removeEventListener('mouseup', dropShape);
-      clone.remove();
-
-      const rect = canvas.getBoundingClientRect();
-      if (dropE.clientX >= rect.left && dropE.clientX <= rect.right &&
-        dropE.clientY >= rect.top && dropE.clientY <= rect.bottom) {
-
-        const pos = getPos(dropE);
-
-        const shape = {
-          id: Date.now() + '-' + Math.random(),
-          type: shapeType,
-          x: pos.x - 50,
-          y: pos.y - 50,
-          width: 100,
-          height: 100,
-          color: shapeColor,
-          rotation: 0
-        };
-
-        shapes.push(shape);
-        addToHistory({ type: 'add', objectType: 'shape', data: shape });
-        socket.emit("shape-add", shape);
-        renderAllShapes();
-      }
-    }
-
-    document.addEventListener('mousemove', moveShape);
-    document.addEventListener('mouseup', dropShape);
-  }
+  */
 
   // Render all shapes
   function renderAllShapes() {
