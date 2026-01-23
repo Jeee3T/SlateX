@@ -164,7 +164,7 @@
         createBtn.disabled = true;
         createBtn.textContent = 'Creating...';
 
-        // TODO: Send to server to create room
+        // Send to server to create room
         const response = await fetch('/api/rooms/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -173,38 +173,41 @@
             name: roomName,
             password: roomPassword
           })
-        }).catch(() => null); // Fallback if endpoint doesn't exist yet
+        });
 
-        // For now, save locally (replace with server response later)
-        const roomData = {
-          id: roomId,
-          name: roomName,
-          password: roomPassword, // In production, never store plain password
-          createdAt: new Date().toISOString(),
-          isOwner: true
-        };
+        const result = await response.json();
 
-        localStorage.setItem('currentRoom', JSON.stringify(roomData));
+        if (result.success) {
+          // Save locally
+          const roomData = {
+            id: roomId,
+            name: roomName,
+            password: roomPassword,
+            createdAt: new Date().toISOString(),
+            isOwner: true
+          };
 
-        // Save to recent rooms
-        saveToRecentRooms(roomData);
+          localStorage.setItem('currentRoom', JSON.stringify(roomData));
 
-        // Show generated room ID
-        document.getElementById('display-code').textContent = roomId;
-        document.getElementById('generated-code').style.display = 'block';
+          // Show generated room ID
+          document.getElementById('display-code').textContent = roomId;
+          document.getElementById('generated-code').style.display = 'block';
 
-        showToast(`Room created successfully!`, 'success');
+          showToast(`Room created successfully!`, 'success');
 
-        // Change button to proceed
-        createBtn.textContent = 'Proceed to Templates →';
-        createBtn.disabled = false;
-        createBtn.onclick = () => {
-          window.location.href = '/domain';
-        };
+          // Change button to proceed
+          createBtn.textContent = 'Proceed to Templates →';
+          createBtn.disabled = false;
+          createBtn.onclick = () => {
+            window.location.href = '/domain';
+          };
+        } else {
+          throw new Error(result.message);
+        }
 
       } catch (error) {
         console.error('Error creating room:', error);
-        showToast('Failed to create room. Please try again.', 'error');
+        showToast(error.message || 'Failed to create room. Please try again.', 'error');
         createBtn.disabled = false;
         createBtn.textContent = 'Create Room';
       }
@@ -223,89 +226,99 @@
       }
 
       try {
-        // TODO: Verify room and password on server
         const response = await fetch('/api/rooms/join', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ roomId, password })
-        }).catch(() => null); // Fallback if endpoint doesn't exist yet
+        });
 
-        // For now, accept any room ID/password (replace with server verification)
-        // In production, the server should verify the password
+        const result = await response.json();
 
-        const roomData = {
-          id: roomId,
-          name: 'Joined Room',
-          password: password,
-          joinedAt: new Date().toISOString(),
-          isOwner: false
-        };
+        if (result.success) {
+          const roomData = {
+            id: roomId,
+            name: result.room.name,
+            password: password,
+            joinedAt: new Date().toISOString(),
+            isOwner: false // Default to false, check exact ownership if needed via API later
+          };
 
-        localStorage.setItem('currentRoom', JSON.stringify(roomData));
+          localStorage.setItem('currentRoom', JSON.stringify(roomData));
 
-        // Save to recent rooms
-        saveToRecentRooms(roomData);
+          showToast(`Joining room: ${roomId}`, 'success');
 
-        showToast(`Joining room: ${roomId}`, 'success');
-
-        // Redirect directly to canvas for joiners
-        setTimeout(() => {
-          window.location.href = '/canvas';
-        }, 1500);
+          // Redirect directly to canvas for joiners
+          setTimeout(() => {
+            window.location.href = '/canvas';
+          }, 1500);
+        } else {
+          showToast(result.message || 'Invalid room ID or password', 'error');
+        }
 
       } catch (error) {
         console.error('Error joining room:', error);
-        showToast('Invalid room ID or password', 'error');
+        showToast('Failed to connect to server', 'error');
       }
     });
 
-    // Save to recent rooms
-    function saveToRecentRooms(roomData) {
-      let recentRooms = JSON.parse(localStorage.getItem('recentRooms') || '[]');
+    // Load recent rooms from API
+    async function loadRecentRooms() {
+      try {
+        const response = await fetch('/api/rooms/user/list');
+        const data = await response.json();
 
-      // Remove duplicate if exists
-      recentRooms = recentRooms.filter(r => r.id !== roomData.id);
+        if (data.success && data.rooms.length > 0) {
+          document.getElementById('recent-rooms').style.display = 'block';
+          const roomsList = document.getElementById('rooms-list');
 
-      // Add to beginning
-      recentRooms.unshift({
-        id: roomData.id,
-        name: roomData.name,
-        lastAccessed: new Date().toISOString()
-      });
-
-      // Keep only last 5 rooms
-      recentRooms = recentRooms.slice(0, 5);
-
-      localStorage.setItem('recentRooms', JSON.stringify(recentRooms));
-    }
-
-    // Load recent rooms
-    function loadRecentRooms() {
-      const recentRooms = JSON.parse(localStorage.getItem('recentRooms') || '[]');
-
-      if (recentRooms.length > 0) {
-        document.getElementById('recent-rooms').style.display = 'block';
-        const roomsList = document.getElementById('rooms-list');
-
-        roomsList.innerHTML = recentRooms.map(room => `
-          <div class="room-item" onclick="quickJoinRoom('${room.id}', '${room.name}')">
-            <div class="room-info">
-              <strong>${room.name}</strong>
-              <span>${room.id}</span>
+          roomsList.innerHTML = data.rooms.map(room => `
+            <div class="room-item" onclick="quickRejoin('${room.id}', '${room.name}', ${room.isOwner})" style="cursor: pointer; display: flex; flex-direction: column; gap: 8px;">
+              ${room.previewImage ?
+              `<div class="room-preview" style="width: 100%; height: 120px; border-radius: 6px; overflow: hidden; border: 1px solid #eee; background: #f8f9fa;">
+                   <img src="${room.previewImage}" style="width: 100%; height: 100%; object-fit: cover;" alt="Preview">
+                 </div>` :
+              `<div class="room-preview-placeholder" style="width: 100%; height: 120px; border-radius: 6px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; color: #94a3b8; font-size: 24px;">
+                   🎨
+                 </div>`
+            }
+              <div class="room-info" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <div style="display: flex; flex-direction: column;">
+                  <strong style="color: #050038;">${room.name}</strong>
+                  <span style="font-size: 11px; color: #64748b;">${room.id} • ${room.isOwner ? 'Owner' : 'Participant'}</span>
+                  <span style="font-size: 10px; color: #94a3b8; margin-top: 2px;">⏳ ${room.timeSpent || 0} mins spent</span>
+                </div>
+                <div class="room-arrow" style="color: #3b82f6;">→</div>
+              </div>
             </div>
-            <div class="room-arrow">→</div>
-          </div>
-        `).join('');
+          `).join('');
+
+          // Add some grid styling for the rooms list if not already present
+          roomsList.style.display = 'grid';
+          roomsList.style.gridTemplateColumns = 'repeat(auto-fill, minmax(200px, 1fr))';
+          roomsList.style.gap = '16px';
+        }
+      } catch (error) {
+        console.error('Error loading recent rooms:', error);
       }
     }
 
-    function quickJoinRoom(id, name) {
-      // Pre-fill the join form
-      document.getElementById('room-id').value = id;
-      document.getElementById('join-password').focus();
+    function quickRejoin(id, name, isOwner) {
+      // Set current room logic
+      const roomData = {
+        id: id,
+        name: name,
+        isOwner: isOwner,
+        password: '', // We don't have password, but session auth handles access
+      };
 
-      // Scroll to join card
-      document.querySelector('.join-card').scrollIntoView({ behavior: 'smooth' });
+      localStorage.setItem('currentRoom', JSON.stringify(roomData));
+
+      showToast(`Restoring ${name}...`, 'success');
+
+      // Navigate to canvas
+      setTimeout(() => {
+        window.location.href = '/canvas';
+      }, 500);
     }
 
     // Load recent rooms on page load

@@ -95,6 +95,9 @@
   </div>
 
   <div id="board-container">
+    <div id="watermark">
+      <img src="/assets/logo/title-logo.png" alt="SlateX Logo">
+    </div>
     <canvas id="board"></canvas>
     <div id="drawer-indicator" class="glass"
       style="display:none; position:fixed; bottom: 24px; left: 50%; transform: translateX(-50%); padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; z-index: 1000; box-shadow: var(--miro-shadow);">
@@ -465,14 +468,7 @@
   <!-- Your existing whiteboard logic -->
   <script src="/js/canvas.js"></script>
 
-  <script>
-    // Go Home button functionality
-    document.getElementById('home-btn').addEventListener('click', () => {
-      if (confirm('Are you sure you want to go home? Any unsaved changes will be lost.')) {
-        window.location.href = '/';
-      }
-    });
-  </script>
+  <!-- Exit button handler is now in canvas.js with save-on-exit functionality -->
 
 </body>
 

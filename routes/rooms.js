@@ -55,7 +55,8 @@ router.post('/create', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error creating room:', error);
+    console.error('Error creating room detailed:', error);
+    console.error('Stack:', error.stack);
     res.json({
       success: false,
       message: error.message || 'Failed to create room'
@@ -128,7 +129,7 @@ router.post('/join', async (req, res) => {
 router.get('/:roomId', async (req, res) => {
   try {
     const { roomId } = req.params;
-    
+
     const room = await Room.findOne({ roomId: roomId.toUpperCase() })
       .populate('creator', 'username')
       .populate('participants', 'username');
@@ -163,7 +164,7 @@ router.get('/:roomId', async (req, res) => {
         boardState: room.boardState,
         template: room.template,
         createdAt: room.createdAt,
-        lastActivity: room.lastActivity
+        lastOpenedAt: room.lastOpenedAt
       }
     });
 
@@ -186,9 +187,9 @@ router.get('/user/list', async (req, res) => {
       participants: userId,
       isActive: true
     })
-    .populate('creator', 'username')
-    .sort({ lastActivity: -1 })
-    .limit(10);
+      .populate('creator', 'username')
+      .sort({ lastOpenedAt: -1 })
+      .limit(10);
 
     const roomsList = rooms.map(room => ({
       id: room.roomId,
@@ -197,8 +198,10 @@ router.get('/user/list', async (req, res) => {
       isOwner: room.creator._id.toString() === userId,
       participants: room.participants.length,
       template: room.template,
+      previewImage: room.previewImage,
+      timeSpent: room.timeSpent || 0, // Minutes
       createdAt: room.createdAt,
-      lastActivity: room.lastActivity
+      lastOpenedAt: room.lastOpenedAt
     }));
 
     res.json({
@@ -222,7 +225,7 @@ router.put('/:roomId/board', async (req, res) => {
     const { boardState } = req.body;
 
     const room = await Room.findOne({ roomId: roomId.toUpperCase() });
-    
+
     if (!room) {
       return res.json({
         success: false,
@@ -255,13 +258,62 @@ router.put('/:roomId/board', async (req, res) => {
   }
 });
 
+// Save room state on exit (owner only)
+router.post('/:roomId/save-on-exit', async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const { canvasState, previewImage } = req.body;
+
+    // Find room
+    const room = await Room.findOne({ roomId: roomId.toUpperCase() });
+
+    if (!room) {
+      return res.json({
+        success: false,
+        message: 'Room not found'
+      });
+    }
+
+    // Check if user is the room creator (only owner can save)
+    if (room.creator.toString() !== req.session.userId) {
+      return res.json({
+        success: false,
+        message: 'Only the room owner can save the canvas state'
+      });
+    }
+
+    // Validate payload
+    if (!canvasState) {
+      return res.json({
+        success: false,
+        message: 'Canvas state is required'
+      });
+    }
+
+    // Save full room state
+    await room.saveOnExit(canvasState, previewImage);
+
+    res.json({
+      success: true,
+      message: 'Room state saved successfully'
+    });
+
+  } catch (error) {
+    console.error('Error saving room state on exit:', error);
+    res.json({
+      success: false,
+      message: 'Failed to save room state'
+    });
+  }
+});
+
 // Leave room
 router.post('/:roomId/leave', async (req, res) => {
   try {
     const { roomId } = req.params;
-    
+
     const room = await Room.findOne({ roomId: roomId.toUpperCase() });
-    
+
     if (!room) {
       return res.json({
         success: false,
@@ -289,9 +341,9 @@ router.post('/:roomId/leave', async (req, res) => {
 router.delete('/:roomId', async (req, res) => {
   try {
     const { roomId } = req.params;
-    
+
     const room = await Room.findOne({ roomId: roomId.toUpperCase() });
-    
+
     if (!room) {
       return res.json({
         success: false,
