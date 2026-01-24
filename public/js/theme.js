@@ -1,6 +1,24 @@
-// Theme management logic
+// Theme management: light/dark with sun/moon toggle
 (function () {
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    document.body.classList.add(`theme-${savedTheme}`);
-    console.log('[Theme] System initialized');
+  const STORAGE_KEY = 'theme';
+
+  function getTheme() {
+    return localStorage.getItem(STORAGE_KEY) || 'light';
+  }
+
+  function applyTheme(theme) {
+    document.body.classList.toggle('dark-mode', theme === 'dark');
+  }
+
+  function toggleTheme() {
+    const next = getTheme() === 'dark' ? 'light' : 'dark';
+    localStorage.setItem(STORAGE_KEY, next);
+    applyTheme(next);
+  }
+
+  // Apply saved theme on load (runs before DOMReady is ok for body class)
+  applyTheme(getTheme());
+
+  // Expose for button onclick
+  window.toggleTheme = toggleTheme;
 })();
