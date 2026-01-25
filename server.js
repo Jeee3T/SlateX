@@ -232,6 +232,13 @@ io.on("connection", (socket) => {
     }
   });
 
+  socket.on("client-typing", (data) => {
+    if (currentRoom) {
+      console.log(`[CHAT] Typing event in ${currentRoom}: ${data.user} (${data.isTyping})`);
+      socket.to(currentRoom).emit("client-typing", data);
+    }
+  });
+
   // Handle room name updates
   socket.on('update-room-name', (data) => {
     if (data.roomId && data.name) {
