@@ -458,3 +458,35 @@ body::before {
   background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
   box-shadow: 0 6px 20px rgba(251, 191, 36, 0.3);
 }
+
+/* ================= DARK MODE ================= */
+
+body.dark-mode { background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 50%, #2d2d2d 100%); color: #fff; }
+body.dark-mode .domain-container { background: transparent; }
+body.dark-mode .domain-header h1 { color: #fff; -webkit-text-fill-color: #fff; }
+body.dark-mode .domain-header p { color: #b0b0b0; }
+body.dark-mode .domain-card {
+  background: linear-gradient(145deg, #1e1e1e 0%, #171717 100%);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+body.dark-mode .domain-card:hover { border-color: rgba(255, 255, 255, 0.1); }
+body.dark-mode .domain-card h2 { color: #fff; }
+body.dark-mode .card-description { color: #999; }
+body.dark-mode .card-preview { background: #0a0a0a; border-color: rgba(255, 255, 255, 0.08); }
+body.dark-mode .preview-section {
+  background: linear-gradient(145deg, #1a1a1a 0%, #141414 100%);
+  border-color: rgba(255, 255, 255, 0.06);
+  color: #888;
+}
+body.dark-mode .brainstorm-preview { background: linear-gradient(135deg, #2a2a2a 0%, #1f1f1f 100%); }
+body.dark-mode .unlimited-text { color: #ccc; }
+body.dark-mode .feature-tag { background: rgba(255, 255, 255, 0.05); color: #bbb; border-color: rgba(255, 255, 255, 0.08); }
+body.dark-mode .select-btn {
+  background: linear-gradient(135deg, #333 0%, #1a1a1a 100%);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+body.dark-mode .select-btn:hover { background: linear-gradient(135deg, #3a3a3a 0%, #202020 100%); }
+body.dark-mode .domain-footer { color: #999; }
+body.dark-mode .domain-footer strong { color: #fff; }
