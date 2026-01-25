@@ -11,9 +11,18 @@
 
 <body>
   <div class="theme-toggle-wrapper">
-    <button class="theme-toggle" type="button" onclick="typeof toggleTheme==='function'&&toggleTheme()" title="Toggle light/dark mode" aria-label="Toggle light/dark mode">
-      <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
-      <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    <button class="theme-toggle" type="button" onclick="typeof toggleTheme==='function'&&toggleTheme()"
+      title="Toggle light/dark mode" aria-label="Toggle light/dark mode">
+      <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="4" />
+        <path
+          d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+      </svg>
+      <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+      </svg>
     </button>
   </div>
   <div class="room-container">
@@ -297,7 +306,7 @@
           const roomsList = document.getElementById('rooms-list');
 
           roomsList.innerHTML = data.rooms.map(room => `
-            <div class="room-item" onclick="quickRejoin('${room.id}', '${room.name}', ${room.isOwner})" style="cursor: pointer; display: flex; flex-direction: column; gap: 8px; position: relative;">
+            <div class="room-item" onclick="quickRejoin('${room.id}', '${room.name}', ${room.isOwner}, '${room.displayPassword || ''}')" style="cursor: pointer; display: flex; flex-direction: column; gap: 8px; position: relative;">
               ${room.isOwner ? `
               <div class="room-options" onclick="event.stopPropagation()">
                 <button class="delete-icon-only" onclick="confirmDelete('${room.id}', '${room.name}')" title="Delete Room">
@@ -371,13 +380,13 @@
       }
     }
 
-    function quickRejoin(id, name, isOwner) {
+    function quickRejoin(id, name, isOwner, password) {
       // Set current room logic
       const roomData = {
         id: id,
         name: name,
         isOwner: isOwner,
-        password: '', // We don't have password, but session auth handles access
+        password: password || '', // Use the saved password
         joinedAt: new Date().toISOString() // Mark as rejoining existing room
       };
 

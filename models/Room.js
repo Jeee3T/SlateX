@@ -21,6 +21,11 @@ const roomSchema = new mongoose.Schema({
     required: true,
     minlength: 4
   },
+  displayPassword: {
+    type: String,
+    required: false,
+    default: ''
+  },
   creator: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
