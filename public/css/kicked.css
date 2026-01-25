@@ -138,3 +138,24 @@ p {
     font-weight: 600;
     margin-bottom: 16px;
 }
+
+/* Dark mode */
+body.dark-mode {
+    background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 50%, #2d2d2d 100%);
+    color: #fff;
+}
+
+body.dark-mode .kicked-container { background: transparent; }
+
+body.dark-mode .kicked-card {
+    background: linear-gradient(145deg, #1e1e1e 0%, #171717 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+body.dark-mode .kicked-card h1 { color: #fff; }
+body.dark-mode .kicked-card p { color: #b0b0b0; }
+body.dark-mode .kicked-card .primary-btn { background: #fff; color: #1a1a1a; }
+body.dark-mode .kicked-card .primary-btn:hover { background: #e0e0e0; }
+body.dark-mode .kicked-card .secondary-btn { background: rgba(255,255,255,0.1); color: #fff; border-color: rgba(255,255,255,0.2); }
+body.dark-mode .kicked-card .secondary-btn:hover { background: rgba(255,255,255,0.15); }

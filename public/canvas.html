@@ -6,6 +6,7 @@
   <title>Whiteboard - SlateX</title>
   <link rel="stylesheet" href="/css/home.css">
   <link rel="stylesheet" href="/css/canvas.css">
+  <link rel="stylesheet" href="/css/theme-toggle.css">
 
 
 </head>
@@ -16,7 +17,7 @@
   <header id="top-header" class="glass">
     <div class="header-left">
       <div class="brand">
-        <img src="/assets/logo/title-logo.png" alt="SlateX Logo" style="height: 32px;">
+        <img src="/assets/logo/title-logo.png" alt="SlateX Logo" class="logo-image" />
       </div>
       <div class="divider-v"></div>
       <div class="board-info">
@@ -30,6 +31,10 @@
     </div>
 
     <div class="header-right">
+      <button class="theme-toggle" type="button" onclick="typeof toggleTheme==='function'&&toggleTheme()" title="Toggle light/dark mode" aria-label="Toggle light/dark mode">
+        <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
       <div class="header-participants" title="Who's joined"
         style="display:flex; align-items:center; gap:8px; cursor:pointer;" id="participants-avatars">
         <span
@@ -500,7 +505,7 @@
 
   <!-- Socket.IO client (MUST come first) -->
   <script src="/socket.io/socket.io.js"></script>
-
+  <script src="/js/theme.js"></script>
   <script src="/js/board-templates.js"></script>
 
   <!-- Your existing whiteboard logic -->

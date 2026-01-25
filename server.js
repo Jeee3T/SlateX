@@ -561,12 +561,52 @@ io.on("connection", (socket) => {
           io.to(currentRoom).emit("drawer-cleared");
         }
 
-        // Remove user
         const userData = roomData.users[socket.id];
         const username = userData?.username;
-        delete roomData.users[socket.id];
+        const userId = userData?.userId; // Get userId of disconnected user
 
-        // Notify room
+        // Check if the disconnected user was the room creator
+        const wasCreator = (userId && roomData.creatorId && String(userId) === String(roomData.creatorId));
+
+        // Remove user
+        delete roomData.users[socket.id];
+        const remainingUsers = Object.values(roomData.users);
+
+        // --- ADMIN TRANSFER LOGIC ---
+        if (wasCreator && remainingUsers.length > 0) {
+            // Find the new admin: the first user in the remaining list
+            const newAdminData = remainingUsers[0];
+            
+            // Find the socket ID of the new admin
+            const newAdminSocketId = Object.keys(roomData.users).find(
+                (sId) => roomData.users[sId].userId === newAdminData.userId
+            );
+
+            if (newAdminSocketId) {
+                roomData.users[newAdminSocketId].isAdmin = true;
+                roomData.users[newAdminSocketId].hasAccess = true; // New admin always has access
+
+                console.log(`[SlateX] Admin transfer: ${username} (creator) left. ${newAdminData.username} (Socket ${newAdminSocketId}) is new admin.`);
+
+                // 1. Notify the new admin client-side
+                io.to(newAdminSocketId).emit("user-permissions", { isAdmin: true, hasAccess: true });
+
+                // 2. Update the creator in the MongoDB Room document for persistence
+                const Room = require('./models/Room');
+                const mongoose = require('mongoose'); // Require mongoose here
+                const room = await Room.findOne({ roomId: currentRoom });
+                if (room) {
+                    room.creator = new mongoose.Types.ObjectId(newAdminData.userId); // Convert to ObjectId
+                    await room.save();
+                    roomData.creatorId = newAdminData.userId; // Update in-memory creatorId
+                    roomData.creatorUsername = newAdminData.username; // Update in-memory creatorUsername
+                    console.log(`[SlateX] MongoDB Room ${currentRoom} creator updated to ${newAdminData.username}`);
+                }
+            }
+        }
+        // --- END ADMIN TRANSFER LOG ---
+
+        // Notify room of user departure and any admin changes
         io.to(currentRoom).emit("user-left", {
           username,
           users: Object.values(roomData.users)

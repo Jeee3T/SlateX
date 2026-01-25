@@ -1191,6 +1191,7 @@ document.addEventListener("DOMContentLoaded", () => {
    */
   function setTool(newTool) {
     tool = newTool;
+    console.log(`[DEBUG] setTool called: tool = ${tool}, drawType = ${drawType}`);
 
     // Reset shape-related states if switching TO a drawing tool and AWAY from shapes
     if (newTool !== "shapes" && !pendingShape) {
@@ -1315,10 +1316,18 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function updateToolButtons() {
+    console.log(`[DEBUG] updateToolButtons called. Current tool: ${tool}, drawType: ${drawType}`);
     document.querySelectorAll('.tool').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('[data-draw]').forEach(btn => btn.classList.remove('active')); // Clear sub-tool active states
 
-    if (tool === "pen") drawBtn.classList.add('active');
-    else if (tool === "eraser") eraserBtn.classList.add('active');
+    if (tool === "pen") {
+      drawBtn.classList.add('active');
+      // Activate the specific drawType sub-tool
+      const activeSubTool = document.querySelector(`[data-draw="${drawType}"]`);
+      if (activeSubTool) {
+        activeSubTool.classList.add('active');
+      }
+    } else if (tool === "eraser") eraserBtn.classList.add('active');
     else if (tool === "hand") handBtn.classList.add('active');
     else if (tool === "text") textBtn.classList.add('active');
     else if (tool === "note") noteBtn.classList.add('active');
@@ -1366,6 +1375,7 @@ document.addEventListener("DOMContentLoaded", () => {
       e.stopPropagation();
       tool = "pen";
       drawType = b.dataset.draw;
+      console.log(`[DEBUG] Sub-tool clicked: drawType = ${drawType}, tool = ${tool}`);
 
       // Update active state
       document.querySelectorAll("[data-draw]").forEach(btn => btn.classList.remove('active'));
