@@ -280,9 +280,15 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Close everything when clicking canvas
-  canvas.addEventListener("mousedown", () => {
+  canvas.addEventListener("mousedown", (e) => {
+    // Only close if we're not clicking a tool element (safety check)
+    if (e.target.closest('.miro-toolbar') || e.target.closest('.context-menu')) return;
+
     chatPanel.classList.add("chat-hidden");
     shapesPanel.classList.add("shapes-hidden");
+    document.querySelectorAll('.context-menu').forEach(menu => {
+      menu.classList.remove('show');
+    });
     const stylePanel = document.getElementById("style-panel");
     if (stylePanel) stylePanel.classList.add("hidden");
     if (roomInfoPanel) roomInfoPanel.classList.add("hidden");
@@ -1502,22 +1508,37 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Miro-style Arrow Menus
-  document.querySelectorAll(".tool-arrow").forEach(a => {
-    a.onclick = (e) => {
-      e.stopPropagation();
-      const targetMenu = document.getElementById(a.dataset.target);
+  // Miro-style Arrow Menus (REDESIGNED LOGIC)
+  const toolbar = document.querySelector('.miro-toolbar');
+  if (toolbar) {
+    toolbar.addEventListener("mousedown", (e) => {
+      const arrow = e.target.closest('.tool-arrow');
+      if (!arrow) return;
 
-      // Close other menus
+      console.log(`[MENU] Arrow Mousedown for: ${arrow.dataset.target}`);
+      e.preventDefault();
+      e.stopPropagation();
+
+      const targetId = arrow.dataset.target;
+      const targetMenu = document.getElementById(targetId);
+
+      if (!targetMenu) {
+        console.error(`[MENU] Could not find menu with id: ${targetId}`);
+        return;
+      }
+
+      // Close other menus first
       document.querySelectorAll('.context-menu').forEach(menu => {
         if (menu !== targetMenu) {
           menu.classList.remove('show');
         }
       });
 
-      targetMenu.classList.toggle("show");
-    };
-  });
+      // Toggle THIS menu
+      const isShowing = targetMenu.classList.toggle("show");
+      console.log(`[MENU] ${targetId} is now ${isShowing ? 'VISIBLE' : 'HIDDEN'}`);
+    });
+  }
 
   // Close menus when clicking outside
   document.addEventListener('click', (e) => {

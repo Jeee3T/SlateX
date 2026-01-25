@@ -53,6 +53,15 @@ body {
     z-index: 1;
 }
 
+body.dark-mode #board-container {
+    background-color: #ffffff;
+    /* User wants the board to stay white */
+    background-image:
+        linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+}
+
 canvas {
     display: block;
     background: transparent !important;
@@ -248,6 +257,7 @@ canvas {
     min-height: 40px;
     margin: 0;
 }
+
 #top-header .theme-toggle svg {
     width: 18px;
     height: 18px;
@@ -382,19 +392,18 @@ canvas {
     position: fixed;
     left: 16px;
     top: calc(50% + 28px);
-    /* Center in available height below 56px header */
     transform: translateY(-50%);
     max-height: calc(100vh - 80px);
-    overflow-y: auto;
+    overflow: visible !important;
+    /* CRITICAL: Allow menus to pop out */
     scrollbar-width: none;
-    /* Firefox */
     -ms-overflow-style: none;
-    /* IE/Edge */
-    width: 48px;
+    width: 62px;
+    /* Widen to accommodate side-by-side arrow */
     display: flex;
     flex-direction: column;
-    padding: 8px 4px;
-    gap: 4px;
+    padding: 8px 6px;
+    gap: 6px;
     border-radius: var(--miro-radius-lg);
     box-shadow: var(--miro-shadow-heavy);
     z-index: 5000;
@@ -415,6 +424,7 @@ canvas {
     position: relative;
     display: flex;
     align-items: center;
+    gap: 2px;
 }
 
 .tool {
@@ -446,34 +456,50 @@ canvas {
 }
 
 .tool-arrow {
-    position: absolute;
-    right: -2px;
-    bottom: 4px;
-    font-size: 10px;
-    background: transparent;
+    width: 14px;
+    height: 40px;
+    background: rgba(0, 0, 0, 0.03);
     border: none;
+    border-radius: 4px;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     color: #999;
+    font-size: 10px;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.tool-arrow:hover {
+    background: rgba(66, 98, 255, 0.1);
+    color: var(--miro-blue);
 }
 
 /* ================= CONTEXT MENUS ================= */
 
 .context-menu {
     position: absolute;
-    left: 56px;
+    left: 68px;
+    /* Offset from wider toolbar */
     top: 0;
-    background: white;
-    border-radius: var(--miro-radius);
-    box-shadow: var(--miro-shadow-heavy);
-    padding: 8px;
+    background: #ffffff !important;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2) !important;
+    padding: 14px;
     display: none;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
-    z-index: 1100;
+    flex-direction: column;
+    gap: 12px;
+    z-index: 100000 !important;
+    min-width: 200px;
+    border: 1px solid rgba(0, 0, 0, 0.15) !important;
+    pointer-events: auto !important;
 }
 
 .context-menu.show {
-    display: grid;
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 
 .context-menu span {
@@ -720,6 +746,67 @@ canvas {
     color: var(--miro-navy);
     border: 1px solid rgba(0, 0, 0, 0.05);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+body.dark-mode .miro-toolbar {
+    background: rgba(30, 30, 30, 0.98) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* Dark mode for panels and popups */
+body.dark-mode #shapes-panel,
+body.dark-mode .settings-panel,
+body.dark-mode .context-menu,
+body.dark-mode .participants-panel {
+    background: #2a2a2a !important;
+    color: #fff !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+body.dark-mode #shapes-header,
+body.dark-mode .panel-header {
+    border-bottom-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+body.dark-mode .shape-item {
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode .shape-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+body.dark-mode .sub-tool {
+    color: #eee;
+}
+
+body.dark-mode .sub-tool:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Fix shape stroke in dark mode */
+/* body.dark-mode .shape-object svg * {
+    stroke: #ffffff !important;
+} */
+
+body.dark-mode .tool-arrow {
+    background: rgba(255, 255, 255, 0.05);
+    color: #888;
+}
+
+body.dark-mode .tool-arrow:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+/* Remove shape stroke override - shapes should stay dark on white board */
+/* body.dark-mode .shape-object svg * {
+  stroke: #ffffff !important;
+} */
+
+body.dark-mode .context-menu .color-grid {
+    border-top-color: rgba(255, 255, 255, 0.1);
 }
 
 .chat-message.own-message .message-bubble {
