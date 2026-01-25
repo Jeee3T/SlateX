@@ -589,6 +589,7 @@ canvas {
 #chat-toggle-wrapper {
     display: flex;
     align-items: center;
+    position: relative;
 }
 
 .chat-pill-btn {
@@ -778,6 +779,245 @@ canvas {
 
 #chat-send:active {
     transform: translateY(0);
+}
+
+/* ================= CHAT ENHANCEMENTS ================= */
+
+.chat-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #ef4444;
+    color: white;
+    font-size: 11px;
+    font-weight: 800;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #ffffff;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+    z-index: 10001;
+    pointer-events: none;
+    animation: badgePop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes badgePop {
+    from {
+        transform: scale(0);
+    }
+
+    to {
+        transform: scale(1);
+    }
+}
+
+.typing-indicator {
+    padding: 10px 16px;
+    display: none;
+    align-items: center;
+    gap: 8px;
+    background: #ffffff;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    flex-shrink: 0;
+    z-index: 10;
+    animation: slideUp 0.2s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(10px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.typing-user-logo {
+    width: 24px;
+    height: 24px;
+    background: var(--miro-blue);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+/* === Emoji Picker === */
+.emoji-picker {
+    position: absolute;
+    bottom: 60px;
+    right: 15px;
+    width: 280px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    z-index: 10002;
+    padding: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.emoji-tabs {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 5px;
+}
+
+.emoji-tab {
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748b;
+    cursor: pointer;
+}
+
+.emoji-tab.active {
+    color: #3b82f6;
+}
+
+.emoji-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 5px;
+}
+
+.emoji-item {
+    font-size: 20px;
+    padding: 5px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background 0.2s;
+    text-align: center;
+}
+
+.emoji-item:hover {
+    background: #f1f5f9;
+}
+
+/* === Mention Dropdown === */
+.mention-dropdown {
+    position: absolute;
+    bottom: 60px;
+    left: 15px;
+    width: 200px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+    z-index: 10003;
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.mention-item {
+    padding: 10px 15px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: background 0.2s;
+}
+
+.mention-item:hover,
+.mention-item.active {
+    background: #f1f5f9;
+}
+
+.mention-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #3b82f6;
+    color: white;
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+/* === Chat Highlights === */
+.mention-highlight {
+    background: rgba(59, 130, 246, 0.1);
+    color: #2563eb;
+    font-weight: 600;
+    padding: 0 4px;
+    border-radius: 4px;
+}
+
+.chat-message.mentioned-me .message-bubble {
+    background: #fffbeb !important;
+    border: 1px solid #fde68a !important;
+}
+
+#emoji-toggle {
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 5px;
+    filter: grayscale(1);
+    transition: filter 0.2s;
+    flex-shrink: 0;
+}
+
+#emoji-toggle:hover {
+    filter: grayscale(0);
+}
+
+.typing-text {
+    font-size: 13px;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.typing-dots {
+    display: flex;
+    gap: 4px;
+    margin-top: 2px;
+}
+
+.typing-dots span {
+    width: 6px;
+    height: 6px;
+    background: #94a3b8;
+    border-radius: 50%;
+    display: inline-block;
+    animation: typingBounce 1.4s infinite ease-in-out both;
+}
+
+.typing-dots span:nth-child(1) {
+    animation-delay: -0.32s;
+}
+
+.typing-dots span:nth-child(2) {
+    animation-delay: -0.16s;
+}
+
+@keyframes typingBounce {
+
+    0%,
+    100% {
+        transform: scale(0.8);
+        opacity: 0.4;
+    }
+
+    50% {
+        transform: scale(1.2);
+        opacity: 1;
+    }
 }
 
 /* ================= SHAPES PANEL ================= */

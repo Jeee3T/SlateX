@@ -47,15 +47,15 @@
       <div id="chat-toggle-wrapper">
         <button id="chat-toggle" class="chat-pill-btn" title="Open Chat">
           <span class="icon">
-            <svg height="1.6em" fill="currentColor" xml:space="preserve" viewBox="0 0 1000 1000" y="0px" x="0px"
-              version="1.1">
-              <path
-                d="M881.1,720.5H434.7L173.3,941V720.5h-54.4C58.8,720.5,10,671.1,10,610.2v-441C10,108.4,58.8,59,118.9,59h762.2C941.2,59,990,108.4,990,169.3v441C990,671.1,941.2,720.5,881.1,720.5L881.1,720.5z M935.6,169.3c0-30.4-24.4-55.2-54.5-55.2H118.9c-30.1,0-54.5,24.7-54.5,55.2v441c0,30.4,24.4,55.1,54.5,55.1h54.4h54.4v110.3l163.3-110.2H500h381.1c30.1,0,54.5-24.7,54.5-55.1V169.3L935.6,169.3z M717.8,444.8c-30.1,0-54.4-24.7-54.4-55.1c0-30.4,24.3-55.2,54.4-55.2c30.1,0,54.5,24.7,54.5,55.2C772.2,420.2,747.8,444.8,717.8,444.8L717.8,444.8z M500,444.8c-30.1,0-54.4-24.7-54.4-55.1c0-30.4,24.3-55.2,54.4-55.2c30.1,0,54.4,24.7,54.4,55.2C554.4,420.2,530.1,444.8,500,444.8L500,444.8z M282.2,444.8c-30.1,0-54.5-24.7-54.5-55.1c0-30.4,24.4-55.2,54.5-55.2c30.1,0,54.4,24.7,54.4,55.2C336.7,420.2,312.3,444.8,282.2,444.8L282.2,444.8z">
-              </path>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+              class="modern-chat-icon">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
             </svg>
           </span>
           <span class="text">Chat</span>
         </button>
+        <span id="chat-badge" class="chat-badge" style="display: none;">0</span>
       </div>
 
       <!-- Participant List Panel -->
@@ -472,9 +472,28 @@
         style="background:none;border:none;cursor:pointer;font-size:20px;color:inherit;opacity:0.6;">×</button>
     </div>
     <div id="chat-messages"></div>
+    <div id="typing-indicator" class="typing-indicator" style="display: none;">
+      <span class="typing-user-logo"></span>
+      <span class="typing-text"></span>
+      <div class="typing-dots">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </div>
+    <div id="mention-dropdown" class="mention-dropdown hidden"></div>
     <div id="chat-input-box">
-      <input id="chat-input" placeholder="Type a message..." />
+      <button id="emoji-toggle" title="Add emoji">😊</button>
+      <input id="chat-input" placeholder="Type a message... (use @ to mention)" autocomplete="off" />
       <button id="chat-send">Send</button>
+      <div id="emoji-picker" class="emoji-picker hidden">
+        <div class="emoji-tabs">
+          <span class="emoji-tab active" data-cat="frequent">Recently</span>
+          <span class="emoji-tab" data-cat="smileys">Smileys</span>
+          <span class="emoji-tab" data-cat="gestures">Hands</span>
+        </div>
+        <div class="emoji-grid"></div>
+      </div>
     </div>
   </div>
 

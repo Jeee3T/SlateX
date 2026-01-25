@@ -138,6 +138,122 @@ document.addEventListener("DOMContentLoaded", () => {
   const chatSend = document.getElementById("chat-send");
   const chatMessages = document.getElementById("chat-messages");
   const closeChat = document.getElementById("close-chat");
+  const chatBadge = document.getElementById("chat-badge");
+  const typingIndicator = document.getElementById("typing-indicator");
+  let unreadCount = 0;
+  let typingTimeout = null;
+
+  /* ================= CHAT INITIALIZATION ================= */
+  function emitTyping(isTyping) {
+    if (!socket || !socket.connected) return;
+    socket.emit("client-typing", { user: username, isTyping: isTyping });
+  }
+
+  /* === EMOJI PICKER === */
+  const emojiToggle = document.getElementById('emoji-toggle');
+  const emojiPicker = document.getElementById('emoji-picker');
+  const emojiGrid = emojiPicker?.querySelector('.emoji-grid');
+  const emojis = {
+    smileys: ['😊', '😂', '😍', '😎', '🤔', '😅', '🙄', '😴', '😤', '😭', '🤯', '🥳'],
+    gestures: ['👍', '👎', '👏', '🙌', '🙏', '👋', '🤝', '✌️', '🤞', '👊', '💪', '🔥']
+  };
+
+  function initEmojis() {
+    if (!emojiGrid) return;
+    emojiGrid.innerHTML = [...emojis.smileys, ...emojis.gestures].map(e => `<span class="emoji-item">${e}</span>`).join('');
+    emojiGrid.querySelectorAll('.emoji-item').forEach(item => {
+      item.onclick = () => {
+        if (chatInput) {
+          chatInput.value += item.innerText;
+          chatInput.focus();
+          emojiPicker.classList.add('hidden');
+        }
+      };
+    });
+  }
+  initEmojis();
+
+  emojiToggle?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    emojiPicker.classList.toggle('hidden');
+  });
+
+  /* === MENTIONS === */
+  const mentionDropdown = document.getElementById('mention-dropdown');
+  function showMentions(filter = '') {
+    if (!mentionDropdown || !lastUsersList.length) return;
+    const filtered = lastUsersList.filter(u => u.username.toLowerCase().includes(filter.toLowerCase()));
+    if (filtered.length === 0) {
+      mentionDropdown.classList.add('hidden');
+      return;
+    }
+    mentionDropdown.innerHTML = filtered.map(u => `
+      <div class="mention-item" data-username="${u.username}">
+        <div class="mention-avatar">${u.username[0].toUpperCase()}</div>
+        <span>${u.username}</span>
+      </div>
+    `).join('');
+    mentionDropdown.classList.remove('hidden');
+    mentionDropdown.querySelectorAll('.mention-item').forEach(item => {
+      item.onclick = () => {
+        const val = chatInput.value;
+        const lastAt = val.lastIndexOf('@');
+        chatInput.value = val.substring(0, lastAt) + '@' + item.dataset.username + ' ';
+        mentionDropdown.classList.add('hidden');
+        chatInput.focus();
+      };
+    });
+  }
+
+  if (chatInput) {
+    chatInput.addEventListener("input", (e) => {
+      emitTyping(true);
+      if (typingTimeout) clearTimeout(typingTimeout);
+      typingTimeout = setTimeout(() => emitTyping(false), 3000);
+
+      const val = chatInput.value;
+      const lastAt = val.lastIndexOf('@');
+      if (lastAt !== -1 && lastAt === val.length - 1) {
+        showMentions();
+      } else if (lastAt !== -1 && lastAt < val.length - 1) {
+        showMentions(val.substring(lastAt + 1));
+      } else {
+        mentionDropdown?.classList.add('hidden');
+      }
+    });
+
+    chatInput.addEventListener("keydown", e => {
+      if (e.key === "Enter") {
+        const text = chatInput.value.trim();
+        if (text && socket) {
+          socket.emit("chat-message", { user: username, content: text, time: Date.now() });
+          chatInput.value = "";
+          if (typingTimeout) clearTimeout(typingTimeout);
+          emitTyping(false);
+          mentionDropdown?.classList.add('hidden');
+        }
+      }
+    });
+  }
+
+  if (chatSend) {
+    chatSend.onclick = () => {
+      const text = chatInput.value.trim();
+      if (text && socket) {
+        socket.emit("chat-message", { user: username, content: text, time: Date.now() });
+        chatInput.value = "";
+        if (typingTimeout) clearTimeout(typingTimeout);
+        emitTyping(false);
+        mentionDropdown?.classList.add('hidden');
+      }
+    };
+  }
+
+  // Close popups on click outside
+  document.addEventListener('click', () => {
+    emojiPicker?.classList.add('hidden');
+    mentionDropdown?.classList.add('hidden');
+  });
 
   chatPanel.classList.add("chat-hidden");
   shapesPanel.classList.add("shapes-hidden");
@@ -149,6 +265,11 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!chatPanel.classList.contains("chat-hidden")) {
       const shapesPanel = document.getElementById("shapes-panel");
       if (shapesPanel) shapesPanel.classList.add("shapes-hidden");
+
+      // Clear badge when opening chat
+      unreadCount = 0;
+      chatBadge.innerText = "0";
+      chatBadge.style.display = "none";
     }
   });
 
@@ -302,36 +423,55 @@ document.addEventListener("DOMContentLoaded", () => {
     renderUserList(users);
   });
 
-  chatSend.addEventListener("click", sendMessage);
-  chatInput.addEventListener("keydown", e => {
-    if (e.key === "Enter") sendMessage();
-  });
-
-  function sendMessage() {
-    const text = chatInput.value.trim();
-    if (!text) return;
-
-    socket.emit("chat-message", {
-      user: username,
-      content: text,
-      time: Date.now()
-    });
-
-    chatInput.value = "";
-  }
-
+  /* ================= CHAT RECEPTION & TYPING ================= */
   socket.on("chat-message", msg => {
+    // Show badge if chat is hidden
+    if (chatPanel.classList.contains("chat-hidden")) {
+      unreadCount++;
+      if (chatBadge) {
+        chatBadge.innerText = unreadCount;
+        chatBadge.style.display = "flex";
+      }
+    }
+
+    const isMentioned = msg.content.includes(`@${username}`);
     const div = document.createElement("div");
-    div.className = `chat-message ${msg.user === username ? 'own-message' : ''}`;
+    div.className = `chat-message ${msg.user === username ? 'own-message' : ''} ${isMentioned ? 'mentioned-me' : ''}`;
+
+    // Highlight mentors in text
+    let displayContent = msg.content.replace(/@(\w+)/g, '<span class="mention-highlight">@$1</span>');
+
     div.innerHTML = `
       <div class="message-bubble">
         <span class="chat-user">${msg.user}</span>
-        <div class="chat-content">${msg.content}</div>
+        <div class="chat-content">${displayContent}</div>
         <span class="chat-time">${new Date(msg.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
       </div>
     `;
     chatMessages.appendChild(div);
     chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    // Bounce badge if mentioned
+    if (isMentioned && chatPanel.classList.contains("chat-hidden")) {
+      chatBadge.style.background = "#f59e0b"; // Golden for mentions
+    }
+  });
+
+  socket.on("client-typing", data => {
+    if (!typingIndicator) return;
+
+    // REMOVED username !== check to allow same-user multi-tab testing
+    if (data.isTyping && data.user) {
+      const logo = typingIndicator.querySelector('.typing-user-logo');
+      const text = typingIndicator.querySelector('.typing-text');
+      if (logo) logo.innerText = data.user[0].toUpperCase();
+      if (text) text.innerText = `${data.user} is typing`;
+
+      typingIndicator.style.setProperty('display', 'flex', 'important');
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    } else {
+      typingIndicator.style.display = "none";
+    }
   });
 
   /* ================= STATE ================= */
