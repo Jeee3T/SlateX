@@ -41,6 +41,7 @@ router.post('/create', async (req, res) => {
       roomId: roomId.toUpperCase(),
       name: name,
       password: password,
+      displayPassword: password,
       creator: req.session.userId,
       participants: [req.session.userId]
     });
@@ -163,6 +164,7 @@ router.get('/:roomId', async (req, res) => {
         participantCount: room.participants.length,
         boardState: room.boardState,
         template: room.template,
+        displayPassword: room.displayPassword || '',
         createdAt: room.createdAt,
         lastOpenedAt: room.lastOpenedAt
       }
@@ -201,6 +203,7 @@ router.get('/user/list', async (req, res) => {
       template: room.template,
       previewImage: room.previewImage,
       timeSpent: room.timeSpent || 0, // Minutes
+      displayPassword: room.displayPassword || '',
       createdAt: room.createdAt,
       lastOpenedAt: room.lastOpenedAt
     }));

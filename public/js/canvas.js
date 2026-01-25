@@ -304,6 +304,24 @@ document.addEventListener("DOMContentLoaded", () => {
     if (displayId) displayId.innerText = currentRoom.id || '---';
     if (displayPass) displayPass.innerText = currentRoom.password || '---';
 
+    // 🔥 FAILSFE: Fetch latest room info from server to ensure we have the password
+    if (currentRoom.id) {
+      fetch(`/api/rooms/${currentRoom.id}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.room) {
+            console.log('[DEBUG] Fetched room displayPassword:', data.room.displayPassword);
+            if (displayPass) displayPass.innerText = data.room.displayPassword || '---';
+            // Update local storage to stay in sync if needed
+            if (data.room.displayPassword && currentRoom.password !== data.room.displayPassword) {
+              const updatedRoom = { ...currentRoom, password: data.room.displayPassword };
+              localStorage.setItem('currentRoom', JSON.stringify(updatedRoom));
+            }
+          }
+        })
+        .catch(err => console.error('Error fetching room info:', err));
+    }
+
     infoBtn.onclick = (e) => {
       e.stopPropagation();
       roomInfoPanel.classList.toggle('hidden');
