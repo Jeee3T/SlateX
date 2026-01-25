@@ -2,7 +2,7 @@
 SlateX is a real-time collaborative whiteboard platform with AI-powered features for smart drawing, text recognition, voice notes, and automated summaries.
 
 
-Feature added as of now :
+Completed tasks:
 1. Real-time collaboration (multi-user)
 2. Live drawing sync (streaming)
 3. One-user-at-a-time drawing (draw lock)
@@ -10,6 +10,10 @@ Feature added as of now :
 5. Username support
 6. Active drawer indicator
 7. Added Homepage and merged with the canvas
-8. Choose from multiple available templates
-9. Rooms introduced  
-   
+8. Domain based multiple templates available
+9. Rooms introduced
+10. Added last 5 recent rooms availability
+11. Dark Mode implemented
+12. Chatbox included
+13. Room Admin authorization optimized
+14. lag fixes while drawing in canvas
