@@ -1120,58 +1120,61 @@ document.addEventListener("DOMContentLoaded", () => {
       canvas.height / scale
     );
 
-    paths.forEach(drawStroke);
+    paths.forEach(p => drawStroke(p));
 
     // Draw remote active paths
-    Object.values(activeRemotePaths).forEach(drawStroke);
+    Object.values(activeRemotePaths).forEach(p => drawStroke(p));
 
     if (currentPath.length)
       drawStroke({ tool, drawType, color, size: brushSize, points: currentPath });
   }
 
-  function drawStroke(p) {
+  function drawStroke(p, customCtx) {
     if (!p.points || p.points.length === 0) return;
+    const drawCtx = customCtx || ctx;
 
-    ctx.beginPath();
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
+    drawCtx.beginPath();
+    drawCtx.lineCap = "round";
+    drawCtx.lineJoin = "round";
 
     if (p.tool === "eraser") {
-      ctx.globalCompositeOperation = "destination-out";
-      ctx.lineWidth = (p.size || 20) / scale;
+      // If we're drawing on a custom context (like a snapshot with white bg),
+      // we should paint white instead of using destination-out to simulate erasing.
+      if (customCtx) {
+        drawCtx.globalCompositeOperation = "source-over";
+        drawCtx.strokeStyle = "#ffffff";
+      } else {
+        drawCtx.globalCompositeOperation = "destination-out";
+      }
+      drawCtx.lineWidth = (p.size || 20) / scale;
     } else {
-      ctx.globalCompositeOperation = "source-over";
-      ctx.strokeStyle = p.color;
+      drawCtx.globalCompositeOperation = "source-over";
+      drawCtx.strokeStyle = p.color;
 
       const baseSize = p.size || 5;
       if (p.drawType === "pen") {
-        ctx.lineWidth = baseSize;
+        drawCtx.lineWidth = baseSize;
       } else if (p.drawType === "pencil") {
-        ctx.lineWidth = Math.max(1, baseSize / 3);
+        drawCtx.lineWidth = Math.max(1, baseSize / 3);
       } else if (p.drawType === "brush") {
-        ctx.lineWidth = baseSize * 2;
+        drawCtx.lineWidth = baseSize * 2;
       } else {
-        ctx.lineWidth = baseSize;
+        drawCtx.lineWidth = baseSize;
       }
     }
 
     if (p.points.length < 3) {
-      // For small strokes, use simple lines
       p.points.forEach((pt, i) =>
-        i ? ctx.lineTo(pt.x, pt.y) : ctx.moveTo(pt.x, pt.y)
+        i ? drawCtx.lineTo(pt.x, pt.y) : drawCtx.moveTo(pt.x, pt.y)
       );
     } else {
-      // Quadratic Bezier curves for smooth strokes
-      ctx.moveTo(p.points[0].x, p.points[0].y);
-
+      drawCtx.moveTo(p.points[0].x, p.points[0].y);
       for (let i = 1; i < p.points.length - 2; i++) {
         const xc = (p.points[i].x + p.points[i + 1].x) / 2;
         const yc = (p.points[i].y + p.points[i + 1].y) / 2;
-        ctx.quadraticCurveTo(p.points[i].x, p.points[i].y, xc, yc);
+        drawCtx.quadraticCurveTo(p.points[i].x, p.points[i].y, xc, yc);
       }
-
-      // For the last 2 points
-      ctx.quadraticCurveTo(
+      drawCtx.quadraticCurveTo(
         p.points[p.points.length - 2].x,
         p.points[p.points.length - 2].y,
         p.points[p.points.length - 1].x,
@@ -1179,8 +1182,8 @@ document.addEventListener("DOMContentLoaded", () => {
       );
     }
 
-    ctx.stroke();
-    ctx.globalCompositeOperation = "source-over";
+    drawCtx.stroke();
+    drawCtx.globalCompositeOperation = "source-over";
   }
 
   /* ================= TOOLS ================= */
@@ -1657,10 +1660,23 @@ document.addEventListener("DOMContentLoaded", () => {
     shapeEl.style.top = (shape.y * scale + offsetY) + 'px';
     shapeEl.style.width = (shape.width * scale) + 'px';
     shapeEl.style.height = (shape.height * scale) + 'px';
-    shapeEl.style.transform = `rotate(${shape.rotation}deg)`;
+    shapeEl.style.transform = `rotate(${shape.rotation || 0}deg)`;
 
-    const svgTemplate = shapeTemplates[shape.type].replace(/COLOR/g, shape.color);
-    shapeEl.innerHTML = `<svg viewBox="0 0 100 100">${svgTemplate}</svg>`;
+    // Handle AI-generated images
+    if (shape.type === 'image') {
+      const img = document.createElement('img');
+      img.src = shape.url;
+      img.style.width = '100%';
+      img.style.height = '100%';
+      img.style.objectFit = 'contain';
+      img.style.borderRadius = '8px';
+      img.style.pointerEvents = 'none';
+      shapeEl.appendChild(img);
+    } else {
+      // Regular SVG shapes
+      const svgTemplate = shapeTemplates[shape.type].replace(/COLOR/g, shape.color);
+      shapeEl.innerHTML = `<svg viewBox="0 0 100 100">${svgTemplate}</svg>`;
+    }
 
     shapeEl.addEventListener('mousedown', selectShape);
     document.body.appendChild(shapeEl);
@@ -2268,5 +2284,234 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Initial check
   setTimeout(checkBoardEmpty, 500); // Wait for init-board
+
+  /* ================= AI BOARD SUMMARIZATION ================= */
+  const aiBtn = document.getElementById('ai-btn');
+  const aiDropdown = document.getElementById('ai-dropdown');
+  const summarizeBtn = document.getElementById('summarize-btn');
+  const aiModal = document.getElementById('ai-summary-modal');
+  const closeAiModal = document.getElementById('close-ai-modal');
+  const summarizeSubmit = document.getElementById('summarize-submit');
+  const summaryContainer = document.getElementById('summary-container');
+  const summaryText = document.getElementById('summary-text');
+  const copySummaryBtn = document.getElementById('copy-summary-btn');
+
+  // Toggle AI dropdown
+  if (aiBtn && aiDropdown) {
+    aiBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      aiDropdown.classList.toggle('hidden');
+
+      // Close other panels
+      if (!aiDropdown.classList.contains('hidden')) {
+        if (typeof chatPanel !== 'undefined' && chatPanel) chatPanel.classList.add('chat-hidden');
+        if (typeof shapesPanel !== 'undefined' && shapesPanel) shapesPanel.classList.add('shapes-hidden');
+        if (typeof roomInfoPanel !== 'undefined' && roomInfoPanel) roomInfoPanel.classList.add('hidden');
+      }
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#ai-btn') && !e.target.closest('#ai-dropdown')) {
+        aiDropdown.classList.add('hidden');
+      }
+    });
+  }
+
+  // Open summary modal
+  if (summarizeBtn && aiModal) {
+    summarizeBtn.addEventListener('click', () => {
+      aiDropdown.classList.add('hidden');
+      aiModal.classList.remove('hidden');
+      if (summaryContainer) summaryContainer.classList.add('hidden');
+      if (summaryText) summaryText.innerText = '';
+    });
+  }
+
+  // Close modal
+  if (closeAiModal) {
+    closeAiModal.addEventListener('click', () => {
+      if (aiModal) aiModal.classList.add('hidden');
+    });
+  }
+
+  // Close modal on overlay click
+  if (aiModal) {
+    aiModal.querySelector('.ai-modal-overlay')?.addEventListener('click', () => {
+      aiModal.classList.add('hidden');
+    });
+  }
+
+  // Generate Summary
+  if (summarizeSubmit) {
+    summarizeSubmit.addEventListener('click', async () => {
+      const loader = document.getElementById('ai-loading-container');
+      const summaryContainer = document.getElementById('summary-container');
+      const summaryText = document.getElementById('summary-text');
+
+      // Show loading state
+      if (aiModal) aiModal.classList.add('hidden'); // Hide the trigger modal
+      if (loader) loader.classList.remove('hidden'); // Show full-screen blur loader
+      if (summaryContainer) summaryContainer.classList.add('hidden');
+
+      try {
+        // Capture canvas snapshot with white background and ALL elements across the entire board
+        // This calculates a bounding box of everything so the AI sees the whole project
+        function getBoardSnapshot() {
+          const allElements = [
+            ...paths.flatMap(p => p.points),
+            ...Object.values(activeRemotePaths).flatMap(p => p.points),
+            ...textElements.map(t => ({ x: t.x, y: t.y })),
+            ...stickyNotes.flatMap(n => [{ x: n.x, y: n.y }, { x: n.x + 200, y: n.y + 200 }]),
+            ...shapes.flatMap(s => [{ x: s.x, y: s.y }, { x: s.x + s.width, y: s.y + s.height }])
+          ];
+
+          if (allElements.length === 0) {
+            // Fallback for empty board
+            const emptyCanvas = document.createElement('canvas');
+            emptyCanvas.width = 100; emptyCanvas.height = 100;
+            const eCtx = emptyCanvas.getContext('2d');
+            eCtx.fillStyle = '#ffffff';
+            eCtx.fillRect(0, 0, 100, 100);
+            return emptyCanvas.toDataURL('image/jpeg', 0.1);
+          }
+
+          const minX = Math.min(...allElements.map(e => e.x));
+          const minY = Math.min(...allElements.map(e => e.y));
+          const maxX = Math.max(...allElements.map(e => e.x));
+          const maxY = Math.max(...allElements.map(e => e.y));
+
+          const padding = 100;
+          const boardW = (maxX - minX) + padding * 2;
+          const boardH = (maxY - minY) + padding * 2;
+
+          // Limit canvas size to avoid browser crash (max 4k for safety)
+          const limit = 4096;
+          const scaleDown = Math.min(1, limit / boardW, limit / boardH);
+
+          const tempCanvas = document.createElement('canvas');
+          tempCanvas.width = boardW * scaleDown;
+          tempCanvas.height = boardH * scaleDown;
+          const tCtx = tempCanvas.getContext('2d');
+
+          // 1. Fill with white background
+          tCtx.fillStyle = '#ffffff';
+          tCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+
+          // 2. Set transform to center all elements in the snapshot
+          tCtx.scale(scaleDown, scaleDown);
+          tCtx.translate(-minX + padding, -minY + padding);
+
+          // 3. Draw all pen strokes
+          paths.forEach(p => drawStroke(p, tCtx));
+          Object.values(activeRemotePaths).forEach(p => drawStroke(p, tCtx));
+
+          // 4. Draw elements
+          tCtx.textAlign = 'left';
+          tCtx.textBaseline = 'top';
+
+          textElements.forEach(t => {
+            tCtx.fillStyle = t.color || '#000000';
+            tCtx.font = '24px Arial';
+            tCtx.fillText(t.text, t.x, t.y);
+          });
+
+          stickyNotes.forEach(n => {
+            tCtx.fillStyle = n.color || '#fff9c4';
+            tCtx.fillRect(n.x, n.y, 200, 200);
+            tCtx.strokeStyle = '#000000';
+            tCtx.strokeRect(n.x, n.y, 200, 200);
+            tCtx.fillStyle = '#000000';
+            tCtx.font = '16px Arial';
+            const words = (n.content || "").split(' ');
+            let line = '';
+            let yy = n.y + 10;
+            words.forEach(word => {
+              if ((line + word).length > 20) {
+                tCtx.fillText(line, n.x + 10, yy);
+                line = word + ' '; yy += 20;
+              } else { line += word + ' '; }
+            });
+            tCtx.fillText(line, n.x + 10, yy);
+          });
+
+          shapes.forEach(s => {
+            tCtx.fillStyle = s.color || '#3b82f6';
+            tCtx.globalAlpha = 0.5;
+            tCtx.fillRect(s.x, s.y, s.width, s.height);
+            tCtx.globalAlpha = 1.0;
+            tCtx.strokeStyle = '#000000';
+            tCtx.strokeRect(s.x, s.y, s.width, s.height);
+            tCtx.fillStyle = '#000000';
+            tCtx.font = '12px Arial';
+            tCtx.fillText(`[${s.type}]`, s.x + 5, s.y + 5);
+          });
+
+          return tempCanvas.toDataURL('image/jpeg', 0.8);
+        }
+
+        const boardImage = getBoardSnapshot();
+
+        // Collect board data
+        const currentRoom = JSON.parse(localStorage.getItem('currentRoom') || '{}');
+        const boardData = {
+          textElements: textElements || [],
+          stickyNotes: stickyNotes || [],
+          shapes: shapes || [],
+          templateName: currentRoom.template || null
+        };
+
+        const response = await fetch('/api/summarize', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ boardData, boardImage })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to generate summary');
+        }
+
+        // Show summary incentered modal
+        if (summaryText) summaryText.innerText = data.summary;
+        if (aiModal) aiModal.classList.remove('hidden'); // Re-show modal with result
+        if (summaryContainer) summaryContainer.classList.remove('hidden');
+
+      } catch (error) {
+        console.error('Error generating summary:', error);
+        if (error.message.includes('Rate limit') || error.message.includes('429')) {
+          alert('🕒 Slow down! You have reached your Gemini API limit for now. Please wait about 30-60 seconds and try again.');
+        } else {
+          alert(error.message || 'Failed to generate summary. Please try again.');
+        }
+      } finally {
+        // Hide loading state
+        const loader = document.getElementById('ai-loading-container');
+        if (loader) loader.classList.add('hidden');
+        summarizeSubmit.classList.remove('hidden');
+        summarizeSubmit.disabled = false;
+      }
+    });
+  }
+
+  // Copy summary to clipboard
+  if (copySummaryBtn) {
+    copySummaryBtn.addEventListener('click', () => {
+      const text = summaryText?.innerText;
+      if (text) {
+        navigator.clipboard.writeText(text).then(() => {
+          const originalText = copySummaryBtn.innerText;
+          copySummaryBtn.innerText = 'Copied!';
+          setTimeout(() => {
+            copySummaryBtn.innerText = originalText;
+          }, 2000);
+        });
+      }
+    });
+  }
+
 
 });

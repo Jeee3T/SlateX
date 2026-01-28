@@ -7,8 +7,7 @@
   <link rel="stylesheet" href="/css/home.css">
   <link rel="stylesheet" href="/css/canvas.css">
   <link rel="stylesheet" href="/css/theme-toggle.css">
-
-
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 
 <body>
@@ -31,9 +30,18 @@
     </div>
 
     <div class="header-right">
-      <button class="theme-toggle" type="button" onclick="typeof toggleTheme==='function'&&toggleTheme()" title="Toggle light/dark mode" aria-label="Toggle light/dark mode">
-        <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
-        <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <button class="theme-toggle" type="button" onclick="typeof toggleTheme==='function'&&toggleTheme()"
+        title="Toggle light/dark mode" aria-label="Toggle light/dark mode">
+        <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="4" />
+          <path
+            d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+        </svg>
+        <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+        </svg>
       </button>
       <div class="header-participants" title="Who's joined"
         style="display:flex; align-items:center; gap:8px; cursor:pointer;" id="participants-avatars">
@@ -45,6 +53,13 @@
         </div>
       </div>
       <button id="ai-btn" class="header-action-btn" title="AI Assistant">✨ AI</button>
+      <!-- AI Dropdown Menu -->
+      <div id="ai-dropdown" class="ai-dropdown hidden">
+        <button class="ai-dropdown-item" id="summarize-btn">
+          <span class="ai-icon">📝</span>
+          <span>Summarize Board</span>
+        </button>
+      </div>
       <button id="exit-btn" class="header-action-btn"
         style="color: #ef4444; border-color: rgba(239, 68, 68, 0.2); background: rgba(239, 68, 68, 0.05);">Exit
         Board</button>
@@ -503,6 +518,33 @@
   </div>
 
 
+  <!-- AI Summarization Modal -->
+  <div id="ai-summary-modal" class="ai-modal hidden">
+    <div class="ai-modal-overlay"></div>
+    <div class="ai-modal-content glass">
+      <div class="ai-modal-header">
+        <h3>✨ AI Board Summary</h3>
+        <button id="close-ai-modal" class="ai-modal-close">×</button>
+      </div>
+      <div class="ai-modal-body">
+        <p class="ai-modal-intro">Instant insights at your fingertips. Our AI synthesizes your board into high-tier
+          takeaways in seconds. No fluff, just pure signal.</p>
+        <button id="summarize-submit" class="ai-generate-btn">
+          <span class="btn-text">Generate Alpha Summary</span>
+        </button>
+
+        <div id="summary-container" class="hidden">
+          <div id="summary-text"></div>
+          <button id="copy-summary-btn" class="copy-btn">
+            <span>📋 Copy to Clipboard</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+
+
   <!-- Socket.IO client (MUST come first) -->
   <script src="/socket.io/socket.io.js"></script>
   <script src="/js/theme.js"></script>
@@ -513,6 +555,23 @@
 
   <!-- Exit button handler is now in canvas.js with save-on-exit functionality -->
 
+
+  <!-- Immersive Full-Screen "Generating" Animation -->
+  <div id="ai-loading-container" class="hidden">
+    <div class="loader-wrapper">
+      <span class="loader-letter">G</span>
+      <span class="loader-letter">e</span>
+      <span class="loader-letter">n</span>
+      <span class="loader-letter">e</span>
+      <span class="loader-letter">r</span>
+      <span class="loader-letter">a</span>
+      <span class="loader-letter">t</span>
+      <span class="loader-letter">i</span>
+      <span class="loader-letter">n</span>
+      <span class="loader-letter">g</span>
+      <div class="loader"></div>
+    </div>
+  </div>
 </body>
 
 </html>
