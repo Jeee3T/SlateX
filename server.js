@@ -14,6 +14,11 @@ const authRoutes = require("./routes/auth");
 const roomRoutes = require("./routes/rooms"); // ADD THIS LINE
 const { isAuthenticated, redirectIfAuthenticated } = require("./middleware/authMiddleware");
 
+// Google AI configuration
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
+const genAI = new GoogleGenerativeAI(GOOGLE_API_KEY);
+
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
@@ -37,8 +42,8 @@ const activeRooms = new Map();
 // ⚙️ MIDDLEWARE
 // =======================
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Session configuration
 app.use(session({
@@ -93,6 +98,101 @@ app.use("/api/auth", authRoutes);
 
 // Room API routes - ADD THIS LINE
 app.use("/api/rooms", roomRoutes);
+
+// AI Board Summarization endpoint
+app.post("/api/summarize", isAuthenticated, async (req, res) => {
+  try {
+    const { boardData, boardImage } = req.body;
+
+    if (!boardData) {
+      return res.status(400).json({ error: "Board data is required" });
+    }
+
+    const { textElements, stickyNotes, shapes, templateName } = boardData;
+
+    // Construct a rich prompt based on board content
+    let contentDescription = "";
+
+    if (templateName) {
+      contentDescription += `The board uses the template: "${templateName}".\n`;
+    }
+
+    if (textElements && textElements.length > 0) {
+      contentDescription += "Text elements found on board:\n";
+      textElements.forEach(t => contentDescription += `- ${t.text}\n`);
+    }
+
+    if (stickyNotes && stickyNotes.length > 0) {
+      contentDescription += "Sticky notes found on board:\n";
+      stickyNotes.forEach(n => contentDescription += `- ${n.content}\n`);
+    }
+
+    if (shapes && shapes.length > 0) {
+      contentDescription += "Shapes explicitly drawn on board:\n";
+      shapes.forEach(s => {
+        const colorScale = s.color || "blue";
+        contentDescription += `- A ${colorScale} ${s.type} (coordinates: ${Math.round(s.x)}, ${Math.round(s.y)})\n`;
+      });
+    }
+
+    console.log(`[AI] Summarizing board content (with image) for user ${req.session.userId}`);
+
+    const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+
+    let promptParts = [
+      `You are a practical human teammate summarizing a SlateX whiteboard. 
+        Your goal is to provide a SIMPLE, GROUNDED, and USEFUL summary of what is actually on the board.
+        
+        CRITICAL INSTRUCTIONS:
+        - **Keep it Simple**: If the board is simple, keep the summary simple. Do not over-analyze or use "corporate speak" (e.g., avoid "meta-commentary", "concept modeling", "semantic drift").
+        - **Be Literal & Real**: Use the structured list of shapes and text below as your source of truth. If the list says there is a "circle", it is a circle, even if it looks slightly different in the low-res image.
+        - **Identify Key Info**: Just tell me what the topic is and what the main notes/drawings are.
+        - **Tone**: Friendly, professional, and DIRECT. No fluff.
+        
+        Input Data (Structured Reality):
+        ${contentDescription || "No specific objects identified."}
+        
+        Input Data (Visual Verification):
+        Analyze the image to confirm context and spatial arrangement.
+        
+        Output Structure:
+        - SUMMARY OF BOARD
+        - MAIN POINTS (Simple list)
+        - ACTION ITEMS (If any are visible)
+        
+        **IMPORTANT**: No markdown symbols (#, *, etc.). Use ALL CAPS for headers. Use dashes (-) for bullets. 
+        
+        Write the practical summary now:`
+    ];
+
+    // If we have an image, add it to the prompt parts
+    if (boardImage && boardImage.includes('base64,')) {
+      const base64Data = boardImage.split('base64,')[1];
+      promptParts.push({
+        inlineData: {
+          data: base64Data,
+          mimeType: "image/png"
+        }
+      });
+    }
+
+    const result = await model.generateContent(promptParts);
+    const response = await result.response;
+    const summary = response.text();
+
+    console.log(`[AI] Multimodal summary generated successfully`);
+    res.json({ summary });
+
+  } catch (error) {
+    if (error.status === 429 || error.message?.includes('429')) {
+      console.warn("[AI] Rate limit hit");
+      return res.status(429).json({ error: "Rate limit reached. Please wait 30-60 seconds and try again." });
+    }
+    console.error("[AI] Error summarizing board:", error);
+    res.status(500).json({ error: error.message || "Failed to generate summary" });
+  }
+});
+
 
 // =======================
 // 📌 SOCKET.IO LOGIC (Room-based)
@@ -574,35 +674,35 @@ io.on("connection", (socket) => {
 
         // --- ADMIN TRANSFER LOGIC ---
         if (wasCreator && remainingUsers.length > 0) {
-            // Find the new admin: the first user in the remaining list
-            const newAdminData = remainingUsers[0];
-            
-            // Find the socket ID of the new admin
-            const newAdminSocketId = Object.keys(roomData.users).find(
-                (sId) => roomData.users[sId].userId === newAdminData.userId
-            );
+          // Find the new admin: the first user in the remaining list
+          const newAdminData = remainingUsers[0];
 
-            if (newAdminSocketId) {
-                roomData.users[newAdminSocketId].isAdmin = true;
-                roomData.users[newAdminSocketId].hasAccess = true; // New admin always has access
+          // Find the socket ID of the new admin
+          const newAdminSocketId = Object.keys(roomData.users).find(
+            (sId) => roomData.users[sId].userId === newAdminData.userId
+          );
 
-                console.log(`[SlateX] Admin transfer: ${username} (creator) left. ${newAdminData.username} (Socket ${newAdminSocketId}) is new admin.`);
+          if (newAdminSocketId) {
+            roomData.users[newAdminSocketId].isAdmin = true;
+            roomData.users[newAdminSocketId].hasAccess = true; // New admin always has access
 
-                // 1. Notify the new admin client-side
-                io.to(newAdminSocketId).emit("user-permissions", { isAdmin: true, hasAccess: true });
+            console.log(`[SlateX] Admin transfer: ${username} (creator) left. ${newAdminData.username} (Socket ${newAdminSocketId}) is new admin.`);
 
-                // 2. Update the creator in the MongoDB Room document for persistence
-                const Room = require('./models/Room');
-                const mongoose = require('mongoose'); // Require mongoose here
-                const room = await Room.findOne({ roomId: currentRoom });
-                if (room) {
-                    room.creator = new mongoose.Types.ObjectId(newAdminData.userId); // Convert to ObjectId
-                    await room.save();
-                    roomData.creatorId = newAdminData.userId; // Update in-memory creatorId
-                    roomData.creatorUsername = newAdminData.username; // Update in-memory creatorUsername
-                    console.log(`[SlateX] MongoDB Room ${currentRoom} creator updated to ${newAdminData.username}`);
-                }
+            // 1. Notify the new admin client-side
+            io.to(newAdminSocketId).emit("user-permissions", { isAdmin: true, hasAccess: true });
+
+            // 2. Update the creator in the MongoDB Room document for persistence
+            const Room = require('./models/Room');
+            const mongoose = require('mongoose'); // Require mongoose here
+            const room = await Room.findOne({ roomId: currentRoom });
+            if (room) {
+              room.creator = new mongoose.Types.ObjectId(newAdminData.userId); // Convert to ObjectId
+              await room.save();
+              roomData.creatorId = newAdminData.userId; // Update in-memory creatorId
+              roomData.creatorUsername = newAdminData.username; // Update in-memory creatorUsername
+              console.log(`[SlateX] MongoDB Room ${currentRoom} creator updated to ${newAdminData.username}`);
             }
+          }
         }
         // --- END ADMIN TRANSFER LOG ---
 
