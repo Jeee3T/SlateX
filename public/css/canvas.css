@@ -535,10 +535,161 @@ canvas {
     background: rgba(0, 0, 0, 0.05);
 }
 
-.sub-tool.active {
-    background: rgba(66, 98, 255, 0.1);
-    color: var(--miro-blue);
-    font-weight: 600;
+/* ================= TEMPLATE UI ENHANCEMENTS ================= */
+
+.template-header.header-red {
+    background: #ff5c5c !important;
+}
+
+.section-textarea {
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    font-size: 14px;
+    line-height: 1.6;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.section-textarea:focus {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Custom scrollbars for template sections */
+.section-text-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.section-text-container::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+}
+
+body.dark-mode .section-text-container::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Dark theme specific adjustments */
+.section-textarea[style*="background: #252526"] {
+    font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace !important;
+}
+
+/* Section entrance animation */
+.template-section {
+    animation: sectionFadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes sectionFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ================= MEDICAL BOARD ENHANCEMENTS ================= */
+
+.header-medical {
+    background: #fdfdfd !important;
+    border-bottom: 2px solid #0891b2 !important;
+}
+
+.header-finance {
+    background: #fdfdfd !important;
+    border-bottom: 2px solid #16a34a !important;
+}
+
+#medical-icon-shelf {
+    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(8, 145, 178, 0.2) !important;
+    padding: 15px !important;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+#medical-icon-shelf.hidden {
+    opacity: 0 !important;
+    transform: translateX(-50%) translateY(20px) !important;
+    pointer-events: none !important;
+}
+
+.medical-library-toggle:hover {
+    background: #0e7490 !important;
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(8, 145, 178, 0.3);
+}
+
+.medical-library-toggle:active {
+    transform: scale(0.95);
+}
+
+.medical-icon-btn {
+    width: 42px !important;
+    height: 42px !important;
+    color: #64748b !important;
+    padding: 8px !important;
+    border: 1px solid transparent !important;
+    background: transparent !important;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.medical-icon-btn:hover {
+    color: #0891b2 !important;
+    background: rgba(8, 145, 178, 0.05) !important;
+    border-color: rgba(8, 145, 178, 0.1) !important;
+    transform: translateY(-5px) scale(1.1);
+}
+
+.medical-icon-btn svg {
+    width: 100%;
+    height: 100%;
+}
+
+/* Journal/Lined Paper Effect for Medical Notes */
+.template-section[data-section-id="medical-notes"] {
+    background: #fffdf7 !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05) !important;
+    position: relative;
+}
+
+.template-section[data-section-id="medical-notes"]::before {
+    content: '';
+    position: absolute;
+    left: 40px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: rgba(255, 0, 0, 0.1);
+    z-index: 1;
+}
+
+/* Diagram grid background refinement */
+.template-section[data-section-id="medical-diagram"] {
+    background-color: #f8fafc !important;
+    background-image:
+        linear-gradient(rgba(8, 145, 178, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(8, 145, 178, 0.05) 1px, transparent 1px) !important;
+    background-size: 25px 25px !important;
+}
+
+/* Medical stamp styling */
+.medical-icon-stamp {
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+    transition: transform 0.2s;
+}
+
+.medical-icon-stamp:hover {
+    transform: scale(1.1);
+    cursor: grab;
+}
+
+.medical-icon-stamp:active {
+    cursor: grabbing;
 }
 
 /* ================= ZOOM CONTROLS ================= */
@@ -1256,6 +1407,147 @@ body.dark-mode .context-menu .color-grid {
     display: none !important;
 }
 
+/* ================= TEMPLATE TRAY (SIDEBAR) ================= */
+
+.template-tray {
+    position: fixed;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 200px;
+    max-height: 80vh;
+    border-radius: 16px;
+    padding: 20px;
+    z-index: 10001;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    box-shadow: var(--miro-shadow-heavy);
+    animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translate(100%, -50%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translate(0, -50%);
+        opacity: 1;
+    }
+}
+
+.tray-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.tray-header h3 {
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.tray-hint {
+    font-size: 11px;
+    color: #64748b;
+    margin-bottom: 5px;
+}
+
+.tray-items {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+.tray-card {
+    background: white;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    padding: 12px;
+    border-radius: 10px;
+    cursor: grab;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.tray-card:hover {
+    background: #f8fafc;
+    border-color: var(--miro-blue);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(66, 98, 255, 0.1);
+}
+
+.tray-card .icon {
+    font-size: 18px;
+}
+
+.tray-card .name {
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* .template-instance-overlay {
+    Optional distinguishing style
+} */
+
+/* Template Drag Handle */
+.template-drag-handle {
+    position: absolute;
+    top: 10px;
+    /* Moved down to be below the header */
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--miro-navy);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 800;
+    cursor: grab;
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    opacity: 0;
+    /* Hidden by default */
+    pointer-events: none;
+    /* Ignore clicks when hidden */
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Show handle when hovering over the board overlay */
+#template-overlay:hover .template-drag-handle,
+.template-instance-overlay:hover .template-drag-handle {
+    opacity: 0.9 !important;
+    pointer-events: auto;
+}
+
+.template-drag-handle:hover {
+    opacity: 1 !important;
+    background: var(--miro-blue);
+    transform: translateX(-50%) scale(1.05);
+}
+
+.template-drag-handle svg {
+    width: 16px;
+    height: 16px;
+}
+
+.close-btn {
+    background: transparent;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: #64748b;
+}
+
 /* ================= AI LOADER REFINEMENT ================= */
 
 .ai-logo-large {
@@ -1745,7 +2037,6 @@ body.dark-mode .context-menu .color-grid {
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
     transition: all 0.2s;
     line-height: 1;
 }
@@ -1754,6 +2045,199 @@ body.dark-mode .context-menu .color-grid {
     background: rgba(0, 0, 0, 0.05);
     color: var(--miro-navy);
 }
+
+/* --- Kanban Board Themes --- */
+.template-section.kanban-todo {
+    background: #a3bfd9 !important;
+    /* Solid Soft Blue */
+    backdrop-filter: none !important;
+    border: none !important;
+    border-radius: 24px !important;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.05);
+}
+
+.template-section.kanban-progress {
+    background: #fce391 !important;
+    /* Solid Soft Yellow */
+    backdrop-filter: none !important;
+    border: none !important;
+    border-radius: 24px !important;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.05);
+}
+
+.template-section.kanban-done {
+    background: #b5d1ba !important;
+    /* Solid Soft Green */
+    backdrop-filter: none !important;
+    border: none !important;
+    border-radius: 24px !important;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.05);
+}
+
+.template-section.kanban-todo .section-header,
+.template-section.kanban-progress .section-header,
+.template-section.kanban-done .section-header {
+    background: transparent !important;
+    border-bottom: none !important;
+    padding: 20px 25px 5px 25px !important;
+    color: #1e293b;
+    font-weight: 800;
+    font-size: 18px;
+    letter-spacing: -0.03em;
+}
+
+.template-section.kanban-todo .section-label,
+.template-section.kanban-progress .section-label,
+.template-section.kanban-done .section-label {
+    font-size: 20px !important;
+}
+
+/* --- Project Task Cards (Speech Bubble Style) --- */
+.project-task-card {
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s;
+    background: white !important;
+    border: none !important;
+}
+
+.project-task-card:hover {
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12) !important;
+    transform: translateY(-2px);
+}
+
+.task-tail {
+    position: absolute;
+    top: 10px;
+    left: -8px;
+    width: 0;
+    height: 0;
+    border-top: 6px solid transparent;
+    border-bottom: 6px solid transparent;
+    border-right: 8px solid white;
+    filter: drop-shadow(-2px 2px 2px rgba(0, 0, 0, 0.05));
+}
+
+.task-title:focus,
+.task-body:focus {
+    background: rgba(241, 245, 249, 0.5);
+    border-radius: 4px;
+}
+
+.project-add-task-btn:hover {
+    background: rgba(255, 255, 255, 0.6) !important;
+    transform: scale(1.1);
+}
+
+/* --- Medical Board High-Fidelity Themes --- */
+.template-section.medical-diagram {
+    background: #dbeafe !important;
+    /* Digger Solid Clinical Blue */
+    backdrop-filter: none !important;
+    border: 1px solid rgba(8, 145, 178, 0.2) !important;
+    border-radius: 24px !important;
+    box-shadow: 0 4px 32px rgba(0, 0, 0, 0.08);
+    background-image:
+        linear-gradient(rgba(8, 145, 178, 0.15) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(8, 145, 178, 0.15) 1px, transparent 1px) !important;
+    background-size: 25px 25px !important;
+    opacity: 1 !important;
+}
+
+.template-section.medical-notes {
+    background: #ccf2f0 !important;
+    /* Deeper Solid Vibrant Clinical Teal */
+    backdrop-filter: none !important;
+    border: 1px solid rgba(13, 145, 161, 0.15) !important;
+    border-radius: 24px !important;
+    box-shadow: 0 4px 32px rgba(0, 0, 0, 0.08);
+    opacity: 1 !important;
+}
+
+.template-section.medical-diagram .section-header,
+.template-section.medical-notes .section-header {
+    background: rgba(255, 255, 255, 0.4) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+    padding: 20px 25px 5px 25px !important;
+    color: #0c4a6e;
+    font-weight: 800;
+    font-size: 19px;
+    letter-spacing: -0.04em;
+}
+
+/* --- Financial Board High-Fidelity Themes (Match Reference Image) --- */
+.template-section.finance-data {
+    background: #ffffff !important;
+    backdrop-filter: none !important;
+    border: 1px solid rgba(0, 0, 0, 0.05) !important;
+    border-top: 4px solid #3b82f6 !important;
+    border-radius: 24px !important;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.05);
+}
+
+.template-section.finance-calc {
+    background: #ffffff !important;
+    backdrop-filter: none !important;
+    border: 1px solid rgba(0, 0, 0, 0.05) !important;
+    border-top: 4px solid #3b82f6 !important;
+    border-radius: 24px !important;
+    box-shadow: 0 10px 40px rgba(59, 130, 246, 0.15), 0 0 20px rgba(59, 130, 246, 0.1);
+    position: relative;
+    overflow: visible !important;
+    /* Allow the glow pseudo-element to show */
+}
+
+.template-section.finance-calc::after {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60%;
+    height: 12px;
+    background: #3b82f6;
+    filter: blur(15px);
+    opacity: 0.5;
+    pointer-events: none;
+    z-index: -1;
+}
+
+.template-section.finance-summary {
+    background: #ffffff !important;
+    backdrop-filter: none !important;
+    border: 1px solid rgba(0, 0, 0, 0.05) !important;
+    border-top: 4px solid #3b82f6 !important;
+    border-radius: 24px !important;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.05);
+}
+
+.template-section.finance-data .section-header,
+.template-section.finance-calc .section-header,
+.template-section.finance-summary .section-header {
+    background: transparent !important;
+    border-bottom: 2px solid #f1f5f9 !important;
+    padding: 25px 30px 10px 30px !important;
+    color: #0f172a;
+    font-weight: 800;
+    font-size: 20px;
+    letter-spacing: -0.02em;
+    font-family: 'Inter', sans-serif !important;
+}
+
+.template-section.finance-summary .section-text-container {
+    background: linear-gradient(#f1f5f9 1px, transparent 1px) !important;
+    background-size: 100% 32px !important;
+    padding: 20px 30px !important;
+}
+
+/* Financial Stamps */
+.financial-symbol-stamp {
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.financial-symbol-stamp:hover {
+    transform: scale(1.1);
+    color: #15803d !important;
+}
+
 
 .ai-modal-body {
     padding: 24px;

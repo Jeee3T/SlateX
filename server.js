@@ -17,6 +17,13 @@ const { isAuthenticated, redirectIfAuthenticated } = require("./middleware/authM
 // Google AI configuration
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
+
+if (!GOOGLE_API_KEY) {
+  console.error("❌ GOOGLE_API_KEY is missing from environment!");
+} else {
+  console.log(`✅ GOOGLE_API_KEY loaded: ${GOOGLE_API_KEY.substring(0, 4)}...${GOOGLE_API_KEY.substring(GOOGLE_API_KEY.length - 4)}`);
+}
+
 const genAI = new GoogleGenerativeAI(GOOGLE_API_KEY);
 
 const app = express();
@@ -235,8 +242,14 @@ io.on("connection", (socket) => {
               textElements: [],
               stickyNotes: [],
               templateTexts: [],
-              templateTransform: { x: 0, y: 0, scale: 1 },
-              templateKey: null
+              medicalStamps: [],
+              financeStamps: [],
+              financeCards: [],
+              financeFields: {}, // 🆕 Added field tracking
+              projectTasks: [],
+              templateTransform: { x: 96.7, y: 87.9, scale: 1 },
+              templateKey: null,
+              templateInstances: [] // Support for multiple boards
             },
             creatorId: null,
             creatorUsername: null
@@ -456,6 +469,8 @@ io.on("connection", (socket) => {
           textElements: [],
           stickyNotes: [],
           templateTexts: [],
+          medicalStamps: [],
+          projectTasks: [],
           templateTransform: { x: 0, y: 0, scale: 1 },
           templateKey: roomData.boardState.templateKey // Keep template on clear
         };
@@ -535,10 +550,61 @@ io.on("connection", (socket) => {
   // Template text events
   socket.on("template-text-add", (textData) => {
     if (currentRoom) {
-      const roomData = activeRooms.get(currentRoom);
-      if (roomData && roomData.users[socket.id]?.hasAccess) {
-        roomData.boardState.templateTexts.push(textData);
-        socket.to(currentRoom).emit("template-text-added", textData);
+      const room = activeRooms.get(currentRoom);
+      if (room && room.users[socket.id]?.hasAccess) {
+        if (!room.boardState.templateTexts) room.boardState.templateTexts = [];
+        room.boardState.templateTexts.push(textData);
+        socket.to(currentRoom).emit("template-text-added", textData); // Match client listener
+      }
+    }
+  });
+
+  socket.on("medical-stamp-add", (stampData) => {
+    if (currentRoom) {
+      const room = activeRooms.get(currentRoom);
+      if (room && room.users[socket.id]?.hasAccess) {
+        if (!room.boardState.medicalStamps) room.boardState.medicalStamps = [];
+        room.boardState.medicalStamps.push(stampData);
+        socket.to(currentRoom).emit("medical-stamp-sync", stampData);
+      }
+    }
+  });
+
+  socket.on("medical-stamp-move", (stampData) => {
+    if (currentRoom) {
+      const room = activeRooms.get(currentRoom);
+      if (room && room.users[socket.id]?.hasAccess) {
+        const idx = (room.boardState.medicalStamps || []).findIndex(s => s.id === stampData.id);
+        if (idx !== -1) {
+          room.boardState.medicalStamps[idx].x = stampData.x;
+          room.boardState.medicalStamps[idx].y = stampData.y;
+        }
+        socket.to(currentRoom).emit("medical-stamp-moved", stampData);
+      }
+    }
+  });
+
+  socket.on("finance-stamp-add", (stampData) => {
+    if (currentRoom) {
+      const room = activeRooms.get(currentRoom);
+      if (room && room.users[socket.id]?.hasAccess) {
+        if (!room.boardState.financeStamps) room.boardState.financeStamps = [];
+        room.boardState.financeStamps.push(stampData);
+        socket.to(currentRoom).emit("finance-stamp-sync", stampData);
+      }
+    }
+  });
+
+  socket.on("finance-stamp-move", (stampData) => {
+    if (currentRoom) {
+      const room = activeRooms.get(currentRoom);
+      if (room && room.users[socket.id]?.hasAccess) {
+        const idx = (room.boardState.financeStamps || []).findIndex(s => s.id === stampData.id);
+        if (idx !== -1) {
+          room.boardState.financeStamps[idx].x = stampData.x;
+          room.boardState.financeStamps[idx].y = stampData.y;
+        }
+        socket.to(currentRoom).emit("finance-stamp-moved", stampData);
       }
     }
   });
@@ -556,12 +622,75 @@ io.on("connection", (socket) => {
     }
   });
 
+  socket.on("finance-field-update", (fieldData) => {
+    if (currentRoom) {
+      const room = activeRooms.get(currentRoom);
+      if (room && room.users[socket.id]?.hasAccess) {
+        if (!room.boardState.financeFields) room.boardState.financeFields = {};
+        room.boardState.financeFields[fieldData.id] = fieldData.value;
+        socket.to(currentRoom).emit("finance-field-sync", fieldData);
+      }
+    }
+  });
+
   socket.on("template-text-delete", (textId) => {
     if (currentRoom) {
       const roomData = activeRooms.get(currentRoom);
       if (roomData && roomData.users[socket.id]?.isAdmin) {
         roomData.boardState.templateTexts = roomData.boardState.templateTexts.filter(t => t.id !== textId);
         socket.to(currentRoom).emit("template-text-deleted", textId);
+      }
+    }
+  });
+
+  socket.on("finance-card-update", (cardData) => {
+    if (currentRoom) {
+      const roomData = activeRooms.get(currentRoom);
+      if (roomData && roomData.users[socket.id]?.hasAccess) {
+        if (!roomData.boardState.financeCards) roomData.boardState.financeCards = [];
+        const idx = roomData.boardState.financeCards.findIndex(c => c.cardId === cardData.cardId);
+        if (idx !== -1) {
+          roomData.boardState.financeCards[idx] = cardData;
+        } else {
+          roomData.boardState.financeCards.push(cardData);
+        }
+        socket.to(currentRoom).emit("finance-card-sync", cardData);
+      }
+    }
+  });
+
+  socket.on("finance-card-delete", (cardId) => {
+    if (currentRoom) {
+      const roomData = activeRooms.get(currentRoom);
+      if (roomData && roomData.users[socket.id]?.isAdmin) {
+        roomData.boardState.financeCards = (roomData.boardState.financeCards || []).filter(c => c.cardId !== cardId);
+        socket.to(currentRoom).emit("finance-card-deleted", cardId);
+      }
+    }
+  });
+
+  socket.on("project-task-update", (taskData) => {
+    if (currentRoom) {
+      const roomData = activeRooms.get(currentRoom);
+      if (roomData && roomData.users[socket.id]?.hasAccess) {
+        if (!roomData.boardState.projectTasks) roomData.boardState.projectTasks = [];
+        const idx = roomData.boardState.projectTasks.findIndex(t => t.taskId === taskData.taskId);
+        if (idx !== -1) {
+          roomData.boardState.projectTasks[idx] = taskData;
+        } else {
+          roomData.boardState.projectTasks.push(taskData);
+        }
+        socket.to(currentRoom).emit("project-task-sync", taskData);
+      }
+    }
+  });
+
+  socket.on("project-task-delete", (taskId) => {
+    if (currentRoom) {
+      const roomData = activeRooms.get(currentRoom);
+      if (roomData && roomData.users[socket.id]?.isAdmin) {
+        roomData.boardState.projectTasks = (roomData.boardState.projectTasks || []).filter(t => t.taskId !== taskId);
+        socket.to(currentRoom).emit("project-task-deleted", taskId);
       }
     }
   });
@@ -623,25 +752,75 @@ io.on("connection", (socket) => {
   });
 
   // Template selection synchronization
-  socket.on("template-select", (templateKey) => {
+  socket.on("template-select", (data) => {
     if (currentRoom) {
       const roomData = activeRooms.get(currentRoom);
       if (roomData && roomData.users[socket.id]?.isAdmin) {
-        roomData.boardState.templateKey = templateKey;
-        // Optionally clear current template texts if template changed? 
-        // For now, just sync the key
-        io.to(currentRoom).emit("template-selected", templateKey);
+        const key = typeof data === 'string' ? data : data.key;
+        const transform = typeof data === 'string' ? null : data.transform;
+        const isInstance = data.isInstance || false;
+
+        if (isInstance) {
+          if (!roomData.boardState.templateInstances) roomData.boardState.templateInstances = [];
+          const newInstance = { id: 'inst-' + Date.now(), key, transform: transform || { x: 0, y: 0, scale: 1 } };
+          roomData.boardState.templateInstances.push(newInstance);
+          io.to(currentRoom).emit("template-instance-added", newInstance);
+        } else {
+          // Check if domain is changing (templateKey !== key)
+          // If switching main template, clear ALL instances and their texts for a fresh start
+          if (roomData.boardState.templateKey !== key) {
+            console.log(`[SlateX] Domain switch in ${currentRoom}: ${roomData.boardState.templateKey} -> ${key}. Clearing all domain objects.`);
+
+            // 1. Clear standard instances and ALL template texts
+            roomData.boardState.templateInstances = [];
+            roomData.boardState.templateTexts = [];
+
+            // 2. Clear all domain-specific collections
+            roomData.boardState.medicalStamps = [];
+            roomData.boardState.financeStamps = [];
+            roomData.boardState.financeCards = [];
+            roomData.boardState.financeFields = {};
+            roomData.boardState.projectTasks = [];
+
+            // 3. Notify all users to clear their local domain states
+            io.to(currentRoom).emit("clear-instances");
+          }
+
+          roomData.boardState.templateKey = key;
+          roomData.boardState.templateTransform = transform || { x: 0, y: 0, scale: 1 };
+          io.to(currentRoom).emit("template-selected", data);
+        }
+      }
+    }
+  });
+
+  socket.on("template-instance-delete", (instanceId) => {
+    if (currentRoom) {
+      const roomData = activeRooms.get(currentRoom);
+      if (roomData && roomData.users[socket.id]?.isAdmin) {
+        roomData.boardState.templateInstances = (roomData.boardState.templateInstances || []).filter(inst => inst.id !== instanceId);
+        // Also delete associated texts
+        roomData.boardState.templateTexts = (roomData.boardState.templateTexts || []).filter(txt => txt.instanceId !== instanceId);
+        socket.to(currentRoom).emit("template-instance-deleted", instanceId);
       }
     }
   });
 
   // Template transform events
-  socket.on("template-transform-update", (transform) => {
+  socket.on("template-transform-update", (data) => {
     if (currentRoom) {
       const roomData = activeRooms.get(currentRoom);
       if (roomData && roomData.users[socket.id]?.isAdmin) {
-        roomData.boardState.templateTransform = transform;
-        socket.to(currentRoom).emit("template-transform-updated", transform);
+        const { id, transform } = data;
+        if (id) {
+          // Update specific instance
+          const inst = (roomData.boardState.templateInstances || []).find(i => i.id === id);
+          if (inst) inst.transform = transform;
+          socket.to(currentRoom).emit("template-instance-transform-updated", data);
+        } else {
+          roomData.boardState.templateTransform = transform;
+          socket.to(currentRoom).emit("template-transform-updated", transform);
+        }
       }
     }
   });

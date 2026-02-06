@@ -40,13 +40,22 @@ document.addEventListener("DOMContentLoaded", () => {
   const username = user.username || user.email || "Anonymous";
   const userId = user.id || user._id || null;
 
+  // 🔥 CRITICAL: Initialize canvas state globals early so BoardTemplates can use them
+  let scale = 0.91;
+  let offsetX = 88; // MATCH CALIBRATED DEFAULT
+  let offsetY = 80; // MATCH CALIBRATED DEFAULT
+
+  window.canvasScale = scale;
+  window.canvasOffsetX = offsetX;
+  window.canvasOffsetY = offsetY;
+
   /* ================= PERMISSIONS ================= */
   // CRITICAL: Set permissions BEFORE loading templates so template selection works
   window.isAdmin = currentRoom.isOwner || false;
   window.hasAccess = currentRoom.isOwner || false;
   let lastUsersList = []; // Cache list for re-rendering
 
-  // FIRST: Set up BoardTemplates listeners
+  // FIRST: Set up BoardTemplates listeners and load state
   window.BoardTemplates.loadSaved(socket);
 
   // THEN: Join the room (which triggers init-board)
@@ -64,8 +73,8 @@ document.addEventListener("DOMContentLoaded", () => {
       if (toolbar) toolbar.classList.add('hidden');
     }
 
-    // Only admin can see/use template button
-    if (window.isAdmin) {
+    // Users with access can see the board placement button
+    if (window.hasAccess) {
       if (templateBtn) templateBtn.classList.remove('hidden');
     } else {
       if (templateBtn) templateBtn.classList.add('hidden');
@@ -507,9 +516,10 @@ document.addEventListener("DOMContentLoaded", () => {
   let drawing = false;
   let pendingDraw = false;
 
-  let scale = 1;
-  let offsetX = 0;
-  let offsetY = 0;
+
+
+
+
 
   let paths = [];
   let currentPath = [];
@@ -719,14 +729,6 @@ document.addEventListener("DOMContentLoaded", () => {
       px = e.clientX;
       py = e.clientY;
       canvas.style.cursor = 'grabbing';
-
-      // Also move template overlay
-      const templateOverlay = document.getElementById('template-overlay');
-      if (templateOverlay && !window.BoardTemplates.interactMode) {
-        const currentTransform = window.BoardTemplates.templateTransform;
-        window.BoardTemplates.templateStartX = currentTransform.x;
-        window.BoardTemplates.templateStartY = currentTransform.y;
-      }
       return;
     }
     if (tool === "text") {
@@ -781,13 +783,13 @@ document.addEventListener("DOMContentLoaded", () => {
       offsetX += dx;
       offsetY += dy;
 
-      // 🆕 ADD THIS BLOCK: Move template overlay along with canvas
-      const templateOverlay = document.getElementById('template-overlay');
-      if (templateOverlay && window.BoardTemplates && !window.BoardTemplates.interactMode) {
-        // Update template position by the same delta
-        window.BoardTemplates.templateTransform.x += dx;
-        window.BoardTemplates.templateTransform.y += dy;
-        window.BoardTemplates.applyTransform();
+      // Sync with global window for BoardTemplates
+      window.canvasOffsetX = offsetX;
+      window.canvasOffsetY = offsetY;
+
+      // Move ALL templates along with canvas
+      if (window.BoardTemplates) {
+        window.BoardTemplates.panAll(dx, dy);
       }
 
       px = e.clientX;
@@ -842,9 +844,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (tool === "hand") {
       canvas.style.cursor = 'grab';
 
-      // Sync template position with other users
-      if (window.BoardTemplates && window.BoardTemplates.socket && window.BoardTemplates.templateTransform) {
-        window.BoardTemplates.socket.emit('template-transform-update', window.BoardTemplates.templateTransform);
+      // Sync all template positions with other users
+      if (window.BoardTemplates) {
+        window.BoardTemplates.syncAllTransforms();
       }
     }
 
@@ -1364,27 +1366,51 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   zoomInBtn.onclick = () => {
+    const oldScale = scale;
     scale *= 1.1;
+    const cx = window.innerWidth / 2;
+    const cy = window.innerHeight / 2;
+    offsetX = cx - (cx - offsetX) * (scale / oldScale);
+    offsetY = cy - (cy - offsetY) * (scale / oldScale);
+
+    window.canvasScale = scale;
+    window.canvasOffsetX = offsetX;
+    window.canvasOffsetY = offsetY;
     redraw();
     updateAllElementPositions();
+    if (window.BoardTemplates) window.BoardTemplates.updateAllTransforms();
     updateZoomDisplay();
   };
 
   zoomOutBtn.onclick = () => {
+    const oldScale = scale;
     scale /= 1.1;
+    const cx = window.innerWidth / 2;
+    const cy = window.innerHeight / 2;
+    offsetX = cx - (cx - offsetX) * (scale / oldScale);
+    offsetY = cy - (cy - offsetY) * (scale / oldScale);
+
+    window.canvasScale = scale;
+    window.canvasOffsetX = offsetX;
+    window.canvasOffsetY = offsetY;
     redraw();
     updateAllElementPositions();
+    if (window.BoardTemplates) window.BoardTemplates.updateAllTransforms();
     updateZoomDisplay();
   };
 
   const resetViewBtn = document.getElementById("reset-view");
   if (resetViewBtn) {
     resetViewBtn.onclick = () => {
-      scale = 1;
+      scale = 0.91;
       offsetX = 0;
       offsetY = 0;
+      window.canvasScale = scale;
+      window.canvasOffsetX = offsetX;
+      window.canvasOffsetY = offsetY;
       redraw();
       updateAllElementPositions();
+      if (window.BoardTemplates) window.BoardTemplates.updateAllTransforms();
       updateZoomDisplay();
     };
   }
@@ -1395,6 +1421,34 @@ document.addEventListener("DOMContentLoaded", () => {
     a.href = canvas.toDataURL();
     a.click();
   };
+
+  // Natural Wheel Zoom
+  window.addEventListener("wheel", (e) => {
+    // Only zoom if not interacting with a text/input field
+    if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
+
+    e.preventDefault();
+    const oldScale = scale;
+    // Smoother zoom factor for wheel
+    const zoomFactor = e.deltaY < 0 ? 1.05 : 0.95;
+    scale *= zoomFactor;
+
+    // Focus on cursor position
+    const cx = e.clientX;
+    const cy = e.clientY;
+
+    offsetX = cx - (cx - offsetX) * (scale / oldScale);
+    offsetY = cy - (cy - offsetY) * (scale / oldScale);
+
+    window.canvasScale = scale;
+    window.canvasOffsetX = offsetX;
+    window.canvasOffsetY = offsetY;
+
+    redraw();
+    updateAllElementPositions();
+    if (window.BoardTemplates) window.BoardTemplates.updateAllTransforms();
+    updateZoomDisplay();
+  }, { passive: false });
 
   /* ================= MENUS ================= */
   document.querySelectorAll("[data-draw]").forEach(b => {
@@ -1525,7 +1579,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const zoomLevelSpan = document.getElementById("zoom-level");
   function updateZoomDisplay() {
     if (zoomLevelSpan) {
-      zoomLevelSpan.innerText = Math.round(scale * 100) + "%";
+      zoomLevelSpan.innerText = Math.round((scale / 0.91) * 100) + "%";
     }
   }
 
