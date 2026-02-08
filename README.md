@@ -17,3 +17,5 @@ Completed tasks:
 12. Chatbox included
 13. Room Admin authorization optimized
 14. lag fixes while drawing in canvas
+15. Added board summarization feature
+    
