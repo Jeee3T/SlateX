@@ -73,8 +73,8 @@ document.addEventListener("DOMContentLoaded", () => {
       if (toolbar) toolbar.classList.add('hidden');
     }
 
-    // Users with access can see the board placement button
-    if (window.hasAccess) {
+    // ONLY Admins can see the board template switcher button
+    if (window.isAdmin) {
       if (templateBtn) templateBtn.classList.remove('hidden');
     } else {
       if (templateBtn) templateBtn.classList.add('hidden');
@@ -374,64 +374,77 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   function renderUserList(users) {
+    if (!users || !Array.isArray(users)) return;
     lastUsersList = users; // Cache for re-renders
-    const avatarContainer = document.getElementById("avatars-list");
-    if (!avatarContainer) return;
-    avatarContainer.innerHTML = "";
 
-    // Update the full participant panel if it exists
+    const avatarContainer = document.getElementById("avatars-list");
     const fullList = document.getElementById("full-participant-list");
+
+    if (avatarContainer) {
+      avatarContainer.innerHTML = "";
+      // Show up to 4 avatars in the header
+      users.slice(0, 4).forEach(u => {
+        const uName = u.username || "Anonymous";
+        const initials = uName.split(" ")
+          .filter(n => n.length > 0)
+          .map(n => n[0])
+          .join("")
+          .toUpperCase()
+          .substring(0, 2) || "?";
+
+        const div = document.createElement("div");
+        div.className = "participant-avatar";
+        div.innerText = initials;
+        div.title = uName;
+        // Professional Miro-like background colors
+        const colors = ['#2ed573', '#1e90ff', '#ffa502', '#ff4757', '#747d8c', '#5352ed'];
+        const colorIndex = Math.abs(uName.split("").reduce((a, b) => (a << 5) - a + b.charCodeAt(0), 0) % colors.length);
+        div.style.background = colors[colorIndex];
+        avatarContainer.appendChild(div);
+      });
+
+      if (users.length > 4) {
+        const more = document.createElement("div");
+        more.className = "participant-avatar more";
+        more.innerText = `+${users.length - 4}`;
+        more.style.background = "#f3f4f6";
+        more.style.color = "#666";
+        avatarContainer.appendChild(more);
+      }
+    }
+
     if (fullList) {
       fullList.innerHTML = users.map(u => {
+        const uName = u.username || "Anonymous";
+        const initials = uName[0]?.toUpperCase() || "?";
         const isTargetAdmin = u.isAdmin;
         const targetHasAccess = u.hasAccess;
-        const isMe = u.username === username;
+        const isMe = uName === username;
 
         let actions = '';
         if (window.isAdmin && !isMe) {
           actions = `
             <div class="participant-actions">
               ${!targetHasAccess ?
-              `<button class="action-btn access-btn" onclick="giveAccess('${u.username}')">Grant Access</button>` :
-              `<button class="action-btn revoke-btn" onclick="revokeAccess('${u.username}')" style="background:#ef4444; color:white;">Revoke Access</button>`
+              `<button class="action-btn access-btn" onclick="giveAccess('${uName}')">Grant Access</button>` :
+              `<button class="action-btn revoke-btn" onclick="revokeAccess('${uName}')">Revoke Access</button>`
             }
-              <button class="action-btn kick-btn" onclick="kickUser('${u.username}')">Kick</button>
+              <button class="action-btn kick-btn" onclick="kickUser('${uName}')">Kick</button>
             </div>
           `;
         }
 
         return `
           <div class="participant-item">
-            <div class="participant-avatar">${u.username[0].toUpperCase()}</div>
+            <div class="participant-avatar">${initials}</div>
             <div class="participant-info">
-              <span class="participant-name" style="font-weight:600;">${u.username} ${isTargetAdmin ? '<span class="admin-badge">Admin</span>' : ''} ${isMe ? '(You)' : ''}</span>
+              <span class="participant-name" style="font-weight:600;">${uName} ${isTargetAdmin ? '<span class="admin-badge">Admin</span>' : ''} ${isMe ? '(You)' : ''}</span>
               ${!targetHasAccess ? '<span class="status-badge error">No Access</span>' : '<span class="status-badge success">Has Access</span>'}
             </div>
             ${actions}
           </div>
         `;
       }).join('');
-    }
-
-    // Show up to 4 avatars, then a count
-    users.slice(0, 4).forEach(u => {
-      const uName = u.username;
-      const initials = uName.split(" ").map(n => n[0]).join("").toUpperCase().substring(0, 2);
-      const div = document.createElement("div");
-      div.className = "participant-avatar";
-      div.innerText = initials;
-      div.title = uName;
-      // Random Miro-like background colors for avatars
-      const colors = ['#FF7043', '#42A5F5', '#66BB6A', '#FFA726', '#AB47BC'];
-      div.style.background = colors[Math.floor(Math.random() * colors.length)];
-      avatarContainer.appendChild(div);
-    });
-
-    if (users.length > 4) {
-      const more = document.createElement("div");
-      more.className = "participant-avatar more";
-      more.innerText = `+${users.length - 4}`;
-      avatarContainer.appendChild(more);
     }
   }
 
@@ -1478,15 +1491,7 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   }
 
-  /* ================= EXIT ================= */
-  if (exitBtn) {
-    exitBtn.onclick = () => {
-      if (confirm("Are you sure you want to leave this board?")) {
-        localStorage.removeItem('currentRoom');
-        window.location.href = "/room";
-      }
-    };
-  }
+  // Exit button logic moved to line 2260 for consolidated save-and-exit handling
 
   sizeSlider.oninput = () => {
     brushSize = parseInt(sizeSlider.value);
@@ -2278,10 +2283,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const currentRoom = JSON.parse(localStorage.getItem('currentRoom') || '{}');
 
-      if (true) { // Temporary: Skip confirm dialog
+      if (confirm("Are you sure you want to leave this board?")) {
         // Show loading state
         exitBtn.disabled = true;
-        exitBtn.innerText = 'Saving...';
+        exitBtn.title = 'Saving...';
+        exitBtn.style.opacity = '0.7';
 
         // Save room state (only if owner)
         console.log('[DEBUG] Exit button clicked, about to save...');
@@ -2377,8 +2383,25 @@ document.addEventListener("DOMContentLoaded", () => {
     summarizeBtn.addEventListener('click', () => {
       aiDropdown.classList.add('hidden');
       aiModal.classList.remove('hidden');
+
+      // Reset UI to initial state
+      const resultsDivider = document.getElementById('results-divider');
+      const chatSection = document.getElementById('ai-chat-section');
+      const chatHistory = document.getElementById('ai-chat-history');
+
       if (summaryContainer) summaryContainer.classList.add('hidden');
-      if (summaryText) summaryText.innerText = '';
+      if (resultsDivider) resultsDivider.classList.add('hidden');
+      if (chatSection) chatSection.classList.add('hidden');
+      if (chatHistory) {
+        chatHistory.innerHTML = '<div class="chat-bubble ai-bubble fade-in">Hello! I\'ve analyzed your board. Do you have any specific questions about these insights?</div>';
+      }
+
+      const summarizeSubmit = document.getElementById('summarize-submit');
+      if (summarizeSubmit) {
+        summarizeSubmit.classList.remove('hidden');
+        summarizeSubmit.disabled = false;
+        summarizeSubmit.querySelector('.btn-text').innerText = 'Generate Insights';
+      }
     });
   }
 
@@ -2399,18 +2422,20 @@ document.addEventListener("DOMContentLoaded", () => {
   // Generate Summary
   if (summarizeSubmit) {
     summarizeSubmit.addEventListener('click', async () => {
-      const loader = document.getElementById('ai-loading-container');
+      const resultsDivider = document.getElementById('results-divider');
       const summaryContainer = document.getElementById('summary-container');
-      const summaryText = document.getElementById('summary-text');
+      const summarizeSubmit = document.getElementById('summarize-submit');
+      const btnText = summarizeSubmit.querySelector('.btn-text');
 
-      // Show loading state
-      if (aiModal) aiModal.classList.add('hidden'); // Hide the trigger modal
-      if (loader) loader.classList.remove('hidden'); // Show full-screen blur loader
-      if (summaryContainer) summaryContainer.classList.add('hidden');
+      // Show loading state on button
+      summarizeSubmit.disabled = true;
+      if (btnText) btnText.innerText = 'Synthesizing...';
 
       try {
-        // Capture canvas snapshot with white background and ALL elements across the entire board
-        // This calculates a bounding box of everything so the AI sees the whole project
+        // Collect board data
+        const currentRoomData = JSON.parse(localStorage.getItem('currentRoom') || '{}');
+
+        // Helper to get board snapshot
         function getBoardSnapshot() {
           const allElements = [
             ...paths.flatMap(p => p.points),
@@ -2421,7 +2446,6 @@ document.addEventListener("DOMContentLoaded", () => {
           ];
 
           if (allElements.length === 0) {
-            // Fallback for empty board
             const emptyCanvas = document.createElement('canvas');
             emptyCanvas.width = 100; emptyCanvas.height = 100;
             const eCtx = emptyCanvas.getContext('2d');
@@ -2438,8 +2462,6 @@ document.addEventListener("DOMContentLoaded", () => {
           const padding = 100;
           const boardW = (maxX - minX) + padding * 2;
           const boardH = (maxY - minY) + padding * 2;
-
-          // Limit canvas size to avoid browser crash (max 4k for safety)
           const limit = 4096;
           const scaleDown = Math.min(1, limit / boardW, limit / boardH);
 
@@ -2448,19 +2470,14 @@ document.addEventListener("DOMContentLoaded", () => {
           tempCanvas.height = boardH * scaleDown;
           const tCtx = tempCanvas.getContext('2d');
 
-          // 1. Fill with white background
           tCtx.fillStyle = '#ffffff';
           tCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-
-          // 2. Set transform to center all elements in the snapshot
           tCtx.scale(scaleDown, scaleDown);
           tCtx.translate(-minX + padding, -minY + padding);
 
-          // 3. Draw all pen strokes
           paths.forEach(p => drawStroke(p, tCtx));
           Object.values(activeRemotePaths).forEach(p => drawStroke(p, tCtx));
 
-          // 4. Draw elements
           tCtx.textAlign = 'left';
           tCtx.textBaseline = 'top';
 
@@ -2505,67 +2522,205 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         const boardImage = getBoardSnapshot();
-
-        // Collect board data
-        const currentRoom = JSON.parse(localStorage.getItem('currentRoom') || '{}');
         const boardData = {
           textElements: textElements || [],
           stickyNotes: stickyNotes || [],
           shapes: shapes || [],
-          templateName: currentRoom.template || null
+          templateName: currentRoomData.template || null
         };
 
         const response = await fetch('/api/summarize', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ boardData, boardImage })
         });
 
         const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Failed to generate insights');
 
-        if (!response.ok) {
-          throw new Error(data.error || 'Failed to generate summary');
+        // --- Structured Parsing Logic ---
+        const text = data.summary;
+
+        function extractSection(sectionName) {
+          const regex = new RegExp(`\\[${sectionName}\\]([\\s\\S]*?)(?=\\[|$)`, 'i');
+          const match = text.match(regex);
+          return match ? match[1].trim() : '';
         }
 
-        // Show summary incentered modal
-        if (summaryText) summaryText.innerText = data.summary;
-        if (aiModal) aiModal.classList.remove('hidden'); // Re-show modal with result
-        if (summaryContainer) summaryContainer.classList.remove('hidden');
+        const execSummary = extractSection('EXECUTIVE SUMMARY');
+        const keyInsightsText = extractSection('KEY INSIGHTS');
+        const metadataText = extractSection('METADATA');
+        const secondaryInsights = extractSection('SECONDARY INSIGHTS');
+
+        // 1. Populate Executive Summary
+        const execSummaryEl = document.getElementById('exec-summary-text');
+        if (execSummaryEl) execSummaryEl.innerText = execSummary || 'Analysis complete. No critical summary generated.';
+
+        // 2. Populate Key Insights
+        const keyInsightsList = document.getElementById('key-insights-list');
+        if (keyInsightsList) {
+          keyInsightsList.innerHTML = '';
+          const points = keyInsightsText.split('\n').filter(p => p.trim().startsWith('-'));
+          if (points.length > 0) {
+            points.forEach(p => {
+              const li = document.createElement('li');
+              li.innerHTML = `<span class="bullet-arrow"></span> ${p.replace('-', '').trim()}`;
+              keyInsightsList.appendChild(li);
+            });
+          } else {
+            keyInsightsList.innerHTML = '<li><span class="bullet-dot"></span> No specific insights identified.</li>';
+          }
+        }
+
+        // 3. Populate Metadata (Dots)
+        const metadataLines = metadataText.split('\n');
+        function setMetric(name, value) {
+          const cards = document.querySelectorAll('.metric-item');
+          cards.forEach(card => {
+            if (card.querySelector('span').innerText.toLowerCase().includes(name.toLowerCase())) {
+              const dots = card.querySelectorAll('.dot');
+              const score = parseInt(value) || 0;
+              dots.forEach((dot, idx) => {
+                if (idx < score) dot.classList.add('active');
+                else dot.classList.remove('active');
+              });
+            }
+          });
+        }
+
+        metadataLines.forEach(line => {
+          const [key, val] = line.split(':').map(s => s.trim());
+          if (key && val) setMetric(key, val);
+        });
+
+        // 4. Populate Secondary Insights
+        const secondaryInsightsEl = document.getElementById('insights-secondary-text');
+        if (secondaryInsightsEl) secondaryInsightsEl.innerText = secondaryInsights || 'Visual hierarchy remains balanced.';
+
+        // Show Results
+        if (resultsDivider) resultsDivider.classList.remove('hidden');
+        if (summaryContainer) {
+          summaryContainer.classList.remove('hidden');
+          // Trigger animations by reflowing
+          summaryContainer.style.display = 'none';
+          summaryContainer.offsetHeight;
+          summaryContainer.style.display = 'grid';
+        }
+
+        if (summarizeSubmit) {
+          summarizeSubmit.classList.add('hidden'); // Hide CTA after success
+        }
+
+        // --- NEW: Show AI Chat Section ---
+        const chatSection = document.getElementById('ai-chat-section');
+        if (chatSection) {
+          chatSection.classList.remove('hidden');
+          chatSection.classList.add('fade-in');
+        }
 
       } catch (error) {
         console.error('Error generating summary:', error);
-        if (error.message.includes('Rate limit') || error.message.includes('429')) {
-          alert('🕒 Slow down! You have reached your Gemini API limit for now. Please wait about 30-60 seconds and try again.');
-        } else {
-          alert(error.message || 'Failed to generate summary. Please try again.');
+        alert(error.message || 'Failed to generate insights. Please try again.');
+        if (summarizeSubmit) {
+          summarizeSubmit.disabled = false;
+          if (btnText) btnText.innerText = 'Retry Generation';
         }
-      } finally {
-        // Hide loading state
-        const loader = document.getElementById('ai-loading-container');
-        if (loader) loader.classList.add('hidden');
-        summarizeSubmit.classList.remove('hidden');
-        summarizeSubmit.disabled = false;
       }
     });
   }
 
-  // Copy summary to clipboard
+  /* --- AI INSIGHT CHAT LOGIC --- */
+  const aiChatInput = document.getElementById('ai-chat-input');
+  const aiChatSend = document.getElementById('ai-chat-send');
+  const aiChatHistory = document.getElementById('ai-chat-history');
+
+  async function sendChatMessage() {
+    const question = aiChatInput.value.trim();
+    if (!question) return;
+
+    // Add user bubble
+    const userBubble = document.createElement('div');
+    userBubble.className = 'chat-bubble user-bubble fade-in';
+    userBubble.innerText = question;
+    aiChatHistory.appendChild(userBubble);
+    aiChatInput.value = '';
+    aiChatHistory.scrollTop = aiChatHistory.scrollHeight;
+
+    // Add typing indicator
+    const typingIndicator = document.createElement('div');
+    typingIndicator.className = 'typing-indicator fade-in';
+    typingIndicator.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+    aiChatHistory.appendChild(typingIndicator);
+    aiChatHistory.scrollTop = aiChatHistory.scrollHeight;
+
+    try {
+      const summary = document.getElementById('exec-summary-text')?.innerText || '';
+      const currentRoomData = JSON.parse(localStorage.getItem('currentRoom') || '{}');
+      const boardData = {
+        textElements: textElements || [],
+        stickyNotes: stickyNotes || [],
+        shapes: shapes || [],
+        templateName: currentRoomData.template || null
+      };
+
+      console.log(`[AI Chat] Sending request to /api/ai-chat with question: ${question}`);
+      const response = await fetch('/api/ai-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question, summary, boardData })
+      });
+
+      console.log(`[AI Chat] Received response status: ${response.status}`);
+      const data = await response.json();
+      typingIndicator.remove();
+
+      if (response.ok) {
+        console.log(`[AI Chat] Success: AI responded`);
+        const aiBubble = document.createElement('div');
+        aiBubble.className = 'chat-bubble ai-bubble fade-in';
+        aiBubble.innerText = data.answer;
+        aiChatHistory.appendChild(aiBubble);
+      } else {
+        console.error(`[AI Chat] Server error: ${data.error}`);
+        throw new Error(data.error || 'Failed to get answer');
+      }
+    } catch (error) {
+      console.error(`[AI Chat] Frontend Catch:`, error);
+      typingIndicator.remove();
+      const errorBubble = document.createElement('div');
+      errorBubble.className = 'chat-bubble ai-bubble fade-in';
+      errorBubble.style.background = 'rgba(239, 68, 68, 0.1)';
+      errorBubble.style.borderColor = 'rgba(239, 68, 68, 0.2)';
+      errorBubble.innerText = `Error: ${error.message || "Failed to get answer"}`;
+      aiChatHistory.appendChild(errorBubble);
+    }
+    aiChatHistory.scrollTop = aiChatHistory.scrollHeight;
+  }
+
+  if (aiChatSend) {
+    aiChatSend.addEventListener('click', sendChatMessage);
+  }
+
+  if (aiChatInput) {
+    aiChatInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') sendChatMessage();
+    });
+  }
+
+  // Copy insights to clipboard
   if (copySummaryBtn) {
     copySummaryBtn.addEventListener('click', () => {
-      const text = summaryText?.innerText;
-      if (text) {
-        navigator.clipboard.writeText(text).then(() => {
-          const originalText = copySummaryBtn.innerText;
-          copySummaryBtn.innerText = 'Copied!';
-          setTimeout(() => {
-            copySummaryBtn.innerText = originalText;
-          }, 2000);
-        });
-      }
+      const exec = document.getElementById('exec-summary-text')?.innerText || '';
+      const insights = Array.from(document.querySelectorAll('#key-insights-list li')).map(li => li.innerText).join('\n');
+      const fullText = `AI INSIGHTS SUMMARY\n\n${exec}\n\nKEY INSIGHTS:\n${insights}`;
+
+      navigator.clipboard.writeText(fullText).then(() => {
+        const originalContent = copySummaryBtn.innerHTML;
+        copySummaryBtn.innerHTML = '<span>Insights Copied!</span>';
+        setTimeout(() => copySummaryBtn.innerHTML = originalContent, 2000);
+      });
     });
   }
 
-
 });
+

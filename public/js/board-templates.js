@@ -169,6 +169,14 @@ const BoardTemplates = {
         this.currentTemplate = data.templateKey;
         this.applyTemplate(this.templates[data.templateKey]);
       }
+      // NEW FIX: If no template active on server but user (admin) has a pending selection
+      else if (window.isAdmin) {
+        const pendingTemplate = localStorage.getItem('boardTemplate');
+        if (pendingTemplate && this.templates[pendingTemplate]) {
+          console.log('[SlateX] Applying pending template for admin:', pendingTemplate);
+          this.selectTemplate(pendingTemplate);
+        }
+      }
 
       // Restore sub-instances
       this.activeInstances.forEach(inst => {
@@ -256,7 +264,11 @@ const BoardTemplates = {
 
     this.socket.on("clear-instances", () => {
       console.log('[SlateX] Domain clearing - removing all template instances');
-      document.querySelectorAll('.template-overlay').forEach(overlay => overlay.remove());
+      document.querySelectorAll('.template-instance-overlay').forEach(overlay => overlay.remove());
+      // Also remove main template overlay if one exists
+      const mainOverlay = document.getElementById('template-overlay');
+      if (mainOverlay) mainOverlay.remove();
+
       this.activeInstances = [];
       this.templateTexts = [];
       // Also trigger the general cleanup
@@ -540,6 +552,12 @@ const BoardTemplates = {
   },
 
   selectTemplate(key, customTransform = null, isInstance = false) {
+    // 🔥 SECURITY: Only admins are allowed to trigger main template changes or instances
+    if (!window.isAdmin) {
+      console.warn("[Access Control] Non-admin attempted to change template.");
+      return;
+    }
+
     console.log("Admin selecting template:", key, "instance:", isInstance);
 
     const s = window.canvasScale || 1;

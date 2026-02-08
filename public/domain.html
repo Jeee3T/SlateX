@@ -185,6 +185,17 @@
 
       // Handle click on card or button
       const selectDomain = () => {
+        // Add selection visual feedback immediately
+        card.style.transform = 'scale(0.98)';
+        card.style.boxShadow = '0 0 20px rgba(59, 130, 246, 0.5)';
+        card.style.borderColor = '#3b82f6';
+        
+        const btn = card.querySelector('.select-btn');
+        if (btn) {
+          btn.innerText = 'Redirecting...';
+          btn.style.background = '#3b82f6';
+        }
+
         // Save selection to localStorage
         localStorage.setItem('boardTemplate', template);
 
@@ -197,14 +208,10 @@
           console.log('[DEBUG] Preserved currentRoom with template:', currentRoom);
         }
 
-        // Add selection animation
-        card.style.transform = 'scale(0.95)';
-        card.style.opacity = '0.7';
-
-        // Redirect to canvas
+        // Redirect to canvas after a short delay for visual feedback
         setTimeout(() => {
           window.location.href = '/canvas';
-        }, 200);
+        }, 400);
       };
 
       btn.addEventListener('click', (e) => {

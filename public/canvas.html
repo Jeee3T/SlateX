@@ -24,7 +24,13 @@
           <span id="board-name" title="Click to rename" spellcheck="false">Untitled Board</span>
           <span class="edit-icon" id="rename-icon">✏️</span>
         </div>
-        <button id="info-btn" title="Room Information" class="header-icon-btn">ℹ️</button>
+        <button id="info-btn" title="Room Information" class="header-icon-btn">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="11" fill="black" />
+            <circle cx="12" cy="7" r="1.8" fill="white" />
+            <rect x="10.2" y="10.5" width="3.6" height="7.5" rx="1.8" fill="white" />
+          </svg>
+        </button>
         <button id="home-btn" title="Go to Home" class="header-icon-btn">🏠</button>
       </div>
     </div>
@@ -43,16 +49,33 @@
           <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
         </svg>
       </button>
-      <div class="header-participants" title="Who's joined"
-        style="display:flex; align-items:center; gap:8px; cursor:pointer;" id="participants-avatars">
-        <span
-          style="font-size: 11px; font-weight: 700; color: var(--miro-navy); background: rgba(0,0,0,0.05); padding: 4px 8px; border-radius: 4px;">Who's
-          Online</span>
-        <div id="avatars-list" style="display:flex; align-items:center; gap: 4px;">
+      <div class="header-participants" title="Who's joined" id="participants-avatars">
+        <span class="online-label">Who's Online</span>
+        <div id="avatars-list" class="avatars-list">
           <!-- Avatars will be injected here -->
         </div>
       </div>
-      <button id="ai-btn" class="header-action-btn" title="AI Assistant">✨ AI</button>
+      <button id="ai-btn" class="header-action-btn icon-only" title="Insights Assistant">
+        <svg class="header-ai-icon-cluster" viewBox="0 0 24 24" width="28" height="28" fill="none">
+          <!-- Main central sparkle -->
+          <path d="M12 4C12 4 13 10 19 12C13 14 12 20 12 20C12 20 11 14 5 12C11 10 12 4 12 4Z"
+            fill="url(#sparkle-grad-main)" />
+          <!-- Small top-left sparkle -->
+          <path d="M6 3C6 3 6.5 5 8.5 6C6.5 7 6 9 6 9C6 9 5.5 7 3.5 6C5.5 5 6 3 6 3Z" fill="#a78bfa" opacity="0.8" />
+          <!-- Small bottom-right sparkle -->
+          <path d="M18 15C18 15 18.5 17 20.5 18C18.5 19 18 21 18 21C18 21 17.5 19 15.5 18C17.5 17 18 15 18 15Z"
+            fill="#7c3aed" opacity="0.6" />
+          <!-- Tiny accent dot/blob -->
+          <circle cx="5" cy="18" r="1.5" fill="#a78bfa" opacity="0.4" />
+
+          <defs>
+            <linearGradient id="sparkle-grad-main" x1="5" y1="4" x2="19" y2="20" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#a78bfa" />
+              <stop offset="100%" stop-color="#7c3aed" />
+            </linearGradient>
+          </defs>
+        </svg>
+      </button>
       <!-- AI Dropdown Menu -->
       <div id="ai-dropdown" class="ai-dropdown hidden">
         <button class="ai-dropdown-item" id="summarize-btn">
@@ -60,22 +83,36 @@
           <span>Summarize Board</span>
         </button>
       </div>
-      <button id="exit-btn" class="header-action-btn"
-        style="color: #ef4444; border-color: rgba(239, 68, 68, 0.2); background: rgba(239, 68, 68, 0.05);">Exit
-        Board</button>
-      <button id="share-btn" class="header-primary-btn">Share</button>
+      <button id="exit-btn" class="button-exit" title="Exit Board">
+        <div class="icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
+        </div>
+      </button>
+      <button id="share-btn" class="button-share" title="Share Board">
+        <div class="icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+            <polyline points="16 6 12 2 8 6" />
+            <line x1="12" y1="2" x2="12" y2="15" />
+          </svg>
+        </div>
+      </button>
       <div id="chat-toggle-wrapper">
-        <button id="chat-toggle" class="chat-pill-btn" title="Open Chat">
-          <span class="icon">
+        <button id="chat-toggle" class="button-chat" title="Open Chat">
+          <div class="icon">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
-              class="modern-chat-icon">
+              stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
             </svg>
-          </span>
-          <span class="text">Chat</span>
+          </div>
+          <span id="chat-badge" class="chat-badge hidden">0</span>
         </button>
-        <span id="chat-badge" class="chat-badge" style="display: none;">0</span>
       </div>
 
       <!-- Participant List Panel -->
@@ -540,29 +577,182 @@
   </div>
 
 
-  <!-- AI Summarization Modal -->
+  <!-- AI Insights Modal -->
   <div id="ai-summary-modal" class="ai-modal hidden">
     <div class="ai-modal-overlay"></div>
-    <div class="ai-modal-content glass">
-      <div class="ai-modal-header">
-        <h3>✨ AI Board Summary</h3>
-        <button id="close-ai-modal" class="ai-modal-close">×</button>
-      </div>
-      <div class="ai-modal-body">
-        <p class="ai-modal-intro">Instant insights at your fingertips. Our AI synthesizes your board into high-tier
-          takeaways in seconds. No fluff, just pure signal.</p>
-        <button id="summarize-submit" class="ai-generate-btn">
-          <span class="btn-text">Generate Alpha Summary</span>
-        </button>
-
-        <div id="summary-container" class="hidden">
-          <div id="summary-text"></div>
-          <button id="copy-summary-btn" class="copy-btn">
-            <span>📋 Copy to Clipboard</span>
+    <div class="ai-modal-content glassmorphism">
+      <div class="ai-header">
+        <div class="ai-header-left">
+          <div class="ai-logo-anim">
+            <svg viewBox="0 0 40 40" class="ai-sparkle">
+              <path d="M20 5 L22 15 L32 17 L22 19 L20 29 L18 19 L8 17 L18 15 Z" fill="currentColor" />
+              <circle cx="20" cy="20" r="4" fill="white" />
+            </svg>
+          </div>
+          <div class="ai-title-group">
+            <h3>AI Insights</h3>
+            <span class="ai-subtitle">Sub-Board Intelligence</span>
+          </div>
+        </div>
+        <div class="ai-header-actions">
+          <button class="ai-action-btn"><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor"
+              stroke-width="2" fill="none">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M12 8v4l3 3"></path>
+            </svg></button>
+          <button id="close-ai-modal" class="ai-close-btn">
+            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2.5" fill="none">
+              <path d="M18 6L6 18M6 6l12 12"></path>
+            </svg>
           </button>
         </div>
       </div>
+
+      <div class="ai-body">
+        <h2 class="ai-hero-text">Synthesizing visual thinking into actionable insights</h2>
+
+        <div class="ai-controls">
+          <button id="summarize-submit" class="ai-generate-btn premium-gradient">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+            <span class="btn-text">Generate Insights</span>
+          </button>
+
+          <div class="ai-status-indicators">
+            <div class="status-item">
+              <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none">
+                <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
+              </svg>
+              <span>Loading</span>
+            </div>
+            <div class="status-item">
+              <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none">
+                <path d="M9 11l3 3L22 4"></path>
+                <path d="M21 12a9 9 0 1 1-9-9c4.569 0 8.32 3.42 8.941 8"></path>
+              </svg>
+              <span>Elevation</span>
+            </div>
+          </div>
+        </div>
+
+        <div id="results-divider" class="ai-divider hidden">
+          <div class="divider-line"></div>
+          <span class="divider-text">RESULTS DISPLAY SECTION (Collapsed until generated)</span>
+          <div class="divider-glow"></div>
+        </div>
+
+        <div id="summary-container" class="ai-results-grid hidden">
+          <!-- Card A: Executive Summary -->
+          <div class="ai-card glass-card fade-in delay-1">
+            <div class="card-tag">A. Executive Summary Card</div>
+            <p id="exec-summary-text" class="card-content">The core card contains insights to evaluate and generating
+              the next light.</p>
+            <div class="card-progress-bar"></div>
+          </div>
+
+          <!-- Card B: Key Insights -->
+          <div class="ai-card glass-card fade-in delay-2">
+            <div class="card-tag">Key Insights</div>
+            <ul id="key-insights-list" class="smart-bullets">
+              <li><span class="bullet-arrow"></span> Smart bullets</li>
+              <li><span class="bullet-dot"></span> Information markers</li>
+            </ul>
+          </div>
+
+          <!-- Card C: Content Analysis (Metrics) -->
+          <div class="ai-card glass-card metrics-card fade-in delay-3">
+            <div class="metric-item">
+              <span>Content Type</span>
+              <div class="metric-dots"><span class="dot active"></span><span class="dot"></span><span
+                  class="dot"></span><span class="dot"></span></div>
+            </div>
+            <div class="metric-item">
+              <span>Complexity Level</span>
+              <div class="metric-dots"><span class="dot active"></span><span class="dot active"></span><span
+                  class="dot active"></span><span class="dot"></span></div>
+            </div>
+            <div class="metric-item">
+              <span>Information Density</span>
+              <div class="metric-dots"><span class="dot active"></span><span class="dot active"></span><span
+                  class="dot"></span><span class="dot"></span></div>
+            </div>
+            <div class="metric-item">
+              <span>Signal vs Noise</span>
+              <div class="metric-dots"><span class="dot active"></span><span class="dot active"></span><span
+                  class="dot active"></span><span class="dot active"></span></div>
+            </div>
+          </div>
+
+          <!-- Card D: Insights -->
+          <div class="ai-card glass-card fade-in delay-4">
+            <div class="card-tag">B. Insights</div>
+            <p id="insights-secondary-text" class="card-content">Outcome session analysis on balance and assets.</p>
+          </div>
+
+          <!-- Card E: Thoughts -->
+          <div class="ai-card glass-card fade-in delay-5">
+            <div class="card-tag">Thoughts</div>
+            <div class="thought-bubbles">
+              <span class="thought-icon minus">-</span>
+              <span class="thought-icon pipe">|</span>
+              <span class="thought-icon square">□</span>
+            </div>
+          </div>
+
+          <!-- Card F: Additional Analysis -->
+          <div class="ai-card glass-card fade-in delay-6">
+            <div class="card-tag">Content Analysis</div>
+            <div class="analysis-icons">
+              <div class="icon-block"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                  <circle cx="12" cy="12" r="8"></circle>
+                </svg></div>
+              <div class="icon-block active"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                  <path d="M12 2L15 8H9L12 2Z"></path>
+                </svg></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI Insight Chat Interface -->
+        <div id="ai-chat-section" class="ai-chat-section hidden">
+          <div class="chat-header">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+            <span>Ask about these insights</span>
+          </div>
+          <div id="ai-chat-history" class="chat-history">
+            <div class="chat-bubble ai-bubble fade-in">
+              Hello! I've analyzed your board. Do you have any specific questions about these insights?
+            </div>
+          </div>
+          <div class="chat-input-wrapper">
+            <input type="text" id="ai-chat-input" placeholder="Type your question here..." />
+            <button id="ai-chat-send" class="chat-send-btn">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="ai-footer">
+        <button id="copy-summary-btn" class="ai-minimal-btn">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none">
+            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+            <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+          </svg>
+          <span>Copy Insights</span>
+        </button>
+      </div>
     </div>
+  </div>
+
+  </div>
+  </div>
   </div>
   </div>
 

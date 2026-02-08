@@ -162,14 +162,26 @@ app.post("/api/summarize", isAuthenticated, async (req, res) => {
         Input Data (Visual Verification):
         Analyze the image to confirm context and spatial arrangement.
         
-        Output Structure:
-        - SUMMARY OF BOARD
-        - MAIN POINTS (Simple list)
-        - ACTION ITEMS (If any are visible)
+        Output Structure (MUST FOLLOW EXACTLY):
+        [EXECUTIVE SUMMARY]
+        (A concise 2-sentence overview)
         
-        **IMPORTANT**: No markdown symbols (#, *, etc.). Use ALL CAPS for headers. Use dashes (-) for bullets. 
+        [KEY INSIGHTS]
+        - (Insight 1)
+        - (Insight 2)
+        - (Insight 3)
         
-        Write the practical summary now:`
+        [METADATA]
+        Complexity: (1-5)
+        Density: (1-5)
+        Signal: (1-5)
+        
+        [SECONDARY INSIGHTS]
+        (Brief deeper analysis)
+        
+        **IMPORTANT**: No markdown symbols (#, *, etc.). Use the exact brackets [ ] for section headers. 
+        
+        Write the insights now:`
     ];
 
     // If we have an image, add it to the prompt parts
@@ -197,6 +209,58 @@ app.post("/api/summarize", isAuthenticated, async (req, res) => {
     }
     console.error("[AI] Error summarizing board:", error);
     res.status(500).json({ error: error.message || "Failed to generate summary" });
+  }
+});
+
+// AI Insight Chat Endpoint
+app.post('/api/ai-chat', isAuthenticated, async (req, res) => {
+  try {
+    const { question, summary, boardData } = req.body;
+    console.log(`[AI Chat DEBUG] Request received. Summary length: ${summary?.length || 0}`);
+    console.log(`[AI Chat DEBUG] Board Objects: Paths=${boardData?.paths?.length}, Shapes=${boardData?.shapes?.length}, Notes=${boardData?.stickyNotes?.length}`);
+
+    if (!question) return res.status(400).json({ error: 'Question is required' });
+    if (!boardData) return res.status(400).json({ error: 'boardData is missing' });
+
+    // Using gemini-flash-latest which is confirmed working for summary
+    const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+
+    const prompt = `
+        You are an AI Board Assistant. You are chatting with a user about a specific whiteboard they just summarized.
+        
+        CONTEXT:
+        [Generated Summary]:
+        ${summary}
+        
+        [Board Details]:
+        Text: ${JSON.stringify(boardData.textElements)}
+        Notes: ${JSON.stringify(boardData.stickyNotes)}
+        Shapes: ${JSON.stringify(boardData.shapes)}
+        
+        USER QUESTION: "${question}"
+        
+        INSTRUCTIONS:
+        - Answer the user's question concisely based on the context provided.
+        - If the answer isn't in the context, use your intelligence to provide a helpful response related to visual thinking or the board's likely goal.
+        - Keep the tone professional, helpful, and "Gen Z/Modern SaaS" (clean, direct, premium).
+        - Avoid markdown headers. Use bold text for emphasis sparingly.
+        
+        Response:`;
+
+    console.log(`[AI Chat] Prompt generated. Sending to Gemini...`);
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+
+    console.log(`[AI Chat] Gemini responded with text length: ${text.length}`);
+    res.json({ answer: text });
+  } catch (error) {
+    console.error('[AI Chat] Error:', error);
+    if (error.status === 429 || error.message?.includes('429')) {
+      console.warn("[AI Chat] Rate limit hit");
+      return res.status(429).json({ error: "Rate limit reached. Please wait 30-60 seconds." });
+    }
+    res.status(500).json({ error: error.message || 'Failed to generate response' });
   }
 });
 
@@ -470,6 +534,9 @@ io.on("connection", (socket) => {
           stickyNotes: [],
           templateTexts: [],
           medicalStamps: [],
+          financeStamps: [],
+          financeCards: [],
+          financeFields: {},
           projectTasks: [],
           templateTransform: { x: 0, y: 0, scale: 1 },
           templateKey: roomData.boardState.templateKey // Keep template on clear
