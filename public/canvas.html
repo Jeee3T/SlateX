@@ -3,7 +3,8 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>Whiteboard - SlateX</title>
+  <title>SlateX</title>
+  <link rel="icon" type="image/png" href="/assets/logo/title-logo.png">
   <link rel="stylesheet" href="/css/home.css">
   <link rel="stylesheet" href="/css/canvas.css">
   <link rel="stylesheet" href="/css/theme-toggle.css">
@@ -18,20 +19,41 @@
       <div class="brand">
         <img src="/assets/logo/title-logo.png" alt="SlateX Logo" class="logo-image" />
       </div>
-      <div class="divider-v"></div>
-      <div class="board-info">
-        <div class="board-name-wrapper">
-          <span id="board-name" title="Click to rename" spellcheck="false">Untitled Board</span>
-          <span class="edit-icon" id="rename-icon">✏️</span>
-        </div>
-        <button id="info-btn" title="Room Information" class="header-icon-btn">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="12" cy="12" r="11" fill="black" />
-            <circle cx="12" cy="7" r="1.8" fill="white" />
-            <rect x="10.2" y="10.5" width="3.6" height="7.5" rx="1.8" fill="white" />
+
+      <!-- Unified Control Center Pill -->
+      <div class="unified-control-center">
+        <!-- Home Button Section -->
+        <button id="home-btn" title="Go to Home" class="unified-btn icon-btn">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+            <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
           </svg>
         </button>
-        <button id="home-btn" title="Go to Home" class="header-icon-btn">🏠</button>
+
+        <div class="unified-divider"></div>
+
+        <!-- Board Name Pill Section -->
+        <div class="board-name-pill" id="board-name-container">
+          <span id="board-name" title="Click to rename" spellcheck="false">Untitled Board</span>
+          <svg class="pencil-icon" viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+            <path
+              d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
+          </svg>
+        </div>
+
+        <div class="unified-divider"></div>
+
+        <!-- Info Button Section -->
+        <button id="info-btn" title="Room Information" class="unified-btn icon-btn">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+            <path
+              d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
+          </svg>
+        </button>
+
+        <!-- Share Button Section -->
+        <button id="share-btn" class="unified-share-btn" title="Share Board">
+          <span>Share</span>
+        </button>
       </div>
     </div>
 
@@ -50,31 +72,17 @@
         </svg>
       </button>
       <div class="header-participants" title="Who's joined" id="participants-avatars">
-        <span class="online-label">Who's Online</span>
         <div id="avatars-list" class="avatars-list">
           <!-- Avatars will be injected here -->
         </div>
       </div>
-      <button id="ai-btn" class="header-action-btn icon-only" title="Insights Assistant">
-        <svg class="header-ai-icon-cluster" viewBox="0 0 24 24" width="28" height="28" fill="none">
-          <!-- Main central sparkle -->
-          <path d="M12 4C12 4 13 10 19 12C13 14 12 20 12 20C12 20 11 14 5 12C11 10 12 4 12 4Z"
-            fill="url(#sparkle-grad-main)" />
-          <!-- Small top-left sparkle -->
-          <path d="M6 3C6 3 6.5 5 8.5 6C6.5 7 6 9 6 9C6 9 5.5 7 3.5 6C5.5 5 6 3 6 3Z" fill="#a78bfa" opacity="0.8" />
-          <!-- Small bottom-right sparkle -->
-          <path d="M18 15C18 15 18.5 17 20.5 18C18.5 19 18 21 18 21C18 21 17.5 19 15.5 18C17.5 17 18 15 18 15Z"
-            fill="#7c3aed" opacity="0.6" />
-          <!-- Tiny accent dot/blob -->
-          <circle cx="5" cy="18" r="1.5" fill="#a78bfa" opacity="0.4" />
-
-          <defs>
-            <linearGradient id="sparkle-grad-main" x1="5" y1="4" x2="19" y2="20" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stop-color="#a78bfa" />
-              <stop offset="100%" stop-color="#7c3aed" />
-            </linearGradient>
-          </defs>
+      <button id="ai-btn" class="header-action-btn premium-ai-btn" title="Insights Assistant">
+        <svg class="header-ai-icon" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M9 3L11.23 7.77L16 10L11.23 12.23L9 17L6.77 12.23L2 10L6.77 7.77L9 3Z" />
+          <path d="M17.5 13L18.61 15.39L21 16.5L18.61 17.61L17.5 20L16.39 17.61L14 16.5L16.39 15.39L17.5 13Z" />
+          <path d="M17.5 2L18.4 3.91L20.31 4.81L18.4 5.71L17.5 7.62L16.6 5.71L14.69 4.81L16.6 3.91L17.5 2Z" />
         </svg>
+        <span class="btn-text">Generate</span>
       </button>
       <!-- AI Dropdown Menu -->
       <div id="ai-dropdown" class="ai-dropdown hidden">
@@ -93,16 +101,7 @@
           </svg>
         </div>
       </button>
-      <button id="share-btn" class="button-share" title="Share Board">
-        <div class="icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-            stroke-linejoin="round">
-            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-            <polyline points="16 6 12 2 8 6" />
-            <line x1="12" y1="2" x2="12" y2="15" />
-          </svg>
-        </div>
-      </button>
+
       <div id="chat-toggle-wrapper">
         <button id="chat-toggle" class="button-chat" title="Open Chat">
           <div class="icon">
@@ -114,47 +113,78 @@
           <span id="chat-badge" class="chat-badge hidden">0</span>
         </button>
       </div>
+    </div>
 
-      <!-- Participant List Panel -->
-      <div id="participants-panel" class="participants-panel glass hidden">
-        <div class="panel-header">
-          <span>Participants</span>
-          <button id="close-participants" style="background:none;border:none;cursor:pointer;font-size:18px;">×</button>
-        </div>
-        <div id="full-participant-list">
-          <!-- List will be injected here -->
+    <!-- Participant List Panel -->
+    <div id="participants-panel" class="participants-panel hidden glass">
+      <div class="panel-header">
+        <span>Participants</span>
+        <button id="close-participants" class="close-btn" title="Close">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </button>
+      </div>
+      <div id="full-participant-list">
+        <!-- List will be injected here -->
+      </div>
+      <div class="participants-footer">
+        <span class="active-count"><span id="participant-count">0</span> participants active</span>
+        <div id="mini-avatars" class="mini-avatar-stack">
+          <!-- Mini avatars will be injected here -->
         </div>
       </div>
+    </div>
     </div>
   </header>
 
   <!-- Room Info Panel -->
-  <div id="room-info-panel" class="settings-panel hidden glass">
-    <div class="panel-header"
-      style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--miro-border);">
-      <span style="font-weight: 700; color: var(--miro-navy);">Room Details</span>
-      <button id="close-room-info"
-        style="background: none; border: none; cursor: pointer; font-size: 18px; color: #666;">×</button>
+  <div id="room-info-panel" class="settings-panel room-info-panel hidden glass">
+    <div class="panel-header">
+      <h3>Room Details</h3>
+      <button id="close-room-info" class="close-btn" title="Close">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </button>
     </div>
+
     <div class="panel-section">
-      <label>Room ID</label>
-      <div
-        style="display: flex; gap: 8px; align-items: center; background: #f8f8f8; padding: 10px; border-radius: 6px; border: 1px solid #eee;">
-        <span id="display-room-id"
-          style="font-family: monospace; font-weight: 600; font-size: 13px; color: var(--miro-navy);">---</span>
-        <button onclick="copyToClipboard('display-room-id')"
-          style="background: var(--miro-blue); color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; margin-left: auto;">Copy</button>
+      <div class="info-field-group">
+        <label>Room ID</label>
+        <div class="info-input-pill">
+          <span id="display-room-id" class="info-value">---</span>
+          <button class="copy-circle-btn" onclick="copyToClipboard('display-room-id')" title="Copy ID">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+              <path
+                d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z" />
+            </svg>
+            Copy
+          </button>
+        </div>
+      </div>
+
+      <div class="info-field-group">
+        <label>Room Password</label>
+        <div class="info-input-pill">
+          <span id="display-room-pass" class="info-value">---</span>
+          <button class="copy-circle-btn" onclick="copyToClipboard('display-room-pass')" title="Copy Password">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+              <path
+                d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z" />
+            </svg>
+            Copy
+          </button>
+        </div>
       </div>
     </div>
-    <div class="panel-section">
-      <label>Room Password</label>
-      <div
-        style="display: flex; gap: 8px; align-items: center; background: #f8f8f8; padding: 10px; border-radius: 6px; border: 1px solid #eee;">
-        <span id="display-room-pass"
-          style="font-family: monospace; font-weight: 600; font-size: 13px; color: var(--miro-navy);">---</span>
-        <button onclick="copyToClipboard('display-room-pass')"
-          style="background: var(--miro-blue); color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; margin-left: auto;">Copy</button>
-      </div>
+
+    <div class="panel-footer-note">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+        <path
+          d="M11 17h2v-6h-2v6zm1-15C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zM11 9h2V7h-2v2z" />
+      </svg>
+      <span>Share these details to invite collaborators to your workspace.</span>
     </div>
   </div>
 
@@ -574,6 +604,7 @@
         <div class="emoji-grid"></div>
       </div>
     </div>
+    <div class="chat-footer-note">AI POWERED INTERFACE</div>
   </div>
 
 
@@ -613,8 +644,10 @@
 
         <div class="ai-controls">
           <button id="summarize-submit" class="ai-generate-btn premium-gradient">
-            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M15 18l-6-6 6-6" />
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M9 3L11.23 7.77L16 10L11.23 12.23L9 17L6.77 12.23L2 10L6.77 7.77L9 3Z" />
+              <path d="M17.5 13L18.61 15.39L21 16.5L18.61 17.61L17.5 20L16.39 17.61L14 16.5L16.39 15.39L17.5 13Z" />
+              <path d="M17.5 2L18.4 3.91L20.31 4.81L18.4 5.71L17.5 7.62L16.6 5.71L14.69 4.81L16.6 3.91L17.5 2Z" />
             </svg>
             <span class="btn-text">Generate Insights</span>
           </button>
@@ -636,6 +669,76 @@
           </div>
         </div>
 
+        <div id="ai-loading-screen" class="ai-loading-screen hidden">
+          <div class="loading-content">
+            <div class="loading-left">
+              <div class="loader-graphic">
+                <div class="gear-outer">
+                  <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
+                    <path
+                      d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1Z" />
+                  </svg>
+                </div>
+                <h3>Synthesizing<span class="pulse-dots"><span>.</span><span>.</span><span>.</span></span></h3>
+              </div>
+            </div>
+            <div class="loading-right">
+              <div class="loading-steps">
+                <div class="step-item" id="step-layout">
+                  <div class="step-icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none"
+                      stroke="currentColor" stroke-width="2">
+                      <path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z" />
+                    </svg></div>
+                  <div class="step-details">
+                    <span class="step-title">Analyzing Layout</span>
+                    <span class="step-desc">Mapping spatial relationships between canvas elements</span>
+                  </div>
+                  <div class="step-status" id="step-layout-status">0%</div>
+                </div>
+                <div class="step-item muted" id="step-context">
+                  <div class="step-icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none"
+                      stroke="currentColor" stroke-width="2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                    </svg></div>
+                  <div class="step-details">
+                    <span class="step-title">Extracting Context</span>
+                    <span class="step-desc">Processing handwriting and sticky note metadata</span>
+                  </div>
+                  <div class="step-status" id="step-context-status"><svg viewBox="0 0 24 24" width="12" height="12"
+                      fill="currentColor">
+                      <circle cx="12" cy="12" r="2" />
+                      <circle cx="19" cy="12" r="2" />
+                      <circle cx="5" cy="12" r="2" />
+                    </svg></div>
+                </div>
+                <div class="step-item muted" id="step-insights">
+                  <div class="step-icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none"
+                      stroke="currentColor" stroke-width="2">
+                      <path
+                        d="M9.663 17h4.674M12 3v1m6.364 1.364-.707.707M21 12h-1M4 12H3m3.364-7.636.707.707M2 20h20M12 17v4m0-14a5 5 0 0 0-5 5c0 4 5 6 5 6s5-2 5-6a5 5 0 0 0-5-5Z" />
+                    </svg></div>
+                  <div class="step-details">
+                    <span class="step-title">Generating Insights</span>
+                    <span class="step-desc">Synthesizing actionable bullet points from raw data</span>
+                  </div>
+                  <div class="step-status" id="step-insights-status"></div>
+                </div>
+              </div>
+              <div class="loading-footer-progress">
+                <div class="load-meta">
+                  <span class="load-label">SYSTEM LOAD: ELEVATION</span>
+                  <span class="load-status" id="ai-load-status">PROCESSING</span>
+                </div>
+                <div class="custom-progress-bar">
+                  <div id="ai-progress-fill" class="progress-fill"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div id="results-divider" class="ai-divider hidden">
           <div class="divider-line"></div>
           <span class="divider-text">RESULTS DISPLAY SECTION (Collapsed until generated)</span>
@@ -645,15 +748,16 @@
         <div id="summary-container" class="ai-results-grid hidden">
           <!-- Card A: Executive Summary -->
           <div class="ai-card glass-card fade-in delay-1">
-            <div class="card-tag">A. Executive Summary Card</div>
-            <p id="exec-summary-text" class="card-content">The core card contains insights to evaluate and generating
-              the next light.</p>
+            <div class="card-tag">A. EXECUTIVE SUMMARY CARD</div>
+            <p id="exec-summary-text" class="card-content">This whiteboard is currently synthesizing key abstract
+              patterns. The workspace exhibits high creative entropy with continuous wavy line drawings. The content is
+              forming into structured data clusters from initial noise.</p>
             <div class="card-progress-bar"></div>
           </div>
 
           <!-- Card B: Key Insights -->
           <div class="ai-card glass-card fade-in delay-2">
-            <div class="card-tag">Key Insights</div>
+            <div class="card-tag">KEY INSIGHTS</div>
             <ul id="key-insights-list" class="smart-bullets">
               <li><span class="bullet-arrow"></span> Smart bullets</li>
               <li><span class="bullet-dot"></span> Information markers</li>
@@ -662,6 +766,7 @@
 
           <!-- Card C: Content Analysis (Metrics) -->
           <div class="ai-card glass-card metrics-card fade-in delay-3">
+            <div class="card-tag">CONTENT METRICS</div>
             <div class="metric-item">
               <span>Content Type</span>
               <div class="metric-dots"><span class="dot active"></span><span class="dot"></span><span
@@ -740,12 +845,12 @@
       </div>
 
       <div class="ai-footer">
-        <button id="copy-summary-btn" class="ai-minimal-btn">
-          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none">
-            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
-            <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+        <button id="expand-intelligence-btn" class="ai-minimal-btn">
+          <span>Expand Full Intelligence</span>
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2.5">
+            <line x1="7" y1="17" x2="17" y2="7"></line>
+            <polyline points="7 7 17 7 17 17"></polyline>
           </svg>
-          <span>Copy Insights</span>
         </button>
       </div>
     </div>

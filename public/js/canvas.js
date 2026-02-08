@@ -379,11 +379,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const avatarContainer = document.getElementById("avatars-list");
     const fullList = document.getElementById("full-participant-list");
+    const countEl = document.getElementById("participant-count");
+    const miniAvatarsEl = document.getElementById("mini-avatars");
+
+    // Update Footer Count
+    if (countEl) countEl.innerText = users.length;
 
     if (avatarContainer) {
       avatarContainer.innerHTML = "";
-      // Show up to 4 avatars in the header
-      users.slice(0, 4).forEach(u => {
+      // Show up to 5 avatars in the header stack
+      const maxHeaderAvatars = 5;
+      users.slice(0, maxHeaderAvatars).forEach(u => {
         const uName = u.username || "Anonymous";
         const initials = uName.split(" ")
           .filter(n => n.length > 0)
@@ -392,23 +398,35 @@ document.addEventListener("DOMContentLoaded", () => {
           .toUpperCase()
           .substring(0, 2) || "?";
 
+        // Main overlapping container
+        const container = document.createElement("div");
+        container.className = "participant-container";
+
+        // The circular avatar
         const div = document.createElement("div");
-        div.className = "participant-avatar";
+        div.className = "header-avatar";
         div.innerText = initials;
         div.title = uName;
-        // Professional Miro-like background colors
+
+        // Status dot (Active if they have access)
+        const dot = document.createElement("div");
+        dot.className = `status-dot ${u.hasAccess ? 'active' : ''}`;
+
+        // Miro-like professional colors
         const colors = ['#2ed573', '#1e90ff', '#ffa502', '#ff4757', '#747d8c', '#5352ed'];
-        const colorIndex = Math.abs(uName.split("").reduce((a, b) => (a << 5) - a + b.charCodeAt(0), 0) % colors.length);
+        const colorHash = uName.split("").reduce((a, b) => (a << 5) - a + b.charCodeAt(0), 0);
+        const colorIndex = Math.abs(colorHash % colors.length);
         div.style.background = colors[colorIndex];
-        avatarContainer.appendChild(div);
+
+        container.appendChild(div);
+        container.appendChild(dot);
+        avatarContainer.appendChild(container);
       });
 
-      if (users.length > 4) {
+      if (users.length > maxHeaderAvatars) {
         const more = document.createElement("div");
         more.className = "participant-avatar more";
-        more.innerText = `+${users.length - 4}`;
-        more.style.background = "#f3f4f6";
-        more.style.color = "#666";
+        more.innerText = `+${users.length - maxHeaderAvatars}`;
         avatarContainer.appendChild(more);
       }
     }
@@ -416,35 +434,72 @@ document.addEventListener("DOMContentLoaded", () => {
     if (fullList) {
       fullList.innerHTML = users.map(u => {
         const uName = u.username || "Anonymous";
-        const initials = uName[0]?.toUpperCase() || "?";
+        const initials = uName.split(" ")
+          .filter(n => n.length > 0)
+          .map(n => n[0])
+          .join("")
+          .toUpperCase()
+          .substring(0, 2) || "?";
         const isTargetAdmin = u.isAdmin;
         const targetHasAccess = u.hasAccess;
         const isMe = uName === username;
 
-        let actions = '';
+        // Miro-like professional colors for individual list items
+        const colors = ['#2ed573', '#1e90ff', '#ffa502', '#ff4757', '#747d8c', '#5352ed'];
+        const colorHash = uName.split("").reduce((a, b) => (a << 5) - a + b.charCodeAt(0), 0);
+        const colorIndex = Math.abs(colorHash % colors.length);
+        const avatarBg = colors[colorIndex];
+
+        let actionBtns = '';
         if (window.isAdmin && !isMe) {
-          actions = `
+          actionBtns = `
             <div class="participant-actions">
               ${!targetHasAccess ?
-              `<button class="action-btn access-btn" onclick="giveAccess('${uName}')">Grant Access</button>` :
-              `<button class="action-btn revoke-btn" onclick="revokeAccess('${uName}')">Revoke Access</button>`
+              `<button class="action-btn-pill btn-grant" onclick="giveAccess('${uName}')">Grant Access</button>` :
+              `<button class="action-btn-pill btn-kick" onclick="revokeAccess('${uName}')">Revoke</button>`
             }
-              <button class="action-btn kick-btn" onclick="kickUser('${uName}')">Kick</button>
+              <button class="action-btn-pill btn-kick" onclick="kickUser('${uName}')">Kick</button>
             </div>
           `;
         }
 
         return `
           <div class="participant-item">
-            <div class="participant-avatar">${initials}</div>
-            <div class="participant-info">
-              <span class="participant-name" style="font-weight:600;">${uName} ${isTargetAdmin ? '<span class="admin-badge">Admin</span>' : ''} ${isMe ? '(You)' : ''}</span>
-              ${!targetHasAccess ? '<span class="status-badge error">No Access</span>' : '<span class="status-badge success">Has Access</span>'}
+            <div class="participant-avatar-wrapper">
+              <div class="participant-avatar-circle" style="background:${avatarBg}">${initials}</div>
+              <div class="status-indicator-dot online"></div>
             </div>
-            ${actions}
+            <div class="participant-info">
+              <div class="participant-name-row">
+                <span class="participant-name">${uName}</span>
+                ${isTargetAdmin ? '<span class="badge badge-admin">Admin</span>' : ''}
+                ${isMe ? '<span class="badge badge-you">You</span>' : ''}
+              </div>
+              <span class="participant-status-label ${targetHasAccess ? 'status-has-access' : 'status-no-access'}">
+                ${targetHasAccess ? 'Has Access' : 'No Access'}
+              </span>
+            </div>
+            ${actionBtns}
           </div>
         `;
       }).join('');
+    }
+
+    // Update Footer Avatar Stack
+    if (miniAvatarsEl) {
+      miniAvatarsEl.innerHTML = users.slice(0, 3).map((u, i) => {
+        const uName = u.username || "Anonymous";
+        const initials = uName[0]?.toUpperCase() || "?";
+        const colors = ['#2ed573', '#1e90ff', '#ffa502', '#ff4757', '#747d8c', '#5352ed'];
+        const colorHash = uName.split("").reduce((a, b) => (a << 5) - a + b.charCodeAt(0), 0);
+        const colorIndex = Math.abs(colorHash % colors.length);
+        return `<div class="mini-avatar" style="background:${colors[colorIndex]}; z-index:${5 - i}">${initials}</div>`;
+      }).join('');
+
+      if (users.length > 3) {
+        const moreCount = users.length - 3;
+        miniAvatarsEl.innerHTML += `<div class="mini-avatar more-count">+${moreCount}</div>`;
+      }
     }
   }
 
@@ -482,16 +537,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const isMentioned = msg.content.includes(`@${username}`);
     const div = document.createElement("div");
-    div.className = `chat-message ${msg.user === username ? 'own-message' : ''} ${isMentioned ? 'mentioned-me' : ''}`;
+    const isMe = msg.user === username;
+    div.className = `chat-message ${isMe ? 'own-message' : ''} ${isMentioned ? 'mentioned-me' : ''}`;
 
-    // Highlight mentors in text
+    const initials = msg.user[0].toUpperCase();
+    const isAI = msg.user.toLowerCase().includes('ai') || msg.user.toLowerCase().includes('assistant');
+    const label = isMe ? 'SENT' : (isAI ? 'ASSISTANT' : 'YOU');
+
+    // Highlight mentions in text
     let displayContent = msg.content.replace(/@(\w+)/g, '<span class="mention-highlight">@$1</span>');
 
     div.innerHTML = `
-      <div class="message-bubble">
-        <span class="chat-user">${msg.user}</span>
-        <div class="chat-content">${displayContent}</div>
-        <span class="chat-time">${new Date(msg.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+      <div class="chat-avatar ${isAI ? 'ai-avatar' : ''}">${initials}</div>
+      <div class="message-wrapper">
+        <div class="message-bubble">${displayContent}</div>
+        <span class="message-label">${label}</span>
       </div>
     `;
     chatMessages.appendChild(div);
@@ -1437,8 +1497,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Natural Wheel Zoom
   window.addEventListener("wheel", (e) => {
-    // Only zoom if not interacting with a text/input field
-    if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
+    // Only zoom if not interacting with a text/input field OR the AI Summary Modal
+    if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT' || e.target.closest('#ai-summary-modal')) return;
 
     e.preventDefault();
     const oldScale = scale;
@@ -2354,7 +2414,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const summarizeSubmit = document.getElementById('summarize-submit');
   const summaryContainer = document.getElementById('summary-container');
   const summaryText = document.getElementById('summary-text');
-  const copySummaryBtn = document.getElementById('copy-summary-btn');
+  const expandIntelligenceBtn = document.getElementById('expand-intelligence-btn');
 
   // Toggle AI dropdown
   if (aiBtn && aiDropdown) {
@@ -2388,10 +2448,12 @@ document.addEventListener("DOMContentLoaded", () => {
       const resultsDivider = document.getElementById('results-divider');
       const chatSection = document.getElementById('ai-chat-section');
       const chatHistory = document.getElementById('ai-chat-history');
+      const loadingScreen = document.getElementById('ai-loading-screen');
 
       if (summaryContainer) summaryContainer.classList.add('hidden');
       if (resultsDivider) resultsDivider.classList.add('hidden');
       if (chatSection) chatSection.classList.add('hidden');
+      if (loadingScreen) loadingScreen.classList.add('hidden');
       if (chatHistory) {
         chatHistory.innerHTML = '<div class="chat-bubble ai-bubble fade-in">Hello! I\'ve analyzed your board. Do you have any specific questions about these insights?</div>';
       }
@@ -2425,11 +2487,53 @@ document.addEventListener("DOMContentLoaded", () => {
       const resultsDivider = document.getElementById('results-divider');
       const summaryContainer = document.getElementById('summary-container');
       const summarizeSubmit = document.getElementById('summarize-submit');
-      const btnText = summarizeSubmit.querySelector('.btn-text');
+      const loadingScreen = document.getElementById('ai-loading-screen');
+      const progressFill = document.getElementById('ai-progress-fill');
+      const loadStatusText = document.getElementById('ai-load-status');
 
-      // Show loading state on button
-      summarizeSubmit.disabled = true;
-      if (btnText) btnText.innerText = 'Synthesizing...';
+      const step1 = document.getElementById('step-layout');
+      const step2 = document.getElementById('step-context');
+      const step3 = document.getElementById('step-insights');
+
+      const step1Status = document.getElementById('step-layout-status');
+      const step2Status = document.getElementById('step-context-status');
+
+      // 1. Enter Loading State
+      summarizeSubmit.classList.add('hidden');
+      if (loadingScreen) loadingScreen.classList.remove('hidden');
+      if (progressFill) progressFill.style.width = '0%';
+
+      // Function to animate progress
+      const animateProgress = async () => {
+        // Step 1: Layout (0-40%)
+        if (loadStatusText) loadStatusText.innerText = 'ANALYZING LAYOUT';
+        for (let i = 0; i <= 40; i += 2) {
+          if (progressFill) progressFill.style.width = `${i}%`;
+          if (step1Status) step1Status.innerText = `${i * 2.5}%`;
+          await new Promise(r => setTimeout(r, 50));
+        }
+        if (step1Status) step1Status.innerHTML = '<svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M20 6L9 17l-5-5"></path></svg>';
+
+        // Step 2: Context (40-75%)
+        if (step2) step2.classList.remove('muted');
+        if (loadStatusText) loadStatusText.innerText = 'EXTRACTING CONTEXT';
+        for (let i = 42; i <= 75; i += 3) {
+          if (progressFill) progressFill.style.width = `${i}%`;
+          await new Promise(r => setTimeout(r, 100));
+        }
+        if (step2Status) step2Status.innerHTML = '<svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M20 6L9 17l-5-5"></path></svg>';
+
+        // Step 3: Insights (75-92%)
+        if (step3) step3.classList.remove('muted');
+        if (loadStatusText) loadStatusText.innerText = 'GENERATING INSIGHTS';
+        for (let i = 77; i <= 92; i += 1) {
+          if (progressFill) progressFill.style.width = `${i}%`;
+          await new Promise(r => setTimeout(r, 150));
+        }
+      };
+
+      // Start the fake progress animation (don't await it yet)
+      const progressPromise = animateProgress();
 
       try {
         // Collect board data
@@ -2597,6 +2701,14 @@ document.addEventListener("DOMContentLoaded", () => {
         const secondaryInsightsEl = document.getElementById('insights-secondary-text');
         if (secondaryInsightsEl) secondaryInsightsEl.innerText = secondaryInsights || 'Visual hierarchy remains balanced.';
 
+        if (progressFill) progressFill.style.width = '100%';
+        if (loadStatusText) loadStatusText.innerText = 'COMPLETE';
+
+        await new Promise(r => setTimeout(r, 600)); // Brief pause to show 100% completion
+
+        // Hide Loading Screen
+        if (loadingScreen) loadingScreen.classList.add('hidden');
+
         // Show Results
         if (resultsDivider) resultsDivider.classList.remove('hidden');
         if (summaryContainer) {
@@ -2607,11 +2719,7 @@ document.addEventListener("DOMContentLoaded", () => {
           summaryContainer.style.display = 'grid';
         }
 
-        if (summarizeSubmit) {
-          summarizeSubmit.classList.add('hidden'); // Hide CTA after success
-        }
-
-        // --- NEW: Show AI Chat Section ---
+        // --- Show AI Chat Section ---
         const chatSection = document.getElementById('ai-chat-section');
         if (chatSection) {
           chatSection.classList.remove('hidden');
@@ -2619,12 +2727,15 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
       } catch (error) {
-        console.error('Error generating summary:', error);
-        alert(error.message || 'Failed to generate insights. Please try again.');
+        console.error('[AI] Summarization error:', error);
+        if (loadingScreen) loadingScreen.classList.add('hidden');
         if (summarizeSubmit) {
+          summarizeSubmit.classList.remove('hidden');
           summarizeSubmit.disabled = false;
+          const btnText = summarizeSubmit.querySelector('.btn-text');
           if (btnText) btnText.innerText = 'Retry Generation';
         }
+        alert('Failed to generate insights: ' + (error.message || 'System error. Please try again.'));
       }
     });
   }
@@ -2707,17 +2818,17 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Copy insights to clipboard
-  if (copySummaryBtn) {
-    copySummaryBtn.addEventListener('click', () => {
+  // Expand Full Intelligence handler
+  if (expandIntelligenceBtn) {
+    expandIntelligenceBtn.addEventListener('click', () => {
       const exec = document.getElementById('exec-summary-text')?.innerText || '';
       const insights = Array.from(document.querySelectorAll('#key-insights-list li')).map(li => li.innerText).join('\n');
       const fullText = `AI INSIGHTS SUMMARY\n\n${exec}\n\nKEY INSIGHTS:\n${insights}`;
 
       navigator.clipboard.writeText(fullText).then(() => {
-        const originalContent = copySummaryBtn.innerHTML;
-        copySummaryBtn.innerHTML = '<span>Insights Copied!</span>';
-        setTimeout(() => copySummaryBtn.innerHTML = originalContent, 2000);
+        const originalContent = expandIntelligenceBtn.innerHTML;
+        expandIntelligenceBtn.innerHTML = '<span>Insights Copied!</span>';
+        setTimeout(() => expandIntelligenceBtn.innerHTML = originalContent, 2000);
       });
     });
   }
