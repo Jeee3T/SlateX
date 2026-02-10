@@ -14,6 +14,8 @@
     const next = getTheme() === 'dark' ? 'light' : 'dark';
     localStorage.setItem(STORAGE_KEY, next);
     applyTheme(next);
+    // Notify other components (like canvas) to redraw
+    window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme: next } }));
   }
 
   // Apply saved theme on load (runs before DOMReady is ok for body class)

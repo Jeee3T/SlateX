@@ -73,11 +73,15 @@ document.addEventListener("DOMContentLoaded", () => {
       if (toolbar) toolbar.classList.add('hidden');
     }
 
-    // ONLY Admins can see the board template switcher button
+    // ONLY Admins can see the board template switcher button AND Mic button
     if (window.isAdmin) {
       if (templateBtn) templateBtn.classList.remove('hidden');
+      const micBtn = document.getElementById('mic-btn');
+      if (micBtn) micBtn.classList.remove('hidden');
     } else {
       if (templateBtn) templateBtn.classList.add('hidden');
+      const micBtn = document.getElementById('mic-btn');
+      if (micBtn) micBtn.classList.add('hidden');
     }
 
     // 🔥 Re-render user list whenever permissions change to show/hide admin buttons
@@ -611,6 +615,11 @@ document.addEventListener("DOMContentLoaded", () => {
   window.addEventListener("resize", resize);
   resize();
 
+  window.addEventListener("themeChanged", () => {
+    console.log("[DEBUG] Theme changed, redrawing canvas...");
+    redraw();
+  });
+
   function getPos(e) {
     return {
       x: (e.clientX - offsetX) / scale,
@@ -939,7 +948,7 @@ document.addEventListener("DOMContentLoaded", () => {
           y: y,
           width: width,
           height: height,
-          color: shapeColor,
+          color: shapeColor, // Restore shapeColor so it saves the selected color DO NOT USE 'transparent' here
           rotation: 0
         };
 
@@ -963,7 +972,7 @@ document.addEventListener("DOMContentLoaded", () => {
       input.className = "text-input";
       input.style.left = e.clientX + "px";
       input.style.top = e.clientY + "px";
-      input.style.color = color;
+      input.style.color = getContrastColor(color);
       input.placeholder = "Type text here...";
       document.body.appendChild(input);
 
@@ -1204,6 +1213,25 @@ document.addEventListener("DOMContentLoaded", () => {
       drawStroke({ tool, drawType, color, size: brushSize, points: currentPath });
   }
 
+  function getContrastColor(originalColor) {
+    const isDarkMode = document.body.classList.contains('dark-mode');
+    const colorLower = originalColor.toLowerCase();
+
+    // In Dark Mode: Convert black/dark strokes to white
+    const darkColors = ['#000', '#000000', '#1a1a1a', '#333', '#333333', '#444'];
+    if (isDarkMode && darkColors.includes(colorLower)) {
+      return '#ffffff';
+    }
+
+    // In Light Mode: Convert white/light strokes to black
+    const lightColors = ['#fff', '#ffffff', '#f0f0f0', '#f5f5f5', '#e0e0e0'];
+    if (!isDarkMode && lightColors.includes(colorLower)) {
+      return '#000000';
+    }
+
+    return originalColor;
+  }
+
   function drawStroke(p, customCtx) {
     if (!p.points || p.points.length === 0) return;
     const drawCtx = customCtx || ctx;
@@ -1213,8 +1241,6 @@ document.addEventListener("DOMContentLoaded", () => {
     drawCtx.lineJoin = "round";
 
     if (p.tool === "eraser") {
-      // If we're drawing on a custom context (like a snapshot with white bg),
-      // we should paint white instead of using destination-out to simulate erasing.
       if (customCtx) {
         drawCtx.globalCompositeOperation = "source-over";
         drawCtx.strokeStyle = "#ffffff";
@@ -1224,7 +1250,7 @@ document.addEventListener("DOMContentLoaded", () => {
       drawCtx.lineWidth = (p.size || 20) / scale;
     } else {
       drawCtx.globalCompositeOperation = "source-over";
-      drawCtx.strokeStyle = p.color;
+      drawCtx.strokeStyle = getContrastColor(p.color);
 
       const baseSize = p.size || 5;
       if (p.drawType === "pen") {
@@ -1793,7 +1819,35 @@ document.addEventListener("DOMContentLoaded", () => {
       shapeEl.appendChild(img);
     } else {
       // Regular SVG shapes
-      const svgTemplate = shapeTemplates[shape.type].replace(/COLOR/g, shape.color);
+      const isDarkMode = document.body.classList.contains('dark-mode');
+
+      // FIX: Use shape.color for STROKE, not fill. Fill is transparent.
+      // If shape.color was mistakenly set to transparent, fallback to theme defaults.
+      // Otherwise use the selected color.
+      const strokeColor = (shape.color === 'transparent' || !shape.color)
+        ? (isDarkMode ? '#eee' : '#333')
+        : shape.color;
+
+      let svgTemplate = shapeTemplates[shape.type];
+
+      // GENERIC REPLACEMENT:
+      // 1. Force fill to transparent
+      if (svgTemplate.includes('fill=')) {
+        svgTemplate = svgTemplate.replace(/fill="[^"]*"/g, 'fill="transparent"');
+      } else {
+        svgTemplate = svgTemplate.replace(/<[a-z]+ /i, `$&fill="transparent" `);
+      }
+
+      // 2. Force stroke to color
+      if (svgTemplate.includes('stroke=')) {
+        svgTemplate = svgTemplate.replace(/stroke="[^"]*"/g, `stroke="${strokeColor}"`);
+      } else {
+        svgTemplate = svgTemplate.replace(/<[a-z]+ /i, `$&stroke="${strokeColor}" `);
+      }
+
+      // Legacy cleanup just in case
+      svgTemplate = svgTemplate.replace(/COLOR/g, 'transparent');
+
       shapeEl.innerHTML = `<svg viewBox="0 0 100 100">${svgTemplate}</svg>`;
     }
 
@@ -1954,7 +2008,7 @@ document.addEventListener("DOMContentLoaded", () => {
     textDiv.style.position = 'absolute';
     textDiv.style.left = (textData.x * scale + offsetX) + 'px';
     textDiv.style.top = (textData.y * scale + offsetY) + 'px';
-    textDiv.style.color = textData.color;
+    textDiv.style.color = getContrastColor(textData.color);
     textDiv.style.fontSize = (20 * scale) + 'px';
     textDiv.style.fontFamily = 'Segoe UI, sans-serif';
     textDiv.style.pointerEvents = 'auto';
@@ -2380,7 +2434,6 @@ document.addEventListener("DOMContentLoaded", () => {
   /* ================= WATERMARK LOGIC ================= */
   function checkBoardEmpty() {
     // Check if drawing currently (instant feedback for quicker UX)
-    // We check partial paths, drawing flags, and active text inputs
     const isDrawing = (typeof drawing !== 'undefined' && drawing) ||
       (typeof pendingDraw !== 'undefined' && pendingDraw) ||
       (typeof currentPath !== 'undefined' && currentPath && currentPath.length > 0) ||
@@ -2402,6 +2455,19 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // Add immediate hide on interaction
+  const canvasBoard = document.getElementById('board');
+  if (canvasBoard) {
+    const hideWatermark = () => {
+      if (['pen', 'pencil', 'brush', 'eraser'].includes(tool)) {
+        const watermark = document.getElementById('watermark');
+        if (watermark) watermark.classList.add('hidden-watermark');
+      }
+    };
+    canvasBoard.addEventListener('mousedown', hideWatermark);
+    canvasBoard.addEventListener('touchstart', hideWatermark);
+  }
+
   // Initial check
   setTimeout(checkBoardEmpty, 500); // Wait for init-board
 
@@ -2417,16 +2483,42 @@ document.addEventListener("DOMContentLoaded", () => {
   const expandIntelligenceBtn = document.getElementById('expand-intelligence-btn');
 
   // Toggle AI dropdown
-  if (aiBtn && aiDropdown) {
+  // Toggle AI dropdown -> NOW OPENS MODAL DIRECTLY
+  if (aiBtn && aiModal) {
     aiBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      aiDropdown.classList.toggle('hidden');
+      // aiDropdown.classList.toggle('hidden'); // REMOVED dropdown toggle
+
+      // Open Modal Directly
+      aiModal.classList.remove('hidden');
 
       // Close other panels
-      if (!aiDropdown.classList.contains('hidden')) {
-        if (typeof chatPanel !== 'undefined' && chatPanel) chatPanel.classList.add('chat-hidden');
-        if (typeof shapesPanel !== 'undefined' && shapesPanel) shapesPanel.classList.add('shapes-hidden');
-        if (typeof roomInfoPanel !== 'undefined' && roomInfoPanel) roomInfoPanel.classList.add('hidden');
+      if (typeof chatPanel !== 'undefined' && chatPanel) chatPanel.classList.add('chat-hidden');
+      if (typeof shapesPanel !== 'undefined' && shapesPanel) shapesPanel.classList.add('shapes-hidden');
+      if (typeof roomInfoPanel !== 'undefined' && roomInfoPanel) roomInfoPanel.classList.add('hidden');
+      if (aiDropdown) aiDropdown.classList.add('hidden');
+
+      // Reset UI to initial state (Moved from summarizeBtn handler)
+      const resultsDivider = document.getElementById('results-divider');
+      const chatSection = document.getElementById('ai-chat-section');
+      const chatHistory = document.getElementById('ai-chat-history');
+      const loadingScreen = document.getElementById('ai-loading-container');
+      // summaryContainer is defined in upper scope
+
+      if (summaryContainer) summaryContainer.classList.add('hidden');
+      if (resultsDivider) resultsDivider.classList.add('hidden');
+      if (chatSection) chatSection.classList.add('hidden');
+      if (loadingScreen) loadingScreen.classList.add('hidden');
+      if (chatHistory) {
+        chatHistory.innerHTML = '<div class="chat-bubble ai-bubble fade-in">Hello! I\'ve analyzed your board. Do you have any specific questions about these insights?</div>';
+      }
+
+      const summarizeSubmit = document.getElementById('summarize-submit');
+      if (summarizeSubmit) {
+        summarizeSubmit.classList.remove('hidden');
+        summarizeSubmit.disabled = false;
+        const btnText = summarizeSubmit.querySelector('.btn-text');
+        if (btnText) btnText.innerText = 'Generate Insights';
       }
     });
 
@@ -2448,7 +2540,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const resultsDivider = document.getElementById('results-divider');
       const chatSection = document.getElementById('ai-chat-section');
       const chatHistory = document.getElementById('ai-chat-history');
-      const loadingScreen = document.getElementById('ai-loading-screen');
+      const loadingScreen = document.getElementById('ai-loading-container');
 
       if (summaryContainer) summaryContainer.classList.add('hidden');
       if (resultsDivider) resultsDivider.classList.add('hidden');
@@ -2487,53 +2579,11 @@ document.addEventListener("DOMContentLoaded", () => {
       const resultsDivider = document.getElementById('results-divider');
       const summaryContainer = document.getElementById('summary-container');
       const summarizeSubmit = document.getElementById('summarize-submit');
-      const loadingScreen = document.getElementById('ai-loading-screen');
-      const progressFill = document.getElementById('ai-progress-fill');
-      const loadStatusText = document.getElementById('ai-load-status');
-
-      const step1 = document.getElementById('step-layout');
-      const step2 = document.getElementById('step-context');
-      const step3 = document.getElementById('step-insights');
-
-      const step1Status = document.getElementById('step-layout-status');
-      const step2Status = document.getElementById('step-context-status');
+      const loadingScreen = document.getElementById('ai-loading-container');
 
       // 1. Enter Loading State
-      summarizeSubmit.classList.add('hidden');
+      if (summarizeSubmit) summarizeSubmit.classList.add('hidden');
       if (loadingScreen) loadingScreen.classList.remove('hidden');
-      if (progressFill) progressFill.style.width = '0%';
-
-      // Function to animate progress
-      const animateProgress = async () => {
-        // Step 1: Layout (0-40%)
-        if (loadStatusText) loadStatusText.innerText = 'ANALYZING LAYOUT';
-        for (let i = 0; i <= 40; i += 2) {
-          if (progressFill) progressFill.style.width = `${i}%`;
-          if (step1Status) step1Status.innerText = `${i * 2.5}%`;
-          await new Promise(r => setTimeout(r, 50));
-        }
-        if (step1Status) step1Status.innerHTML = '<svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M20 6L9 17l-5-5"></path></svg>';
-
-        // Step 2: Context (40-75%)
-        if (step2) step2.classList.remove('muted');
-        if (loadStatusText) loadStatusText.innerText = 'EXTRACTING CONTEXT';
-        for (let i = 42; i <= 75; i += 3) {
-          if (progressFill) progressFill.style.width = `${i}%`;
-          await new Promise(r => setTimeout(r, 100));
-        }
-        if (step2Status) step2Status.innerHTML = '<svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M20 6L9 17l-5-5"></path></svg>';
-
-        // Step 3: Insights (75-92%)
-        if (step3) step3.classList.remove('muted');
-        if (loadStatusText) loadStatusText.innerText = 'GENERATING INSIGHTS';
-        for (let i = 77; i <= 92; i += 1) {
-          if (progressFill) progressFill.style.width = `${i}%`;
-          await new Promise(r => setTimeout(r, 150));
-        }
-      };
-
-      // Start the fake progress animation (don't await it yet)
-      const progressPromise = animateProgress();
 
       try {
         // Collect board data
@@ -2698,13 +2748,11 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         // 4. Populate Secondary Insights
+        // 4. Populate Secondary Insights
         const secondaryInsightsEl = document.getElementById('insights-secondary-text');
         if (secondaryInsightsEl) secondaryInsightsEl.innerText = secondaryInsights || 'Visual hierarchy remains balanced.';
 
-        if (progressFill) progressFill.style.width = '100%';
-        if (loadStatusText) loadStatusText.innerText = 'COMPLETE';
-
-        await new Promise(r => setTimeout(r, 600)); // Brief pause to show 100% completion
+        await new Promise(r => setTimeout(r, 1000)); // Brief pause to show loading state
 
         // Hide Loading Screen
         if (loadingScreen) loadingScreen.classList.add('hidden');
@@ -2830,6 +2878,37 @@ document.addEventListener("DOMContentLoaded", () => {
         expandIntelligenceBtn.innerHTML = '<span>Insights Copied!</span>';
         setTimeout(() => expandIntelligenceBtn.innerHTML = originalContent, 2000);
       });
+    });
+  }
+
+  // Voice Command UI Toggle
+  const micBtn = document.getElementById('mic-btn');
+  const voiceBar = document.getElementById('voice-command-bar');
+  const voiceClose = document.getElementById('voice-close');
+  const voiceConfirm = document.getElementById('voice-confirm');
+
+  if (micBtn && voiceBar) {
+    micBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      voiceBar.classList.remove('hidden');
+      micBtn.classList.add('mic-active'); // Add glow
+    });
+  }
+
+  if (voiceClose && voiceBar) {
+    voiceClose.addEventListener('click', (e) => {
+      e.stopPropagation();
+      voiceBar.classList.add('hidden');
+      if (micBtn) micBtn.classList.remove('mic-active'); // Remove glow
+    });
+  }
+
+  if (voiceConfirm && voiceBar) {
+    voiceConfirm.addEventListener('click', (e) => {
+      e.stopPropagation();
+      // Placeholder for processing
+      voiceBar.classList.add('hidden');
+      if (micBtn) micBtn.classList.remove('mic-active'); // Remove glow
     });
   }
 

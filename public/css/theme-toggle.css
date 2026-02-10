@@ -8,22 +8,20 @@
 }
 
 .theme-toggle {
-  background: rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 10px;
+  background: transparent !important;
+  border: none !important;
   width: 44px;
   height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
 }
 
 .theme-toggle:hover {
-  background: rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
+  transform: scale(1.15);
 }
 
 .theme-toggle svg {
@@ -54,11 +52,11 @@ body.dark-mode .theme-toggle .moon-icon {
 }
 
 body.dark-mode .theme-toggle {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: transparent !important;
+  border: none !important;
   color: #fff;
 }
 
 body.dark-mode .theme-toggle:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: transparent !important;
 }

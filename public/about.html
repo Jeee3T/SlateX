@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>About - SlateX</title>
+    <link rel="icon" type="image/png" href="/assets/logo/title-logo.png">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="/css/about.css" />
+</head>
+
+<body>
+    <!-- NAVBAR -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <div class="nav-logo" onclick="window.location.href='/'">
+                <img src="./assets/logo/title-logo.png" alt="SlateX Logo" class="logo-image" />
+            </div>
+
+            <div class="nav-links">
+                <a href="/#features">Features</a>
+                <a href="/about">About</a>
+            </div>
+
+            <div class="nav-actions">
+                <button class="theme-toggle" type="button" onclick="typeof toggleTheme==='function'&&toggleTheme()"
+                    title="Toggle light/dark mode" aria-label="Toggle light/dark mode">
+                    <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="4" />
+                        <path
+                            d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+                    </svg>
+                    <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                    </svg>
+                </button>
+                <a href="/auth" class="btn-primary nav-btn" id="auth-btn">Login / Register</a>
+                <button class="btn-secondary nav-btn" id="logout-btn" style="display: none;">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- HERO SECTION -->
+    <section class="about-hero">
+        <div class="about-container">
+            <h1 class="about-title reveal">
+                Thinking, <span class="highlight">Digitally.</span>
+            </h1>
+            <p class="about-subtitle reveal delay-1">
+                Slate.X is more than just a canvas. It's a spatial engine powered by AI that bridges the gap between
+                chaotic brainstorming and structured output.
+            </p>
+        </div>
+    </section>
+
+    <!-- THE PROJECT SECTION -->
+    <section class="project-section">
+        <div class="project-container">
+            <div class="project-content">
+                <h2 class="section-title reveal-left">The Project</h2>
+                <p class="project-description reveal-left delay-1">
+                    Built with the belief that technology should get out of the way of creativity. We started Slate.X to
+                    solve a simple problem: digital whiteboards were either too rigid or too messy.
+                </p>
+                <p class="project-description reveal-left delay-2">
+                    Our AI-powered recognition engine understands <em>your</em> scribbles, converting them into
+                    structured layouts, code, or documentation in real-time.
+                </p>
+
+                <div class="features-list">
+                    <div class="feature-item reveal-left delay-3">
+                        <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                            <path d="M2 17l10 5 10-5" />
+                            <path d="M2 12l10 5 10-5" />
+                        </svg>
+                        <div>
+                            <h3>Infinite Canvas</h3>
+                            <p>Unlimited space for unlimited ideas</p>
+                        </div>
+                    </div>
+
+                    <div class="feature-item reveal-left delay-4">
+                        <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                            <polyline points="14 2 14 8 20 8" />
+                        </svg>
+                        <div>
+                            <h3>AI Translation</h3>
+                            <p>Convert sketches to structured formats</p>
+                        </div>
+                    </div>
+
+                    <div class="feature-item reveal-left delay-4">
+                        <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                            <circle cx="9" cy="7" r="4" />
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                        </svg>
+                        <div>
+                            <h3>Real-time Sync</h3>
+                            <p>Collaborate seamlessly with your team</p>
+                        </div>
+                    </div>
+
+                    <div class="feature-item reveal-left delay-5">
+                        <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                        </svg>
+                        <div>
+                            <h3>Open Standards</h3>
+                            <p>Export to any format you need</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="project-visual">
+                <div class="visual-card reveal-right delay-2">
+                    <svg class="visual-icon" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="100" cy="100" r="80" stroke="currentColor" stroke-width="2" opacity="0.2" />
+                        <circle cx="100" cy="100" r="60" stroke="currentColor" stroke-width="2" opacity="0.4" />
+                        <circle cx="100" cy="100" r="40" stroke="currentColor" stroke-width="2" opacity="0.6" />
+                        <circle cx="100" cy="100" r="20" fill="currentColor" opacity="0.8" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- THE CREATOR SECTION -->
+    <section class="creator-section">
+        <h2 class="section-title reveal">The Creators</h2>
+        <div class="creators-grid">
+            <!-- CREATOR 1 -->
+            <div class="creator-profile reveal">
+                <div class="creator-avatar">
+                    <img src="https://ui-avatars.com/api/?name=Prasanjeet+Panda&size=200&background=6366f1&color=fff&bold=true"
+                        alt="Prasanjeet Panda" />
+                    <div class="status-indicator"></div>
+                </div>
+                <h3 class="creator-name reveal delay-1">Prasanjeet Panda</h3>
+                <p class="creator-title reveal delay-2">Student at Acharya Institutes</p>
+                <p class="creator-quote reveal delay-3">
+                    A software development enthusiast passionate about building intuitive tools that simplify complex
+                    digital workflows.
+                </p>
+
+                <div class="social-links">
+                    <a href="https://github.com/Jeee3T" target="_blank" class="social-link reveal delay-4"
+                        aria-label="GitHub">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path
+                                d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+                        </svg>
+                    </a>
+                    <a href="https://www.linkedin.com/in/prasanjeet-panda" target="_blank"
+                        class="social-link reveal delay-5" aria-label="LinkedIn">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
+                            <rect x="2" y="9" width="4" height="12" />
+                            <circle cx="4" cy="4" r="2" />
+                        </svg>
+                    </a>
+                </div>
+            </div>
+
+            <!-- CREATOR 2 -->
+            <div class="creator-profile reveal">
+                <div class="creator-avatar">
+                    <img src="https://ui-avatars.com/api/?name=Nevin+Roy&size=200&background=8b5cf6&color=fff&bold=true"
+                        alt="Nevin Roy" />
+                    <div class="status-indicator"></div>
+                </div>
+                <h3 class="creator-name reveal delay-1">Nevin Roy</h3>
+                <p class="creator-title reveal delay-2">Student at Acharya Institutes</p>
+                <p class="creator-quote reveal delay-3">
+                    A software development enthusiast focused on architecting scalable and efficient digital solutions
+                    for modern problems.
+                </p>
+
+                <div class="social-links">
+                    <a href="https://github.com/Nevin17" target="_blank" class="social-link reveal delay-4"
+                        aria-label="GitHub">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path
+                                d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+                        </svg>
+                    </a>
+                    <a href="http://linkedin.com/in/nevinroy/" target="_blank" class="social-link reveal delay-5"
+                        aria-label="LinkedIn">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
+                            <rect x="2" y="9" width="4" height="12" />
+                            <circle cx="4" cy="4" r="2" />
+                        </svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-left">
+                <div class="footer-logo">
+                    <img src="./assets/logo/title-logo.png" alt="SlateX Logo" class="footer-logo-image" />
+                </div>
+                <p class="footer-copyright">© 2024 Slate.X Laboratory. All rights reserved.</p>
+            </div>
+            <div class="footer-links">
+                <a href="#">Terms</a>
+                <a href="#">Privacy</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/js/theme.js"></script>
+    <script>
+        // Check if user is logged in and update UI
+        async function checkAuthStatus() {
+            try {
+                const response = await fetch('/api/auth/status');
+                const data = await response.json();
+
+                if (data.authenticated) {
+                    const authBtn = document.getElementById('auth-btn');
+                    const logoutBtn = document.getElementById('logout-btn');
+
+                    authBtn.style.display = 'none';
+                    logoutBtn.style.display = 'block';
+                }
+            } catch (error) {
+                console.log('Not authenticated');
+            }
+        }
+
+        // Logout handler
+        document.getElementById('logout-btn').addEventListener('click', async () => {
+            try {
+                const response = await fetch('/api/auth/logout', { method: 'POST' });
+                const data = await response.json();
+
+                if (data.success) {
+                    window.location.href = '/';
+                }
+            } catch (error) {
+                console.error('Logout failed:', error);
+            }
+        });
+
+        // Check auth status on page load
+        checkAuthStatus();
+
+        // Navbar scroll effect
+        window.addEventListener('scroll', () => {
+            const navbar = document.getElementById('navbar');
+            if (window.pageYOffset > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+
+        // Reveal on scroll logic
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                    // Stop observing once animated
+                    revealObserver.unobserve(entry.target);
+                }
+            });
+        }, observerOptions);
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const revealElements = document.querySelectorAll('.reveal, .reveal-left, .reveal-right');
+            revealElements.forEach((el) => {
+                revealObserver.observe(el);
+            });
+        });
+    </script>
+</body>
+
+</html>

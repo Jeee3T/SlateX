@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Canvas Flow - Infinite Whiteboard</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography,container-queries"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#3b82f6",
+                        secondary: "#4f46e5",
+                        "background-light": "#ffffff",
+                        "background-dark": "#020617",
+                        "canvas-grid-light": "#e2e8f0",
+                        "canvas-grid-dark": "#1e293b",
+                        "charcoal": "#334155"
+                    },
+                    fontFamily: {
+                        display: ["Inter", "sans-serif"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.5rem",
+                        'xl': '1rem',
+                        '2xl': '1.5rem',
+                        '3xl': '2rem',
+                        'full': '9999px',
+                    },
+                },
+            },
+        };
+    </script>
+    <style type="text/tailwindcss">
+        @layer base {
+            body { @apply antialiased tracking-tight text-slate-200 leading-relaxed; }
+        }
+        .grid-bg-light {
+            background-image: radial-gradient(#e2e8f0 1.2px, transparent 1.2px);
+            background-size: 32px 32px;
+        }
+        .grid-bg-dark {
+            background-image: radial-gradient(circle, #334155 1.5px, transparent 1.5px);
+            background-size: 40px 40px;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 200, 'GRAD' 0, 'opsz' 24;
+            font-size: 22px;
+            @apply transition-all duration-300;
+        }
+        .active-tool {
+            background-color: #3b82f6 !important;
+            color: white !important;
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+            transform: scale(1.05);
+        }
+        .active-tool .material-symbols-outlined {
+            font-variation-settings: 'FILL' 1, 'wght' 400;
+        }
+        .floating-toolbar {
+            @apply shadow-[0_4px_30px_rgba(0,0,0,0.4)] border border-slate-800/50 backdrop-blur-xl bg-slate-900/60 transition-all duration-300;
+        }
+        .header-pill-shadow {
+            @apply shadow-[0_4px_25px_rgba(0,0,0,0.6)];
+        }
+        .ai-gemini-gradient {
+            background: linear-gradient(135deg, #4285f4, #9b72cb, #d96570);
+            background-size: 200% 200%;
+            animation: gradient-shift 4s ease infinite;
+        }
+        @keyframes gradient-shift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .metallic-sheen {
+            position: relative;
+            overflow: hidden;
+        }
+        .metallic-sheen::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent 45%, rgba(255,255,255,0.4) 50%, transparent 55%);
+            pointer-events: none;
+            @apply transition-transform duration-700 ease-in-out;
+        }
+        .metallic-sheen:hover::after {
+            transform: translate(25%, 25%);
+        }
+        .card-dark-modern {
+            @apply shadow-[0_10px_40px_-10px_rgba(0,0,0,0.4)] border border-slate-800/50 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] hover:scale-[1.02] hover:border-primary/30;
+        }
+        .sticky-note-dark-modern {
+            @apply shadow-[0_10px_25px_rgba(0,0,0,0.5)] transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] hover:rotate-0 hover:scale-[1.08];
+        }
+        button { @apply transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]; }
+    </style>
+</head>
+
+<body class="font-display bg-background-dark overflow-hidden h-screen flex flex-col">
+    <div class="fixed top-8 left-1/2 -translate-x-1/2 z-[100] w-auto">
+        <div
+            class="bg-slate-900/60 backdrop-blur-xl border border-slate-800/50 rounded-full p-1.5 flex items-center space-x-3 header-pill-shadow">
+            <div
+                class="bg-slate-950/80 rounded-full flex items-center px-5 py-2.5 space-x-4 border border-slate-800/30">
+                <button class="text-slate-400 hover:text-primary transition-all flex items-center hover:scale-110">
+                    <span class="material-symbols-outlined">home</span>
+                </button>
+                <div class="h-4 w-px bg-slate-800/80"></div>
+                <div class="flex items-center space-x-2 px-1">
+                    <input
+                        class="border-none bg-transparent focus:ring-0 text-sm font-bold p-0 w-28 text-white placeholder-slate-600"
+                        type="text" value="Project Name" />
+                    <span class="material-symbols-outlined text-[14px] text-slate-500">edit</span>
+                </div>
+                <div class="h-4 w-px bg-slate-800/80"></div>
+                <button class="text-slate-400 hover:text-primary transition-all flex items-center hover:scale-110">
+                    <span class="material-symbols-outlined">info</span>
+                </button>
+            </div>
+            <button
+                class="bg-primary hover:bg-blue-600 text-white px-8 py-2.5 rounded-full text-xs font-black shadow-lg shadow-blue-900/20 transition-all flex items-center uppercase tracking-[0.15em] leading-none">
+                Share
+            </button>
+        </div>
+    </div>
+    <div class="flex flex-1 overflow-hidden relative">
+        <div class="absolute left-6 top-1/2 -translate-y-1/2 z-50">
+            <aside class="floating-toolbar w-[64px] flex flex-col items-center py-6 rounded-3xl space-y-2">
+                <div class="flex flex-col w-full px-3">
+                    <button
+                        class="w-11 h-11 flex items-center justify-center text-slate-300 hover:bg-slate-800/80 rounded-xl">
+                        <span class="material-symbols-outlined">near_me</span>
+                    </button>
+                </div>
+                <div class="w-10 h-px bg-slate-800/50 my-1"></div>
+                <div class="flex flex-col space-y-1.5 w-full px-3">
+                    <button
+                        class="w-11 h-11 flex items-center justify-center text-slate-300 hover:bg-slate-800/80 rounded-xl">
+                        <span class="material-symbols-outlined">view_quilt</span>
+                    </button>
+                    <button
+                        class="w-11 h-11 flex items-center justify-center text-slate-300 hover:bg-slate-800/80 rounded-xl">
+                        <span class="material-symbols-outlined">add_box</span>
+                    </button>
+                    <button
+                        class="w-11 h-11 flex items-center justify-center text-slate-300 hover:bg-slate-800/80 rounded-xl">
+                        <span class="material-symbols-outlined">title</span>
+                    </button>
+                    <button
+                        class="w-11 h-11 flex items-center justify-center text-slate-300 hover:bg-slate-800/80 rounded-xl">
+                        <span class="material-symbols-outlined">description</span>
+                    </button>
+                    <button
+                        class="w-11 h-11 flex items-center justify-center text-slate-300 hover:bg-slate-800/80 rounded-xl">
+                        <span class="material-symbols-outlined">category</span>
+                    </button>
+                    <button
+                        class="w-11 h-11 flex items-center justify-center text-slate-300 hover:bg-slate-800/80 rounded-xl active-tool">
+                        <span class="material-symbols-outlined">edit_note</span>
+                    </button>
+                    <button
+                        class="w-11 h-11 flex items-center justify-center text-slate-300 hover:bg-slate-800/80 rounded-xl">
+                        <span class="material-symbols-outlined">ink_eraser</span>
+                    </button>
+                </div>
+                <div class="w-10 h-px bg-slate-800/50 my-1"></div>
+                <div class="flex flex-col space-y-1.5 w-full px-3 items-center">
+                    <button
+                        class="w-11 h-11 flex items-center justify-center text-slate-300 hover:bg-slate-800/80 rounded-xl">
+                        <span class="material-symbols-outlined">undo</span>
+                    </button>
+                    <button class="w-11 h-11 flex items-center justify-center text-slate-700 cursor-not-allowed">
+                        <span class="material-symbols-outlined">redo</span>
+                    </button>
+                    <div
+                        class="mt-1 px-2.5 py-1 bg-slate-100 rounded-md text-[10px] font-black text-slate-900 select-none shadow-premium-dark">
+                        5PX
+                    </div>
+                </div>
+                <div class="w-10 h-px bg-slate-800/50 my-1"></div>
+                <div class="flex flex-col space-y-1.5 w-full px-3">
+                    <button
+                        class="w-11 h-11 flex items-center justify-center text-slate-500 hover:bg-red-900/20 hover:text-red-400 rounded-xl">
+                        <span class="material-symbols-outlined">delete</span>
+                    </button>
+                    <button
+                        class="w-11 h-11 flex items-center justify-center text-slate-500 hover:bg-slate-800/80 rounded-xl">
+                        <span class="material-symbols-outlined">download</span>
+                    </button>
+                </div>
+            </aside>
+        </div>
+        <main class="flex-1 relative overflow-hidden bg-background-dark">
+            <div class="absolute inset-0 grid-bg-dark z-0 opacity-15"></div>
+            <div class="relative z-10 w-full h-full">
+                <div
+                    class="absolute top-[20%] left-[25%] w-72 bg-slate-900 border border-slate-800/50 rounded-2xl p-6 cursor-move card-dark-modern">
+                    <h3
+                        class="font-black mb-2 text-slate-100 tracking-wider text-sm uppercase leading-none pb-2 border-b border-slate-800">
+                        Ideation Phase</h3>
+                    <p class="text-sm text-slate-400 font-medium leading-relaxed pt-1">Main focus: Streamlining the user
+                        onboarding flow for the Q4 release.</p>
+                </div>
+                <div
+                    class="absolute top-[45%] left-[45%] w-60 h-60 bg-blue-500/5 border-2 border-dashed border-primary/20 rounded-full flex flex-col items-center justify-center transition-all hover:border-primary/50 group">
+                    <div
+                        class="w-3.5 h-3.5 bg-primary/40 rounded-full mb-3 group-hover:scale-150 transition-transform shadow-[0_0_15px_rgba(59,130,246,0.3)]">
+                    </div>
+                    <span class="text-primary font-black text-[10px] tracking-[0.25em] uppercase">Core Concept</span>
+                </div>
+                <div class="absolute top-[40%] left-[10%] rotate-[-5deg]">
+                    <div
+                        class="bg-yellow-900/20 p-7 w-48 h-48 shadow-premium-dark border-l-[6px] border-yellow-600/50 backdrop-blur-sm sticky-note-dark-modern">
+                        <span class="text-sm font-bold text-yellow-200/90 leading-snug tracking-tight">Don't forget to
+                            check mobile responsiveness!</span>
+                    </div>
+                </div>
+            </div>
+        </main>
+        <div class="absolute right-6 top-1/2 -translate-y-1/2 z-50">
+            <aside class="floating-toolbar w-[64px] flex flex-col items-center py-6 rounded-3xl">
+                <div class="flex flex-col items-center space-y-3.5 px-3 pb-6">
+                    <div class="relative group cursor-pointer">
+                        <img alt="User Avatar"
+                            class="w-9 h-9 rounded-full border-2 border-slate-900 shadow-xl transition-all group-hover:scale-125 group-hover:border-primary/50"
+                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuA_Th51MgHOtFe7HBslrOp8xu8qge5WETbtPF3P89dh45LeqJNkJAi9wK1lejXQK5FaW5yXTS5E-noCnsWvd7gU2ONf-xbDtdhlcWiM4PCAUwnR0NYywahkBdAKTJPpFf4Qys1cknWs5zu_w7UYKoXE4fQ1dzE5des6zQ8kIbdu_ulrJcxPok5saj_eHZPgeYqrWSJbABYnzCz14T7pZJs6yxzS2fByO_E7WHQVVEe6XXTiV-Hq8WoXDhT1x6RmI_kcxWXrBXgtviY1" />
+                        <div
+                            class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-slate-900 rounded-full shadow-[0_0_10px_rgba(34,197,94,0.3)]">
+                        </div>
+                    </div>
+                    <div class="relative group cursor-pointer">
+                        <img alt="User Avatar"
+                            class="w-9 h-9 rounded-full border-2 border-slate-900 shadow-xl transition-all group-hover:scale-125 group-hover:border-primary/50"
+                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuBi8uOkAhM8a-XxpHFEDs4YhWLFZ_jCTT6zmeCD4vauDIUIfpu4AW3x2NJk67YjnH7jREbgPEbJj6BmTIf81SfSSf3-PjT5umnxRqR9HwaRH8-VWA84dDmHgOyF81yGpldLsL2-kv-MCd9rzts39dDgziQo6Gjd7JxwN0R-WERHWpmkPZqPzLCNwzSHUBGaHFvRgZrwFFitEmB-5GsaCQd_DZ17CxZOQ5_Q0rD_rlQ_Ps0ctl2DUbL7TELd9P-n3AX0DsSZv37MHLKr" />
+                        <div
+                            class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-slate-900 rounded-full shadow-[0_0_10px_rgba(34,197,94,0.3)]">
+                        </div>
+                    </div>
+                    <div
+                        class="w-9 h-9 rounded-full border-2 border-slate-900 bg-slate-800 flex items-center justify-center text-[11px] font-black text-slate-500 shadow-inner">
+                        +3</div>
+                </div>
+                <div class="px-3 pb-6 w-full flex justify-center">
+                    <button
+                        class="w-11 h-11 flex items-center justify-center bg-orange-600 text-white rounded-2xl shadow-lg shadow-orange-950/40 hover:bg-orange-500 hover:scale-110 active:scale-95 group"
+                        title="Leave Room">
+                        <span class="material-symbols-outlined">logout</span>
+                    </button>
+                </div>
+                <div class="w-10 h-px bg-slate-800/50 mb-6"></div>
+                <button
+                    class="w-11 h-11 flex items-center justify-center bg-slate-800/40 border border-slate-700/50 rounded-full shadow-lg text-slate-400 hover:text-primary hover:border-primary/40 hover:scale-[1.15] mb-6">
+                    <span class="material-symbols-outlined">chat_bubble</span>
+                </button>
+                <div class="w-10 h-px bg-slate-800/50 mb-6"></div>
+                <div
+                    class="flex flex-col items-center space-y-3 bg-slate-800/30 p-1.5 rounded-2xl border border-slate-800/50 mb-6">
+                    <button class="p-2 text-slate-500 hover:text-primary hover:scale-[1.3] transition-colors">
+                        <span class="material-symbols-outlined">add</span>
+                    </button>
+                    <div class="text-[10px] font-black text-slate-500 py-0.5">100%</div>
+                    <button class="p-2 text-slate-500 hover:text-primary hover:scale-[1.3] transition-colors">
+                        <span class="material-symbols-outlined">remove</span>
+                    </button>
+                </div>
+                <div class="w-10 h-px bg-slate-800/50 mb-6"></div>
+                <div class="flex flex-col items-center space-y-6 w-full px-3">
+                    <button
+                        class="w-11 h-11 flex items-center justify-center text-slate-400 hover:bg-slate-800/80 rounded-xl hover:scale-110"
+                        id="themeToggle">
+                        <span class="material-symbols-outlined">light_mode</span>
+                    </button>
+                    <button
+                        class="ai-gemini-gradient metallic-sheen w-12 h-12 flex items-center justify-center text-white rounded-2xl shadow-[0_0_20px_rgba(66,133,244,0.3)] hover:scale-[1.2] transition-transform duration-500"
+                        title="AI Assistant">
+                        <span class="material-symbols-outlined"
+                            style="font-variation-settings: 'FILL' 1, 'wght' 400">auto_awesome</span>
+                    </button>
+                </div>
+            </aside>
+        </div>
+    </div>
+    <script>
+        const themeToggle = document.getElementById('themeToggle');
+        const html = document.documentElement;
+        themeToggle.addEventListener('click', () => {
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                html.classList.add('light');
+            } else {
+                html.classList.remove('light');
+                html.classList.add('dark');
+            }
+        });
+        const tools = document.querySelectorAll('.floating-toolbar button');
+        tools.forEach(tool => {
+            tool.addEventListener('click', () => {
+                const iconSpan = tool.querySelector('.material-symbols-outlined');
+                if (!iconSpan) return;
+                const icon = iconSpan.innerText;
+                const excludedIcons = ['undo', 'redo', 'delete', 'download', 'dark_mode', 'light_mode', 'chat_bubble', 'auto_awesome', 'add', 'remove', 'logout', 'home', 'info'];
+                if (excludedIcons.includes(icon)) return;
+                // Only toggle active state for main whiteboard tools in the left sidebar
+                if (tool.closest('.left-6')) {
+                    tools.forEach(t => {
+                        if (t.closest('.left-6')) t.classList.remove('active-tool');
+                    });
+                    tool.classList.add('active-tool');
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

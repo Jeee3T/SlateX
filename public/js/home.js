@@ -148,14 +148,19 @@ document.addEventListener("DOMContentLoaded", function () {
   const navLinks = document.querySelectorAll(".nav-links a");
   navLinks.forEach((link) => {
     link.addEventListener("click", function (e) {
-      e.preventDefault();
-      const targetId = this.getAttribute("href");
-      const targetSection = document.querySelector(targetId);
-      if (targetSection) {
-        targetSection.scrollIntoView({ behavior: "smooth" });
+      const href = this.getAttribute("href");
+
+      // Only prevent default and scroll if it's an anchor link on the same page
+      if (href.startsWith("#")) {
+        e.preventDefault();
+        const targetSection = document.querySelector(href);
+        if (targetSection) {
+          targetSection.scrollIntoView({ behavior: "smooth" });
+        }
       }
+      // Otherwise, allow the default link behavior (e.g., navigating to /about)
     });
   });
 
- 
+
 });

@@ -80,6 +80,11 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
+// About page (public)
+app.get("/about", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "about.html"));
+});
+
 // Auth page (redirect if already logged in)
 app.get("/auth", redirectIfAuthenticated, (req, res) => {
   res.sendFile(path.join(__dirname, "public", "auth.html"));
@@ -352,6 +357,12 @@ io.on("connection", (socket) => {
         const isSameByUsername = (u.username.trim().toLowerCase() === normalizedUsername);
 
         if (isSameByUserId || isSameByUsername) {
+          // GRACEFUL RECONNECT: Cancel pending disconnect if exists
+          if (u.disconnectTimeout) {
+            clearTimeout(u.disconnectTimeout);
+            console.log(`[SlateX] Graceful reconnect for ${username}. Cancelled disconnect.`);
+          }
+
           inheritedAdmin = u.isAdmin;
           inheritedAccess = u.hasAccess;
           delete roomData.users[oldSocketId]; // Wipe old session to prevent ID conflicts
@@ -899,73 +910,78 @@ io.on("connection", (socket) => {
     if (currentRoom) {
       const roomData = activeRooms.get(currentRoom);
 
-      if (roomData) {
-        // Release drawing permissions
-        if (roomData.currentDrawer === socket.id) {
-          roomData.currentDrawer = null;
-          io.to(currentRoom).emit("draw-released");
-          io.to(currentRoom).emit("drawer-cleared");
-        }
-
+      if (roomData && roomData.users[socket.id]) {
         const userData = roomData.users[socket.id];
-        const username = userData?.username;
-        const userId = userData?.userId; // Get userId of disconnected user
 
-        // Check if the disconnected user was the room creator
-        const wasCreator = (userId && roomData.creatorId && String(userId) === String(roomData.creatorId));
+        // GRACEFUL DISCONNECT: 4-second grace period
+        userData.disconnectTimeout = setTimeout(async () => {
+          // If user was removed (e.g. by reconnecting/handover), stop.
+          // Or if room was closed
+          if (!activeRooms.has(currentRoom) || !roomData.users[socket.id]) return;
 
-        // Remove user
-        delete roomData.users[socket.id];
-        const remainingUsers = Object.values(roomData.users);
+          // Release drawing permissions
+          if (roomData.currentDrawer === socket.id) {
+            roomData.currentDrawer = null;
+            io.to(currentRoom).emit("draw-released");
+            io.to(currentRoom).emit("drawer-cleared");
+          }
 
-        // --- ADMIN TRANSFER LOGIC ---
-        if (wasCreator && remainingUsers.length > 0) {
-          // Find the new admin: the first user in the remaining list
-          const newAdminData = remainingUsers[0];
+          const username = userData.username;
+          const userId = userData.userId;
 
-          // Find the socket ID of the new admin
-          const newAdminSocketId = Object.keys(roomData.users).find(
-            (sId) => roomData.users[sId].userId === newAdminData.userId
-          );
+          // Check if the disconnected user was the room creator
+          const wasCreator = (userId && roomData.creatorId && String(userId) === String(roomData.creatorId));
 
-          if (newAdminSocketId) {
-            roomData.users[newAdminSocketId].isAdmin = true;
-            roomData.users[newAdminSocketId].hasAccess = true; // New admin always has access
+          // Remove user
+          delete roomData.users[socket.id];
+          const remainingUsers = Object.values(roomData.users);
 
-            console.log(`[SlateX] Admin transfer: ${username} (creator) left. ${newAdminData.username} (Socket ${newAdminSocketId}) is new admin.`);
+          // --- ADMIN TRANSFER LOGIC ---
+          if (wasCreator && remainingUsers.length > 0) {
+            // Find the new admin: the first user in the remaining list
+            const newAdminData = remainingUsers[0];
 
-            // 1. Notify the new admin client-side
-            io.to(newAdminSocketId).emit("user-permissions", { isAdmin: true, hasAccess: true });
+            // Find the socket ID of the new admin
+            const newAdminSocketId = Object.keys(roomData.users).find(
+              (sId) => roomData.users[sId].userId === newAdminData.userId
+            );
 
-            // 2. Update the creator in the MongoDB Room document for persistence
-            const Room = require('./models/Room');
-            const mongoose = require('mongoose'); // Require mongoose here
-            const room = await Room.findOne({ roomId: currentRoom });
-            if (room) {
-              room.creator = new mongoose.Types.ObjectId(newAdminData.userId); // Convert to ObjectId
-              await room.save();
-              roomData.creatorId = newAdminData.userId; // Update in-memory creatorId
-              roomData.creatorUsername = newAdminData.username; // Update in-memory creatorUsername
-              console.log(`[SlateX] MongoDB Room ${currentRoom} creator updated to ${newAdminData.username}`);
+            if (newAdminSocketId) {
+              roomData.users[newAdminSocketId].isAdmin = true;
+              roomData.users[newAdminSocketId].hasAccess = true; // New admin always has access
+
+              console.log(`[SlateX] Admin transfer: ${username} (creator) left. ${newAdminData.username} (Socket ${newAdminSocketId}) is new admin.`);
+
+              // 1. Notify the new admin client-side
+              io.to(newAdminSocketId).emit("user-permissions", { isAdmin: true, hasAccess: true });
+
+              // 2. Update the creator in the MongoDB Room document for persistence
+              const Room = require('./models/Room');
+              const mongoose = require('mongoose');
+              const room = await Room.findOne({ roomId: currentRoom });
+              if (room) {
+                room.creator = new mongoose.Types.ObjectId(newAdminData.userId);
+                await room.save();
+                roomData.creatorId = newAdminData.userId;
+                roomData.creatorUsername = newAdminData.username;
+                console.log(`[SlateX] MongoDB Room ${currentRoom} creator updated to ${newAdminData.username}`);
+              }
             }
           }
-        }
-        // --- END ADMIN TRANSFER LOG ---
+          // --- END ADMIN TRANSFER LOGIC ---
 
-        // Notify room of user departure and any admin changes
-        io.to(currentRoom).emit("user-left", {
-          username,
-          users: Object.values(roomData.users)
-        });
+          // Notify room of user departure
+          io.to(currentRoom).emit("user-left", {
+            username,
+            users: Object.values(roomData.users)
+          });
 
-        // NOTE: Save is now handled explicitly via API call on room exit
-        // No auto-save on disconnect per requirements
-
-        // Clean up empty rooms
-        if (Object.keys(roomData.users).length === 0) {
-          activeRooms.delete(currentRoom);
-          console.log(`Room ${currentRoom} cleaned up (empty)`);
-        }
+          // Clean up empty rooms
+          if (Object.keys(roomData.users).length === 0) {
+            activeRooms.delete(currentRoom);
+            console.log(`Room ${currentRoom} cleaned up (empty)`);
+          }
+        }, 4000); // 4 seconds grace period
       }
     }
   });
