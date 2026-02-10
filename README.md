@@ -18,4 +18,4 @@ Completed tasks:
 13. Room Admin authorization optimized
 14. lag fixes while drawing in canvas
 15. Added board summarization feature
-    
+16. Added Speech to Text feature 
