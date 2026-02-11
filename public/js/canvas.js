@@ -592,6 +592,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let brushSize = 5;
   let drawing = false;
   let pendingDraw = false;
+  let autoShapeEnabled = false;
 
 
 
@@ -921,7 +922,7 @@ document.addEventListener("DOMContentLoaded", () => {
     redraw();
   });
 
-  canvas.addEventListener("mouseup", (e) => {
+  canvas.addEventListener("mouseup", async (e) => {
     // Hand tool cursor reset and sync template position
     if (tool === "hand") {
       canvas.style.cursor = 'grab';
@@ -1062,24 +1063,311 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (!drawing) return;
-    // ADD ID TO STROKE
+
+    // CAPTURE CURRENT STATE
+    const strokePath = [...currentPath];
+    const sId = socket.id;
     const strokeId = Date.now() + '-' + Math.random();
+    const strokeColor = color;
+    const strokeSize = brushSize;
+    const strokeTool = tool;
+    const strokeDrawType = drawType;
+
+    // RESET DRAWING STATE IMMEDIATELY
+    drawing = false;
+    currentPath = [];
+    socket.emit("release-draw");
+
+    // SAVE STROKE IMMEDIATELY (Prevent disappearing)
     const stroke = {
       id: strokeId,
-      socketId: socket.id, // Attach socketId for remote buffer cleanup
-      tool,
-      drawType,
-      color,
-      size: brushSize,
-      points: currentPath
+      socketId: sId,
+      tool: strokeTool,
+      drawType: strokeDrawType,
+      color: strokeColor,
+      size: strokeSize,
+      points: strokePath
     };
     paths.push(stroke);
     addToHistory({ type: 'add', objectType: 'stroke', data: stroke });
     socket.emit("draw-stroke", stroke);
-    socket.emit("release-draw");
-    drawing = false;
-    currentPath = [];
+    redraw();
+
+    // --- ASYNC AUTO SHAPE REPLACEMENT ---
+    if (autoShapeEnabled && strokePath.length > 5) {
+      console.log('[AI] Triggering detection for stroke:', strokeId);
+      detectShape(strokePath).then(detectedShape => {
+        if (detectedShape) {
+          console.log('[AI] Match found, replacing stroke:', strokeId, 'with', detectedShape.type);
+          // REMOVE THE STROKE WE JUST ADDED
+          paths = paths.filter(p => p.id !== strokeId);
+
+          // CLEAN HISTORY: Remove the stroke entry so it doesn't clutter
+          if (typeof undoStack !== 'undefined') {
+            const hIdx = undoStack.findIndex(h => h.data && h.data.id === strokeId);
+            if (hIdx !== -1) undoStack.splice(hIdx, 1);
+          }
+
+          // ADD THE PERFECT SHAPE
+          const shape = {
+            id: Date.now() + '-' + Math.random(),
+            type: detectedShape.type,
+            x: detectedShape.x,
+            y: detectedShape.y,
+            width: detectedShape.width,
+            height: detectedShape.height,
+            color: strokeColor,
+            rotation: 0
+          };
+
+          shapes.push(shape);
+          addToHistory({ type: 'add', objectType: 'shape', data: shape });
+          socket.emit("shape-add", shape);
+
+          // SYNC DELETE FOR REMOTE CLIENTS
+          socket.emit("stroke-delete", strokeId);
+
+          renderAllShapes();
+          redraw();
+          showToast(`Converted to ${detectedShape.type}! ✨`, 'ai-ready', 1500);
+        } else {
+          console.log('[AI] No match found for stroke:', strokeId);
+        }
+      });
+    }
+    return;
   });
+
+  /* ================= TOAST NOTIFICATIONS ================= */
+  function showToast(message, type = '', duration = 3000) {
+    let container = document.querySelector('.toast-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.className = 'toast-container';
+      document.body.appendChild(container);
+    }
+
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.innerHTML = `
+      <span class="material-symbols-outlined" style="font-size: 18px;">${type === 'ai-ready' ? 'auto_awesome' : 'info'}</span>
+      <span>${message}</span>
+    `;
+    container.appendChild(toast);
+
+    setTimeout(() => {
+      toast.classList.add('toast-fade-out');
+      setTimeout(() => toast.remove(), 300);
+    }, duration);
+  }
+
+  /* ================= AUTO SHAPE DETECTION ENGINE (ML-BASED via ml5.js) ================= */
+  let classifier;
+  let modelReady = false;
+  let modelLoadRetries = 0;
+  let modelLoadPromise = null;
+
+  function initShapeModel() {
+    if (modelReady) return Promise.resolve(classifier);
+    if (modelLoadPromise && modelLoadRetries < 3) return modelLoadPromise;
+
+    console.log('[AI] Initializing Stable DoodleNet (v0.12.2)...');
+    showToast('AI Model is booting up...', 'ai-loading', 4000);
+
+    modelLoadPromise = new Promise((resolve) => {
+      try {
+        if (typeof ml5 === 'undefined') {
+          showToast('AI Library missing! Please refresh.', 'ai-error', 5000);
+          return resolve(null);
+        }
+
+        // Legacy ml5 style: classifier = ml5.imageClassifier(model, callback)
+        classifier = ml5.imageClassifier('DoodleNet', () => {
+          console.log('[AI] DoodleNet Ready!');
+          showToast('AI Engine Ready! 🤖', 'ai-ready', 2000);
+          modelReady = true;
+          resolve(classifier);
+        });
+      } catch (fatal) {
+        console.error('[AI] Fatal load crash:', fatal);
+        showToast('AI Engine failed to start.', 'ai-error', 5000);
+        modelLoadPromise = null;
+        resolve(null);
+      }
+    });
+
+    return modelLoadPromise;
+  }
+
+  function getShapeMapping(label) {
+    const l = label.toLowerCase();
+
+    // Specific Mapping Categorization
+    const circles = ['circle', 'donut', 'hockey puck', 'pancake', 'pool', 'wheel', 'sun', 'soccer ball', 'compass', 'blueberry', 'baseball', 'cookie'];
+    const rectangles = ['square', 'box', 'door', 'envelope', 'frame', 'laptop', 'microwave', 'oven', 'picture frame', 'postcard', 'radio', 'refrigerator', 'spreadsheet', 'television', 'washing machine', 'window', 'building', 'camera', 'book', 'bus', 'suitcase', 'toaster', 'van'];
+    const triangles = ['triangle', 'mountain', 'tent', 'pyramid', 'sailboat', 'house', 'nose', 'party hat', 'megaphone'];
+    const stars = ['star'];
+    const arrows = ['arrow', 'line', 'string bean'];
+    const hexagons = ['hexagon'];
+    const pentagons = ['pentagon'];
+    const diamonds = ['diamond'];
+    const ellipses = ['ellipse', 'oval', 'potato'];
+    const hearts = ['heart'];
+    const clouds = ['cloud', 'brain'];
+    const trapezoids = ['trapezoid'];
+    const parallelograms = ['parallelogram'];
+    const octagons = ['octagon', 'stop sign'];
+    const crosses = ['cross', 'plus', 'add'];
+    const lightnings = ['lightning', 'bolt', 'flash'];
+    const moons = ['moon', 'banana'];
+    const cylinders = ['cylinder', 'coffee cup', 'mug', 'cup', 'bucket', 'paint can', 'barrel', 'wine glass', 'candle'];
+    const cubes = ['cube', 'dice'];
+    const speechBubbles = ['speech bubble'];
+    const roundedRects = ['spreadsheet', 'radio', 'television', 'washing machine'];
+
+    if (circles.includes(l)) return 'circle';
+    if (rectangles.includes(l)) return 'rectangle';
+    if (triangles.includes(l)) return 'triangle';
+    if (stars.includes(l)) return 'star';
+    if (arrows.includes(l)) return 'arrow-right';
+    if (hexagons.includes(l)) return 'hexagon';
+    if (pentagons.includes(l)) return 'pentagon';
+    if (diamonds.includes(l)) return 'diamond';
+    if (ellipses.includes(l)) return 'ellipse';
+    if (hearts.includes(l)) return 'heart';
+    if (clouds.includes(l)) return 'cloud';
+    if (trapezoids.includes(l)) return 'trapezoid';
+    if (parallelograms.includes(l)) return 'parallelogram';
+    if (octagons.includes(l)) return 'octagon';
+    if (crosses.includes(l)) return 'cross';
+    if (lightnings.includes(l)) return 'lightning';
+    if (moons.includes(l)) return 'moon';
+    if (cylinders.includes(l)) return 'cylinder';
+    if (cubes.includes(l)) return 'cube';
+    if (speechBubbles.includes(l)) return 'speech-bubble';
+    if (roundedRects.includes(l)) return 'rounded-rect';
+
+    return null;
+  }
+
+  async function detectShape(points) {
+    if (!modelReady) {
+      if (!modelLoadPromise) initShapeModel();
+      showToast('AI is warming up... please wait a second ⏳', 'ai-waiting', 3000);
+
+      // WAIT FOR IT INSTEAD OF QUITTING
+      await modelLoadPromise;
+
+      if (!modelReady) {
+        console.warn('[AI] Model failed to ready even after waiting.');
+        return null;
+      }
+    }
+
+    // START PROCESSING FEEDBACK
+    showToast('🧠 AI Thinking...', 'ai-processing', 1500);
+
+    const bufferSize = 280; // Larger buffer for better internal resizing by ml5
+    const buffer = document.createElement('canvas');
+    buffer.width = bufferSize;
+    buffer.height = bufferSize;
+    const ctx = buffer.getContext('2d');
+
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, bufferSize, bufferSize);
+
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    points.forEach(p => {
+      minX = Math.min(minX, p.x); minY = Math.min(minY, p.y);
+      maxX = Math.max(maxX, p.x); maxY = Math.max(maxY, p.y);
+    });
+
+    const width = maxX - minX;
+    const height = maxY - minY;
+    if (width < 3 || height < 3) return null;
+
+    const padding = 40;
+    const scaleFactor = (bufferSize - padding * 2) / Math.max(width, height || 1);
+    const offsetX = (bufferSize - width * scaleFactor) / 2;
+    const offsetY = (bufferSize - height * scaleFactor) / 2;
+
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 14;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    ctx.beginPath();
+    points.forEach((p, idx) => {
+      const x = (p.x - minX) * scaleFactor + offsetX;
+      const y = (p.y - minY) * scaleFactor + offsetY;
+      if (idx === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    // WRAP CLASSIFY IN TIMEOUT
+    const classificationPromise = new Promise((resolve) => {
+      try {
+        if (!classifier || typeof classifier.classify !== 'function') {
+          return resolve({ error: 'not_ready' });
+        }
+
+        // Legacy callback style
+        classifier.classify(buffer, (err, results) => {
+          if (err) {
+            console.error('[AI] Prediction error:', err);
+            return resolve({ error: 'prediction_failed' });
+          }
+          resolve({ results: results });
+        });
+      } catch (e) {
+        resolve({ error: 'crash' });
+      }
+    });
+
+    const timeoutPromise = new Promise((resolve) => {
+      setTimeout(() => resolve({ error: 'timeout' }), 5000);
+    });
+
+    const response = await Promise.race([classificationPromise, timeoutPromise]);
+
+    if (response.error === 'timeout') {
+      showToast('AI is taking too long... try drawing slower? ⏳', 'ai-waiting', 3000);
+      return null;
+    }
+    if (response.error) {
+      showToast(`AI Error: ${response.error}`, 'ai-error', 4000);
+      return null;
+    }
+
+    const results = response.results;
+    if (!results || results.length === 0) {
+      showToast('AI saw absolute nothing! 💨', 'ai-debug', 2000);
+      return null;
+    }
+
+    console.log('[AI] Top Results:', results.slice(0, 3).map(r => `${r.label} (${(r.confidence * 100).toFixed(0)}%)`).join(', '));
+
+    // FIND BEST MATCH
+    for (let i = 0; i < Math.min(results.length, 10); i++) {
+      const mappedLabel = getShapeMapping(results[i].label);
+      if (mappedLabel && results[i].confidence > 0.01) {
+        return {
+          type: mappedLabel,
+          x: minX,
+          y: minY,
+          width: mappedLabel === 'circle' ? Math.max(width, height) : width,
+          height: mappedLabel === 'circle' ? Math.max(width, height) : height
+        };
+      }
+    }
+
+    // EXTREME DIAGNOSTIC: Show the user what AI "thought" regardless of result
+    const top = results[0];
+    showToast(`AI saw "${top.label}" (${(top.confidence * 100).toFixed(0)}%)`, 'ai-debug', 2500);
+
+    return null;
+  }
 
   socket.on("draw-point", data => {
     const sId = data.socketId;
@@ -2726,31 +3014,7 @@ document.addEventListener("DOMContentLoaded", () => {
           }
         }
 
-        // 3. Populate Metadata (Dots)
-        const metadataLines = metadataText.split('\n');
-        function setMetric(name, value) {
-          const cards = document.querySelectorAll('.metric-item');
-          cards.forEach(card => {
-            if (card.querySelector('span').innerText.toLowerCase().includes(name.toLowerCase())) {
-              const dots = card.querySelectorAll('.dot');
-              const score = parseInt(value) || 0;
-              dots.forEach((dot, idx) => {
-                if (idx < score) dot.classList.add('active');
-                else dot.classList.remove('active');
-              });
-            }
-          });
-        }
-
-        metadataLines.forEach(line => {
-          const [key, val] = line.split(':').map(s => s.trim());
-          if (key && val) setMetric(key, val);
-        });
-
-        // 4. Populate Secondary Insights
-        // 4. Populate Secondary Insights
-        const secondaryInsightsEl = document.getElementById('insights-secondary-text');
-        if (secondaryInsightsEl) secondaryInsightsEl.innerText = secondaryInsights || 'Visual hierarchy remains balanced.';
+        // Card C, D, E, F removed as requested
 
         await new Promise(r => setTimeout(r, 1000)); // Brief pause to show loading state
 
@@ -2768,10 +3032,10 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         // --- Show AI Chat Section ---
+        // AI Chat Section hidden by default until toggled via the new AI button
         const chatSection = document.getElementById('ai-chat-section');
         if (chatSection) {
-          chatSection.classList.remove('hidden');
-          chatSection.classList.add('fade-in');
+          chatSection.classList.add('hidden');
         }
 
       } catch (error) {
@@ -2784,6 +3048,17 @@ document.addEventListener("DOMContentLoaded", () => {
           if (btnText) btnText.innerText = 'Retry Generation';
         }
         alert('Failed to generate insights: ' + (error.message || 'System error. Please try again.'));
+      }
+    });
+  }
+  // AI Chat Toggle Logic
+  const toggleAiChat = document.getElementById('toggle-ai-chat');
+  if (toggleAiChat) {
+    toggleAiChat.addEventListener('click', () => {
+      const chatSection = document.getElementById('ai-chat-section');
+      if (chatSection) {
+        chatSection.classList.toggle('hidden');
+        chatSection.classList.toggle('fade-in');
       }
     });
   }
@@ -2909,6 +3184,17 @@ document.addEventListener("DOMContentLoaded", () => {
       // Placeholder for processing
       voiceBar.classList.add('hidden');
       if (micBtn) micBtn.classList.remove('mic-active'); // Remove glow
+    });
+  }
+
+  const autoShapeToggle = document.getElementById('auto-shape-toggle');
+  if (autoShapeToggle) {
+    autoShapeToggle.addEventListener('change', (e) => {
+      autoShapeEnabled = e.target.checked;
+      console.log('[AI] Auto Shape Detection:', autoShapeEnabled);
+      if (autoShapeEnabled) {
+        initShapeModel(); // Start pre-loading model as soon as toggled ON
+      }
     });
   }
 

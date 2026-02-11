@@ -37,6 +37,8 @@
   <link rel="stylesheet" href="/css/canvas.css">
   <link rel="stylesheet" href="/css/theme-toggle.css">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <!-- ml5.js for DoodleNet ML Model (QuickDraw) - Rolling back to 0.12.2 for maximum compatibility -->
+  <script src="https://unpkg.com/ml5@0.12.2/dist/ml5.min.js"></script>
 </head>
 
 <body>
@@ -480,6 +482,16 @@
         <button data-draw="pencil" class="sub-tool" title="Pencil">✏️ Pencil</button>
         <button data-draw="pen" class="sub-tool active" title="Pen">✒️ Pen</button>
         <button data-draw="brush" class="sub-tool" title="Brush">🖌️ Brush</button>
+        <div class="tool-divider h-px bg-slate-200/60 dark:bg-zinc-800/50 my-1"></div>
+        <div class="sub-tool flex justify-between items-center px-3 py-2">
+          <span class="text-[12px] font-medium opacity-70">Auto Shape</span>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="auto-shape-toggle" class="sr-only peer">
+            <div
+              class="w-8 h-4 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:height-3 after:width-3 after:transition-all dark:border-gray-600 peer-checked:bg-primary">
+            </div>
+          </label>
+        </div>
         <div class="color-grid">
           <span class="color-swatch" data-draw-color="#000" style="background: #000"></span>
           <span class="color-swatch" data-draw-color="#ef4444" style="background: #ef4444"></span>
@@ -644,6 +656,11 @@
               <circle cx="12" cy="12" r="10"></circle>
               <path d="M12 8v4l3 3"></path>
             </svg></button>
+          <button id="toggle-ai-chat" class="ai-action-btn" title="Toggle Chat">
+            <div class="mini-gemini">
+              <div></div>
+            </div>
+          </button>
           <button id="close-ai-modal" class="ai-close-btn">
             <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2.5" fill="none">
               <path d="M18 6L6 18M6 6l12 12"></path>
@@ -777,59 +794,6 @@
             </ul>
           </div>
 
-          <!-- Card C: Content Analysis (Metrics) -->
-          <div class="ai-card glass-card metrics-card fade-in delay-3">
-            <div class="card-tag">CONTENT METRICS</div>
-            <div class="metric-item">
-              <span>Content Type</span>
-              <div class="metric-dots"><span class="dot active"></span><span class="dot"></span><span
-                  class="dot"></span><span class="dot"></span></div>
-            </div>
-            <div class="metric-item">
-              <span>Complexity Level</span>
-              <div class="metric-dots"><span class="dot active"></span><span class="dot active"></span><span
-                  class="dot active"></span><span class="dot"></span></div>
-            </div>
-            <div class="metric-item">
-              <span>Information Density</span>
-              <div class="metric-dots"><span class="dot active"></span><span class="dot active"></span><span
-                  class="dot"></span><span class="dot"></span></div>
-            </div>
-            <div class="metric-item">
-              <span>Signal vs Noise</span>
-              <div class="metric-dots"><span class="dot active"></span><span class="dot active"></span><span
-                  class="dot active"></span><span class="dot active"></span></div>
-            </div>
-          </div>
-
-          <!-- Card D: Insights -->
-          <div class="ai-card glass-card fade-in delay-4">
-            <div class="card-tag">B. Insights</div>
-            <p id="insights-secondary-text" class="card-content">Outcome session analysis on balance and assets.</p>
-          </div>
-
-          <!-- Card E: Thoughts -->
-          <div class="ai-card glass-card fade-in delay-5">
-            <div class="card-tag">Thoughts</div>
-            <div class="thought-bubbles">
-              <span class="thought-icon minus">-</span>
-              <span class="thought-icon pipe">|</span>
-              <span class="thought-icon square">□</span>
-            </div>
-          </div>
-
-          <!-- Card F: Additional Analysis -->
-          <div class="ai-card glass-card fade-in delay-6">
-            <div class="card-tag">Content Analysis</div>
-            <div class="analysis-icons">
-              <div class="icon-block"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                  <circle cx="12" cy="12" r="8"></circle>
-                </svg></div>
-              <div class="icon-block active"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                  <path d="M12 2L15 8H9L12 2Z"></path>
-                </svg></div>
-            </div>
-          </div>
         </div>
 
         <!-- AI Insight Chat Interface -->
