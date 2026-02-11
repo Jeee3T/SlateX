@@ -1436,7 +1436,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const hearts = ['heart'];
     const trapezoids = ['trapezoid'];
     const parallelograms = ['parallelogram'];
-    const octagons = ['octagon', 'stop sign'];
+    const octagons = ['stop sign'];
     const crosses = ['cross', 'plus', 'add'];
     const lightnings = ['lightning', 'bolt', 'flash'];
     const moons = ['moon', 'banana'];
@@ -1567,14 +1567,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     console.log('[AI] Top Results:', results.slice(0, 3).map(r => `${r.label} (${(r.confidence * 100).toFixed(0)}%)`).join(', '));
 
-    // Improved Priority: If circle is anywhere in the top 10, and the top result is a polygon (hexagon/octagon), favor the circle.
+    // Improved Priority: If circle is anywhere in the top 10, and the top result is a polygon (hexagon), favor the circle.
     const top10Labels = results.slice(0, 10).map(r => r.label.toLowerCase());
-    const octagonIndex = top10Labels.indexOf('octagon');
     const hexagonIndex = top10Labels.indexOf('hexagon');
     const circleIndex = top10Labels.indexOf('circle');
 
-    // If octagon or hexagon is the top prediction (index 0) or near top, and circle exists in top 10
-    if (circleIndex !== -1 && (octagonIndex === 0 || hexagonIndex === 0)) {
+    // If hexagon is the top prediction (index 0) or near top, and circle exists in top 10
+    if (circleIndex !== -1 && (hexagonIndex === 0 || top10Labels[0] === 'octagon')) {
       console.log('[AI] Aggressively favoring Circle over top polygon detection');
       return {
         type: 'circle',
@@ -2394,7 +2393,6 @@ document.addEventListener("DOMContentLoaded", () => {
     cloud: '<path d="M75,50 C75,40 70,30 60,30 C58,20 50,15 40,15 C28,15 20,25 20,38 C12,38 8,44 8,52 C8,60 14,66 22,66 L75,66 C84,66 90,60 90,52 C90,44 84,50 75,50 Z" fill="COLOR" stroke="#333" stroke-width="2"/>',
     trapezoid: '<polygon points="30,20 70,20 90,80 10,80" fill="COLOR" stroke="#333" stroke-width="2"/>',
     parallelogram: '<polygon points="20,70 60,70 80,30 40,30" fill="COLOR" stroke="#333" stroke-width="2"/>',
-    octagon: '<polygon points="35,10 65,10 90,35 90,65 65,90 35,90 10,65 10,35" fill="COLOR" stroke="#333" stroke-width="2"/>',
     cross: '<path d="M40,10 L60,10 L60,40 L90,40 L90,60 L60,60 L60,90 L40,90 L40,60 L10,60 L10,40 L40,40 Z" fill="COLOR" stroke="#333" stroke-width="2"/>',
     'rounded-rect': '<rect x="10" y="20" width="80" height="60" rx="10" fill="COLOR" stroke="#333" stroke-width="2"/>',
     'speech-bubble': '<rect x="10" y="10" width="80" height="60" rx="10" fill="COLOR" stroke="#333" stroke-width="2"/><path d="M40,70 L30,90 L50,70" fill="COLOR" stroke="#333" stroke-width="2"/>',
