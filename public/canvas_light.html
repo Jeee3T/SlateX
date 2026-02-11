@@ -7,7 +7,7 @@
     <title>Canvas Flow - Infinite Whiteboard</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,typography,container-queries"></script>
     <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Gochi+Hand&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
         rel="stylesheet" />
     <script>
         tailwind.config = {
@@ -137,10 +137,16 @@
     <div class="flex flex-1 overflow-hidden relative">
         <div class="absolute left-6 top-1/2 -translate-y-1/2 z-50">
             <aside class="floating-toolbar w-[60px] flex flex-col items-center py-6 rounded-3xl space-y-2">
-                <div class="flex flex-col w-full px-2.5">
+                <div class="flex flex-col w-full px-2.5 space-y-1.5">
                     <button
-                        class="w-11 h-11 flex items-center justify-center text-charcoal dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl">
+                        class="w-11 h-11 flex items-center justify-center text-charcoal dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl active-tool"
+                        id="selectBtn" title="Select">
                         <span class="material-symbols-outlined">near_me</span>
+                    </button>
+                    <button
+                        class="w-11 h-11 flex items-center justify-center text-charcoal dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl"
+                        id="panBtn" title="Pan">
+                        <span class="material-symbols-outlined">pan_tool</span>
                     </button>
                 </div>
                 <div class="w-10 h-px bg-slate-100/50 dark:bg-slate-800/50 my-1"></div>
@@ -221,11 +227,17 @@
                 </div>
                 <div class="absolute top-[40%] left-[10%] rotate-[-4deg]">
                     <div
-                        class="bg-[#fef9c3] dark:bg-yellow-900/20 p-7 w-48 h-48 border-l-[6px] border-yellow-400 sticky-note-modern">
-                        <span class="text-sm font-bold text-yellow-800 dark:text-yellow-200 leading-snug">Don't forget
-                            to check mobile responsiveness!</span>
+                        class="bg-[#fbd46d] p-0 w-64 h-64 rounded-sm shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex flex-col note-modern">
+                        <div class="h-10 bg-black/5 flex items-center justify-end px-4">
+                            <span class="text-[10px] font-bold text-black/40 uppercase tracking-tighter">Context</span>
+                        </div>
+                        <div class="flex-1 p-8 flex items-center justify-center text-center">
+                            <span class="text-3xl font-normal text-black leading-tight"
+                                style="font-family: 'Gochi Hand', cursive;">Sticky note</span>
+                        </div>
                     </div>
                 </div>
+
             </div>
         </main>
         <div class="absolute right-6 top-1/2 -translate-y-1/2 z-50">
@@ -270,6 +282,12 @@
                     <div class="text-[10px] font-black text-slate-400 py-0.5">100%</div>
                     <button class="p-2 text-slate-400 hover:text-primary hover:scale-125 transition-colors">
                         <span class="material-symbols-outlined">remove</span>
+                    </button>
+                    <div class="w-8 h-px bg-slate-100/50 dark:bg-slate-800/50 my-1"></div>
+                    <button id="fullscreenBtn"
+                        class="p-2 text-slate-400 hover:text-primary hover:scale-125 transition-colors"
+                        title="Toggle Fullscreen">
+                        <span class="material-symbols-outlined">fullscreen</span>
                     </button>
                 </div>
                 <div class="w-10 h-px bg-slate-100/50 dark:bg-slate-800/50"></div>

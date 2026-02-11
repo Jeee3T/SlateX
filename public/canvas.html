@@ -114,6 +114,11 @@
         title="Zoom Out">
         <span class="material-symbols-outlined text-lg">remove</span>
       </button>
+      <div class="w-8 h-px bg-slate-200/50 dark:bg-zinc-800/50 my-1"></div>
+      <button id="fullscreenBtn" class="p-2 text-slate-500 hover:text-primary hover:scale-125 transition-all"
+        title="Toggle Fullscreen">
+        <span class="material-symbols-outlined text-lg">fullscreen</span>
+      </button>
     </div>
 
     <div class="sidebar-v-divider w-10 h-px bg-slate-200 dark:bg-zinc-800"></div>
@@ -395,9 +400,18 @@
     <!-- Select / Hand -->
     <div class="tool-wrapper w-full flex justify-center">
       <button
+        class="tool w-11 h-11 rounded-full flex items-center justify-center text-slate-700 dark:text-slate-300 transition-all active"
+        id="selectBtn" title="Select">
+        <span class="material-symbols-outlined text-2xl filled-icon">near_me</span>
+      </button>
+    </div>
+
+    <!-- Pan / Hand -->
+    <div class="tool-wrapper w-full flex justify-center">
+      <button
         class="tool w-11 h-11 rounded-full flex items-center justify-center text-slate-700 dark:text-slate-300 transition-all"
-        id="hand" title="Select / Hand">
-        <span class="material-symbols-outlined text-2xl filled-icon">navigation</span>
+        id="panBtn" title="Pan">
+        <span class="material-symbols-outlined text-2xl filled-icon">pan_tool</span>
       </button>
     </div>
 
@@ -427,6 +441,15 @@
         class="tool w-11 h-11 rounded-full flex items-center justify-center text-slate-700 dark:text-slate-300 transition-all"
         id="text" title="Text">
         <span class="material-symbols-outlined text-3xl font-bold">title</span>
+      </button>
+    </div>
+
+    <!-- Image -->
+    <div class="tool-wrapper w-full flex justify-center">
+      <button
+        class="tool w-11 h-11 rounded-full flex items-center justify-center text-slate-700 dark:text-slate-300 transition-all"
+        id="imageBtn" title="Add Image">
+        <span class="material-symbols-outlined text-2xl filled-icon">image</span>
       </button>
     </div>
 
@@ -467,7 +490,7 @@
 
     <!-- Draw / Pen -->
     <div class="tool-wrapper w-full flex items-center relative pl-1">
-      <button class="tool active w-11 h-11 rounded-full flex items-center justify-center transition-all" id="drawBtn"
+      <button class="tool w-11 h-11 rounded-full flex items-center justify-center transition-all" id="drawBtn"
         title="Pen">
         <span class="material-symbols-outlined text-2xl filled-icon">edit_note</span>
       </button>
@@ -582,6 +605,28 @@
         <span class="color-swatch" data-color="#a855f7" style="background: #a855f7"></span>
         <span class="color-swatch" data-color="#ec4899" style="background: #ec4899"></span>
         <span class="color-swatch" data-color="#8b5cf6" style="background: #8b5cf6"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Image Source Modal -->
+  <div id="image-source-modal" class="modal-overlay hidden">
+    <div class="source-modal glass">
+      <div class="modal-header">
+        <h3 class="text-lg font-bold">Add Image</h3>
+        <button id="close-image-modal" class="close-btn">&times;</button>
+      </div>
+      <div class="modal-body grid grid-cols-2 gap-4">
+        <button id="local-image-btn" class="source-option">
+          <span class="material-symbols-outlined text-4xl mb-2">upload_file</span>
+          <span class="font-semibold text-sm">Local Storage</span>
+          <p class="text-[11px] opacity-60">Upload from your device</p>
+        </button>
+        <button id="ai-image-btn" class="source-option">
+          <span class="material-symbols-outlined text-4xl mb-2">smart_toy</span>
+          <span class="font-semibold text-sm">AI Generate</span>
+          <p class="text-[11px] opacity-60">Create with AI prompt</p>
+        </button>
       </div>
     </div>
   </div>

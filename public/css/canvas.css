@@ -1242,6 +1242,19 @@ body.dark-mode .typing-indicator {
     animation: slideUp 0.2s ease-out;
 }
 
+body.dark-mode .typing-indicator {
+    background: #18181b;
+    border-top-color: rgba(255, 255, 255, 0.1);
+    color: #f4f4f5;
+}
+
+body.dark-mode #drawer-indicator {
+    background: rgba(30, 30, 35, 0.9) !important;
+    color: #f4f4f5 !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    backdrop-filter: blur(12px);
+}
+
 @keyframes slideUp {
     from {
         transform: translateY(10px);
@@ -1529,28 +1542,103 @@ body.dark-mode #mic-btn {
 
 .note {
     position: absolute;
-    width: 150px;
-    height: 150px;
-    padding: 16px;
-    background: #fff9c4;
-    box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+    width: 250px;
+    height: 250px;
+    background: #fbd46d;
+    /* Standard sticky yellow */
     border-radius: 2px;
-    font-family: 'Inter', sans-serif;
-    font-size: 14px;
-    outline: none;
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+    z-index: 1000;
     cursor: move;
-    z-index: 100;
+    outline: none;
+
+    /* Professional shadow representing depth in the image */
+    box-shadow:
+        0 1px 3px rgba(0, 0, 0, 0.12),
+        0 8px 24px rgba(0, 0, 0, 0.15),
+        0 14px 45px rgba(0, 0, 0, 0.25);
+
+    font-family: 'Gochi Hand', cursive;
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-.note:after {
-    content: "";
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    border-style: solid;
-    border-width: 0 0 20px 20px;
-    border-color: transparent transparent rgba(0, 0, 0, 0.1) transparent;
+.note:hover {
+    transform: scale(1.02) rotate(1deg);
+    z-index: 1001;
 }
+
+.note-header {
+    height: 38px;
+    width: 100%;
+    background: rgba(0, 0, 0, 0.04);
+    /* Subtle darker band */
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0 12px;
+    pointer-events: none;
+    /* Let clicks pass to the note for dragging */
+}
+
+.note-header-text {
+    font-size: 11px;
+    color: rgba(0, 0, 0, 0.3);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.note-content {
+    flex: 1;
+    padding: 10px 24px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-size: 28px;
+    color: #000000 !important;
+    /* Absolute black for visibility */
+    line-height: 1.2;
+    word-break: break-word;
+    outline: none;
+    box-sizing: border-box;
+}
+
+
+/* Modernized delete button for notes - positioned relative to note */
+.note .delete-note-btn {
+    position: absolute;
+    top: -12px;
+    right: -12px;
+    width: 28px;
+    height: 28px;
+    background: #ef4444;
+    color: white;
+    border-radius: 50%;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: bold;
+    border: 3px solid white;
+    z-index: 2000;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
+}
+
+.note:hover .delete-note-btn {
+    display: flex;
+}
+
+.note .delete-note-btn:hover {
+    background: #dc2626;
+    transform: scale(1.1);
+}
+
+
 
 /* ================= SETTINGS PANEL ================= */
 
@@ -2003,6 +2091,32 @@ body.dark-mode .status-dot {
     /* Active/Green */
 }
 
+.participant-count-badge {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    background: #3b82f6;
+    /* Use primary blue */
+    color: white;
+    font-size: 9px;
+    font-weight: 800;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    z-index: 5;
+    pointer-events: none;
+}
+
+body.dark-mode .participant-count-badge {
+    border-color: #0B0B0B;
+}
+
+
 .participant-avatar.more {
     margin-left: -8px;
     width: 34px;
@@ -2024,6 +2138,28 @@ body.dark-mode .participant-avatar.more {
     border-color: #0B0B0B;
 }
 
+/* ================= CORE LAYOUT LAYERING ================= */
+
+#top-header-wrapper {
+    z-index: 9000 !important;
+}
+
+#right-vertical-sidebar {
+    z-index: 9000 !important;
+}
+
+.miro-toolbar {
+    z-index: 9000 !important;
+}
+
+#chat-panel {
+    z-index: 9500 !important;
+}
+
+#room-info-panel {
+    z-index: 9500 !important;
+}
+
 .participants-panel {
     position: absolute;
     top: 72px;
@@ -2037,10 +2173,11 @@ body.dark-mode .participant-avatar.more {
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid rgba(255, 255, 255, 0.4);
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-    z-index: 5000;
+    z-index: 9500 !important;
     padding: 0;
     /* Remove default padding for better header control */
 }
+
 
 .panel-header {
     display: flex;
@@ -5513,3 +5650,111 @@ body.dark-mode .voice-btn.close:hover {
 }
 
 /* ================= AI INSIGHTS MODAL REDESIGN ================= */
+
+/* ================= IMAGE SOURCE MODAL ================= */
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 999999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.source-modal {
+    width: 420px;
+    padding: 24px;
+    border-radius: 20px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    background: rgba(255, 255, 255, 0.95);
+    transform: scale(1);
+    animation: modalIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes modalIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+body.dark-mode .source-modal {
+    background: rgba(24, 24, 27, 0.95);
+    color: #f4f4f5;
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.modal-header .close-btn {
+    background: transparent;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: inherit;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+.modal-header .close-btn:hover {
+    opacity: 1;
+}
+
+.source-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    border-radius: 16px;
+    background: rgba(0, 0, 0, 0.03);
+    border: 2px solid transparent;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    color: inherit;
+    text-align: center;
+}
+
+body.dark-mode .source-option {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.source-option:hover {
+    background: rgba(66, 98, 255, 0.1);
+    border-color: var(--miro-blue);
+    transform: translateY(-4px);
+    box-shadow: 0 10px 20px -5px rgba(66, 98, 255, 0.2);
+}
+
+.source-option .material-symbols-outlined {
+    color: var(--miro-blue);
+}
+
+body.dark-mode .source-option .material-symbols-outlined {
+    color: #60a5fa;
+}
