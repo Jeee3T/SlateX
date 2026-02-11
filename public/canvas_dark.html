@@ -7,7 +7,7 @@
     <title>Canvas Flow - Infinite Whiteboard</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,typography,container-queries"></script>
     <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Gochi+Hand&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
         rel="stylesheet" />
     <script>
         tailwind.config = {
@@ -137,10 +137,16 @@
     <div class="flex flex-1 overflow-hidden relative">
         <div class="absolute left-6 top-1/2 -translate-y-1/2 z-50">
             <aside class="floating-toolbar w-[64px] flex flex-col items-center py-6 rounded-3xl space-y-2">
-                <div class="flex flex-col w-full px-3">
+                <div class="flex flex-col w-full px-3 space-y-1.5">
                     <button
-                        class="w-11 h-11 flex items-center justify-center text-slate-300 hover:bg-slate-800/80 rounded-xl">
+                        class="w-11 h-11 flex items-center justify-center text-slate-300 hover:bg-slate-800/80 rounded-xl active-tool"
+                        id="selectBtn" title="Select">
                         <span class="material-symbols-outlined">near_me</span>
+                    </button>
+                    <button
+                        class="w-11 h-11 flex items-center justify-center text-slate-300 hover:bg-slate-800/80 rounded-xl"
+                        id="panBtn" title="Pan">
+                        <span class="material-symbols-outlined">pan_tool</span>
                     </button>
                 </div>
                 <div class="w-10 h-px bg-slate-800/50 my-1"></div>
@@ -221,11 +227,18 @@
                 </div>
                 <div class="absolute top-[40%] left-[10%] rotate-[-5deg]">
                     <div
-                        class="bg-yellow-900/20 p-7 w-48 h-48 shadow-premium-dark border-l-[6px] border-yellow-600/50 backdrop-blur-sm sticky-note-dark-modern">
-                        <span class="text-sm font-bold text-yellow-200/90 leading-snug tracking-tight">Don't forget to
-                            check mobile responsiveness!</span>
+                        class="bg-[#fbd46d] p-0 w-64 h-64 rounded-sm shadow-[0_30px_60px_rgba(0,0,0,0.5)] flex flex-col note-dark-modern">
+                        <div class="h-10 bg-black/5 flex items-center justify-end px-4">
+                            <span class="text-[10px] font-bold text-black/40 uppercase tracking-tighter">Note</span>
+                        </div>
+                        <div class="flex-1 p-8 flex items-center justify-center text-center">
+                            <span class="text-3xl font-normal text-black leading-tight"
+                                style="font-family: 'Gochi Hand', cursive;">Don't forget to check mobile
+                                responsiveness!</span>
+                        </div>
                     </div>
                 </div>
+
             </div>
         </main>
         <div class="absolute right-6 top-1/2 -translate-y-1/2 z-50">
@@ -272,6 +285,12 @@
                     <div class="text-[10px] font-black text-slate-500 py-0.5">100%</div>
                     <button class="p-2 text-slate-500 hover:text-primary hover:scale-[1.3] transition-colors">
                         <span class="material-symbols-outlined">remove</span>
+                    </button>
+                    <div class="w-8 h-px bg-slate-800/50 my-1"></div>
+                    <button id="fullscreenBtn"
+                        class="p-2 text-slate-500 hover:text-primary hover:scale-[1.3] transition-colors"
+                        title="Toggle Fullscreen">
+                        <span class="material-symbols-outlined">fullscreen</span>
                     </button>
                 </div>
                 <div class="w-10 h-px bg-slate-800/50 mb-6"></div>
