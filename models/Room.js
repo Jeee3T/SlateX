@@ -56,6 +56,27 @@ const roomSchema = new mongoose.Schema({
       type: Array,
       default: []
     },
+    medicalStamps: {
+      type: Array,
+      default: []
+    },
+    financeStamps: {
+      type: Array,
+      default: []
+    },
+    financeCards: {
+      type: Array,
+      default: []
+    },
+    financeFields: {
+      type: Map,
+      of: String,
+      default: {}
+    },
+    projectTasks: {
+      type: Array,
+      default: []
+    },
     templateTransform: {
       type: Object,
       default: { x: 0, y: 0, scale: 1 }

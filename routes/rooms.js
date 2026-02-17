@@ -113,7 +113,8 @@ router.post('/join', async (req, res) => {
         id: room.roomId,
         name: room.name,
         createdAt: room.createdAt,
-        template: room.template
+        template: room.template,
+        isOwner: room.creator.toString() === req.session.userId
       }
     });
 

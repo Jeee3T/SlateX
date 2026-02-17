@@ -107,20 +107,9 @@ canvas {
     display: flex;
     align-items: center;
     justify-content: center;
-    animation: shapeEntrance 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-@keyframes shapeEntrance {
-    from {
-        opacity: 0;
-        transform: scale(0.5);
-    }
 
-    to {
-        opacity: 1;
-        transform: scale(1);
-    }
-}
 
 .shape-object.selected {
     outline: 2px solid var(--miro-blue);
@@ -3590,7 +3579,7 @@ body.dark-mode .card-progress-bar {
 }
 
 .bullet-arrow::before {
-    content: 'â†’';
+    content: '\2192'; /* Unicode for → */
     position: absolute;
     color: #6366f1;
     font-weight: bold;

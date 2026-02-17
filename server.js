@@ -120,7 +120,7 @@ app.post("/api/summarize", isAuthenticated, async (req, res) => {
       return res.status(400).json({ error: "Board data is required" });
     }
 
-    const { textElements, stickyNotes, shapes, templateName } = boardData;
+    const { textElements, stickyNotes, shapes, templateName, domainData } = boardData;
 
     // Construct a rich prompt based on board content
     let contentDescription = "";
@@ -129,8 +129,51 @@ app.post("/api/summarize", isAuthenticated, async (req, res) => {
       contentDescription += `The board uses the template: "${templateName}".\n`;
     }
 
+    // 🔥 NEW: Process Domain Specific Data
+    if (domainData) {
+      if (domainData.medicalStamps?.length > 0) {
+        contentDescription += "Medical Diagram Icons/Elements:\n";
+        domainData.medicalStamps.forEach(s => {
+          contentDescription += `- ${s.isDiagram ? 'Diagram' : 'Icon'}: ${s.item?.name || 'Medical Symbol'} at ${Math.round(s.x)}%, ${Math.round(s.y)}%\n`;
+        });
+      }
+      if (domainData.financeStamps?.length > 0) {
+        contentDescription += "Financial Icons/Elements:\n";
+        domainData.financeStamps.forEach(s => {
+          contentDescription += `- Icon: "${s.content || 'Finance Symbol'}" at position ${Math.round(s.x)}, ${Math.round(s.y)}\n`;
+        });
+      }
+      if (domainData.financeFields && Object.keys(domainData.financeFields).length > 0) {
+        contentDescription += "Financial Table/Field Data:\n";
+        Object.entries(domainData.financeFields).forEach(([id, val]) => {
+          contentDescription += `- Field ${id}: ${val}\n`;
+        });
+      }
+      if (domainData.financeCards?.length > 0) {
+        contentDescription += "Financial Strategy Cards:\n";
+        domainData.financeCards.forEach(c => {
+          contentDescription += `- [${c.sectionId}] ${c.title}: ${c.value}\n`;
+        });
+      }
+      if (domainData.projectTasks?.length > 0) {
+        contentDescription += "Project Kanban Tasks:\n";
+        domainData.projectTasks.forEach(t => {
+          contentDescription += `- [Status: ${t.sectionId}] Task: ${t.title} (${t.body || 'No description'})\n`;
+        });
+      }
+      if (domainData.templateTexts?.length > 0) {
+        contentDescription += "\n--- REGIONAL TEMPLATE CONTENT ---\n";
+        domainData.templateTexts.forEach(t => {
+          const content = t.content || t.text || "";
+          if (content.trim()) {
+            contentDescription += `[Section: ${t.sectionId || 'Unknown'}] ${content}\n`;
+          }
+        });
+      }
+    }
+
     if (textElements && textElements.length > 0) {
-      contentDescription += "Text elements found on board:\n";
+      contentDescription += "General Text elements found on board:\n";
       textElements.forEach(t => contentDescription += `- ${t.text}\n`);
     }
 
@@ -241,11 +284,13 @@ app.post('/api/ai-chat', isAuthenticated, async (req, res) => {
         Text: ${JSON.stringify(boardData.textElements)}
         Notes: ${JSON.stringify(boardData.stickyNotes)}
         Shapes: ${JSON.stringify(boardData.shapes)}
+        Domain Data: ${JSON.stringify(boardData.domainData || {})}
         
         USER QUESTION: "${question}"
         
         INSTRUCTIONS:
         - Answer the user's question concisely based on the context provided.
+        - Pay special attention to domain-specific data (Medical icons, Finance fields, Kanban tasks, Code/Comments) if it exists in the Domain Data.
         - If the answer isn't in the context, use your intelligence to provide a helpful response related to visual thinking or the board's likely goal.
         - Keep the tone professional, helpful, and "Gen Z/Modern SaaS" (clean, direct, premium).
         - Avoid markdown headers. Use bold text for emphasis sparingly.
@@ -557,7 +602,22 @@ io.on("connection", (socket) => {
     }
   });
 
-  // Text events
+  const saveBoardToDB = async (roomId) => {
+    const roomData = activeRooms.get(roomId);
+    if (!roomData) return;
+
+    try {
+      const Room = require('./models/Room');
+      await Room.findOneAndUpdate(
+        { roomId: roomId },
+        { $set: { boardState: roomData.boardState } },
+        { new: true }
+      );
+    } catch (err) {
+      console.error(`[SlateX] Error saving board ${roomId} to DB:`, err);
+    }
+  };
+
   socket.on("text-add", (textElement) => {
     if (currentRoom) {
       const roomData = activeRooms.get(currentRoom);
@@ -630,8 +690,8 @@ io.on("connection", (socket) => {
     if (currentRoom) {
       const room = activeRooms.get(currentRoom);
       if (room && room.users[socket.id]?.hasAccess) {
-        if (!room.boardState.templateTexts) room.boardState.templateTexts = [];
         room.boardState.templateTexts.push(textData);
+        saveBoardToDB(currentRoom);
         socket.to(currentRoom).emit("template-text-added", textData); // Match client listener
       }
     }
@@ -643,6 +703,7 @@ io.on("connection", (socket) => {
       if (room && room.users[socket.id]?.hasAccess) {
         if (!room.boardState.medicalStamps) room.boardState.medicalStamps = [];
         room.boardState.medicalStamps.push(stampData);
+        saveBoardToDB(currentRoom);
         socket.to(currentRoom).emit("medical-stamp-sync", stampData);
       }
     }
@@ -656,6 +717,7 @@ io.on("connection", (socket) => {
         if (idx !== -1) {
           room.boardState.medicalStamps[idx].x = stampData.x;
           room.boardState.medicalStamps[idx].y = stampData.y;
+          saveBoardToDB(currentRoom);
         }
         socket.to(currentRoom).emit("medical-stamp-moved", stampData);
       }
@@ -668,6 +730,7 @@ io.on("connection", (socket) => {
       if (room && room.users[socket.id]?.hasAccess) {
         if (!room.boardState.financeStamps) room.boardState.financeStamps = [];
         room.boardState.financeStamps.push(stampData);
+        saveBoardToDB(currentRoom);
         socket.to(currentRoom).emit("finance-stamp-sync", stampData);
       }
     }
@@ -681,6 +744,7 @@ io.on("connection", (socket) => {
         if (idx !== -1) {
           room.boardState.financeStamps[idx].x = stampData.x;
           room.boardState.financeStamps[idx].y = stampData.y;
+          saveBoardToDB(currentRoom);
         }
         socket.to(currentRoom).emit("finance-stamp-moved", stampData);
       }
@@ -694,6 +758,7 @@ io.on("connection", (socket) => {
         const idx = roomData.boardState.templateTexts.findIndex(t => t.id === updatedText.id);
         if (idx !== -1) {
           roomData.boardState.templateTexts[idx] = updatedText;
+          saveBoardToDB(currentRoom);
         }
         socket.to(currentRoom).emit("template-text-updated", updatedText);
       }
@@ -706,6 +771,7 @@ io.on("connection", (socket) => {
       if (room && room.users[socket.id]?.hasAccess) {
         if (!room.boardState.financeFields) room.boardState.financeFields = {};
         room.boardState.financeFields[fieldData.id] = fieldData.value;
+        saveBoardToDB(currentRoom);
         socket.to(currentRoom).emit("finance-field-sync", fieldData);
       }
     }
@@ -716,6 +782,7 @@ io.on("connection", (socket) => {
       const roomData = activeRooms.get(currentRoom);
       if (roomData && roomData.users[socket.id]?.isAdmin) {
         roomData.boardState.templateTexts = roomData.boardState.templateTexts.filter(t => t.id !== textId);
+        saveBoardToDB(currentRoom);
         socket.to(currentRoom).emit("template-text-deleted", textId);
       }
     }
@@ -732,6 +799,7 @@ io.on("connection", (socket) => {
         } else {
           roomData.boardState.financeCards.push(cardData);
         }
+        saveBoardToDB(currentRoom);
         socket.to(currentRoom).emit("finance-card-sync", cardData);
       }
     }
@@ -742,6 +810,7 @@ io.on("connection", (socket) => {
       const roomData = activeRooms.get(currentRoom);
       if (roomData && roomData.users[socket.id]?.isAdmin) {
         roomData.boardState.financeCards = (roomData.boardState.financeCards || []).filter(c => c.cardId !== cardId);
+        saveBoardToDB(currentRoom);
         socket.to(currentRoom).emit("finance-card-deleted", cardId);
       }
     }
@@ -758,6 +827,7 @@ io.on("connection", (socket) => {
         } else {
           roomData.boardState.projectTasks.push(taskData);
         }
+        saveBoardToDB(currentRoom);
         socket.to(currentRoom).emit("project-task-sync", taskData);
       }
     }
@@ -768,6 +838,7 @@ io.on("connection", (socket) => {
       const roomData = activeRooms.get(currentRoom);
       if (roomData && roomData.users[socket.id]?.isAdmin) {
         roomData.boardState.projectTasks = (roomData.boardState.projectTasks || []).filter(t => t.taskId !== taskId);
+        saveBoardToDB(currentRoom);
         socket.to(currentRoom).emit("project-task-deleted", taskId);
       }
     }
@@ -838,11 +909,16 @@ io.on("connection", (socket) => {
         const transform = typeof data === 'string' ? null : data.transform;
         const isInstance = data.isInstance || false;
 
+        console.log(`[SlateX] Processing template-select: ${key} (Instance: ${isInstance}) for room ${currentRoom}`);
+
         if (isInstance) {
           if (!roomData.boardState.templateInstances) roomData.boardState.templateInstances = [];
           const newInstance = { id: 'inst-' + Date.now(), key, transform: transform || { x: 0, y: 0, scale: 1 } };
           roomData.boardState.templateInstances.push(newInstance);
           io.to(currentRoom).emit("template-instance-added", newInstance);
+
+          // 🔥 PERSISTENCE FIX
+          saveBoardToDB(currentRoom);
         } else {
           // Check if domain is changing (templateKey !== key)
           // If switching main template, clear ALL instances and their texts for a fresh start
@@ -860,13 +936,23 @@ io.on("connection", (socket) => {
             roomData.boardState.financeFields = {};
             roomData.boardState.projectTasks = [];
 
-            // 3. Notify all users to clear their local domain states
+            // 🔥 EXPLICIT CLEARANCE: Clear main board objects on domain switch
+            roomData.boardState.paths = [];
+            roomData.boardState.shapes = [];
+            roomData.boardState.textElements = [];
+            roomData.boardState.stickyNotes = [];
+
+            // 3. Notify all users to clear their local states
             io.to(currentRoom).emit("clear-instances");
+            io.to(currentRoom).emit("clear-all");
           }
 
           roomData.boardState.templateKey = key;
           roomData.boardState.templateTransform = transform || { x: 0, y: 0, scale: 1 };
           io.to(currentRoom).emit("template-selected", data);
+
+          // 🔥 PERSISTENCE FIX
+          saveBoardToDB(currentRoom);
         }
       }
     }

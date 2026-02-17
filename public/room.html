@@ -204,6 +204,8 @@
             isOwner: true
           };
 
+          // Clear any previous template state to ensure a fresh board
+          localStorage.removeItem('boardTemplate');
           localStorage.setItem('currentRoom', JSON.stringify(roomData));
 
           // Show generated room ID
@@ -257,9 +259,11 @@
             name: result.room.name,
             password: password,
             joinedAt: new Date().toISOString(),
-            isOwner: false // Default to false, check exact ownership if needed via API later
+            isOwner: result.room.isOwner || false
           };
 
+          // Clear any previous template state to ensure a fresh board
+          localStorage.removeItem('boardTemplate');
           localStorage.setItem('currentRoom', JSON.stringify(roomData));
 
           showToast(`Joining room: ${roomId}`, 'success');
@@ -409,6 +413,8 @@
         joinedAt: new Date().toISOString() // Mark as rejoining existing room
       };
 
+      // Clear any previous template state to ensure a fresh board
+      localStorage.removeItem('boardTemplate');
       localStorage.setItem('currentRoom', JSON.stringify(roomData));
 
       showToast(`Restoring ${name}...`, 'success');

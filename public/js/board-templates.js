@@ -138,6 +138,13 @@ const BoardTemplates = {
   templateTexts: [],
   activeInstances: [], // Support multiple boards
 
+  // 🔥 Track domain state for AI summarization
+  medicalStamps: [],
+  financeStamps: [],
+  financeCards: [],
+  financeFields: {},
+  projectTasks: [],
+
   textbookDiagrams: [
     { id: 'kidney', name: 'Kidney', img: '/assets/medical/kidney.png' },
     { id: 'heart', name: 'Heart', img: '/assets/medical/heart.png' },
@@ -160,22 +167,34 @@ const BoardTemplates = {
   setupSocketListeners() {
     // Receive initial board state
     this.socket.on("init-board", (data) => {
+      const roomInfo = JSON.parse(localStorage.getItem('currentRoom') || '{}');
+      const isActuallyAdmin = window.isAdmin || roomInfo.isOwner;
+
+      console.log("[SlateX] Received init-board. templateKey:", data.templateKey, "isAdmin:", window.isAdmin, "isActuallyAdmin:", isActuallyAdmin);
+
       this.templateTexts = data.templateTexts || [];
       this.templateTransform = data.templateTransform || { x: 96.7, y: 87.9, scale: 1 };
       this.activeInstances = data.templateInstances || [];
 
       // Restore main template if one was active
       if (data.templateKey && this.templates[data.templateKey]) {
+        console.log("[SlateX] Restoring active template from server:", data.templateKey);
         this.currentTemplate = data.templateKey;
         this.applyTemplate(this.templates[data.templateKey]);
       }
-      // NEW FIX: If no template active on server but user (admin) has a pending selection
-      else if (window.isAdmin) {
+      // If no template active on server but user (admin) has a pending selection
+      else if (isActuallyAdmin) {
         const pendingTemplate = localStorage.getItem('boardTemplate');
+        console.log("[SlateX] No active server template. Checking pendingTemplate:", pendingTemplate);
         if (pendingTemplate && this.templates[pendingTemplate]) {
           console.log('[SlateX] Applying pending template for admin:', pendingTemplate);
           this.selectTemplate(pendingTemplate);
+        } else {
+          console.log("[SlateX] No pending template found, defaulting to brainstorm.");
+          // No default apply
         }
+      } else {
+        console.log("[SlateX] User is not admin and no template active on server.");
       }
 
       // Restore sub-instances
@@ -190,7 +209,16 @@ const BoardTemplates = {
       this.setupTray(); // Initialize the new tray
 
       setTimeout(() => {
+        // Sync local tracking arrays with server data
+        this.templateTexts = data.templateTexts || [];
         this.restoreAllTexts();
+
+        this.medicalStamps = data.medicalStamps || [];
+        this.financeStamps = data.financeStamps || [];
+        this.financeCards = data.financeCards || [];
+        this.financeFields = data.financeFields || {};
+        this.projectTasks = data.projectTasks || [];
+
         if (data.medicalStamps) {
           data.medicalStamps.forEach(stamp => this.renderRemoteMedicalStamp(stamp));
         }
@@ -239,22 +267,33 @@ const BoardTemplates = {
     });
 
     this.socket.on('medical-stamp-sync', (data) => {
+      const idx = this.medicalStamps.findIndex(s => s.id === data.id);
+      if (idx !== -1) this.medicalStamps[idx] = data;
+      else this.medicalStamps.push(data);
       this.renderRemoteMedicalStamp(data);
     });
 
     this.socket.on('medical-stamp-moved', (data) => {
+      const idx = this.medicalStamps.findIndex(s => s.id === data.id);
+      if (idx !== -1) this.medicalStamps[idx] = data;
       this.renderRemoteMedicalStamp(data);
     });
 
     this.socket.on('finance-stamp-sync', (data) => {
+      const idx = this.financeStamps.findIndex(s => s.id === data.id);
+      if (idx !== -1) this.financeStamps[idx] = data;
+      else this.financeStamps.push(data);
       this.renderRemoteFinanceStamp(data);
     });
 
     this.socket.on('finance-stamp-moved', (data) => {
+      const idx = this.financeStamps.findIndex(s => s.id === data.id);
+      if (idx !== -1) this.financeStamps[idx] = data;
       this.renderRemoteFinanceStamp(data);
     });
 
     this.socket.on('finance-field-sync', (data) => {
+      this.financeFields[data.id] = data.value;
       const el = document.getElementById(data.id);
       if (el) {
         if (el.tagName === 'INPUT') el.value = data.value;
@@ -271,6 +310,14 @@ const BoardTemplates = {
 
       this.activeInstances = [];
       this.templateTexts = [];
+
+      // 🔥 Track domain state
+      this.medicalStamps = [];
+      this.financeStamps = [];
+      this.financeCards = [];
+      this.financeFields = {};
+      this.projectTasks = [];
+
       // Also trigger the general cleanup
       if (this.socket.listeners('clear-all').length > 0) {
         this.socket.emit('internal-clear-all'); // Non-socket internal trigger fallback or just repeat logic
@@ -294,9 +341,21 @@ const BoardTemplates = {
       });
       // Clear current local texts
       this.templateTexts = [];
+
+      // 🔥 Track domain state
+      this.medicalStamps = [];
+      this.financeStamps = [];
+      this.financeCards = [];
+      this.financeFields = {};
+      this.projectTasks = [];
     });
 
     this.socket.on('finance-card-sync', (cardData) => {
+      // 🔥 Track local state
+      const cIdx = this.financeCards.findIndex(c => c.cardId === cardData.cardId);
+      if (cIdx !== -1) this.financeCards[cIdx] = cardData;
+      else this.financeCards.push(cardData);
+
       const existing = document.querySelector(`[data-finance-card-id="${cardData.cardId}"]`);
       if (existing) {
         existing.style.left = cardData.x + 'px';
@@ -318,11 +377,17 @@ const BoardTemplates = {
     });
 
     this.socket.on('finance-card-deleted', (cardId) => {
+      this.financeCards = this.financeCards.filter(c => c.cardId !== cardId);
       const card = document.querySelector(`[data-finance-card-id="${cardId}"]`);
       if (card) card.remove();
     });
 
     this.socket.on('project-task-sync', (taskData) => {
+      // 🔥 Track local state
+      const tIdx = this.projectTasks.findIndex(t => t.taskId === taskData.taskId);
+      if (tIdx !== -1) this.projectTasks[tIdx] = taskData;
+      else this.projectTasks.push(taskData);
+
       // Find existing or create new
       const existing = document.querySelector(`[data-task-id="${taskData.taskId}"]`);
       if (existing) {
@@ -344,6 +409,7 @@ const BoardTemplates = {
     });
 
     this.socket.on('project-task-deleted', (taskId) => {
+      this.projectTasks = this.projectTasks.filter(t => t.taskId !== taskId);
       const card = document.querySelector(`[data-task-id="${taskId}"]`);
       if (card) card.remove();
     });
@@ -552,6 +618,7 @@ const BoardTemplates = {
   },
 
   selectTemplate(key, customTransform = null, isInstance = false) {
+    console.log("[SlateX] selectTemplate called with key:", key, "isInstance:", isInstance, "isAdmin:", window.isAdmin);
     // 🔥 SECURITY: Only admins are allowed to trigger main template changes or instances
     if (!window.isAdmin) {
       console.warn("[Access Control] Non-admin attempted to change template.");
@@ -604,6 +671,8 @@ const BoardTemplates = {
   applyTemplate(template, instanceId = null, customTransform = null) {
     const isMain = instanceId === null;
     const overlayId = isMain ? 'template-overlay' : `template-overlay-${instanceId}`;
+
+    console.log("[SlateX] applyTemplate instanceId:", instanceId, "templateName:", template?.name);
 
     // Replace if main, or create if new instance
     let overlay = document.getElementById(overlayId);
@@ -1233,6 +1302,8 @@ const BoardTemplates = {
       `;
 
       input.oninput = () => {
+        // 🔥 Store locally for AI summary
+        this.financeFields[field.id] = input.value;
         if (this.socket) {
           this.socket.emit('finance-field-update', { id: field.id, value: input.value });
         }
@@ -1384,8 +1455,14 @@ const BoardTemplates = {
   },
 
   syncFinanceCard(cardId, sectionId, title, value, x, y) {
+    const cardData = { cardId, sectionId, title, value, x, y };
+    // 🔥 Track local state
+    const idx = this.financeCards.findIndex(c => c.cardId === cardId);
+    if (idx !== -1) this.financeCards[idx] = cardData;
+    else this.financeCards.push(cardData);
+
     if (this.socket) {
-      this.socket.emit('finance-card-update', { cardId, sectionId, title, value, x, y });
+      this.socket.emit('finance-card-update', cardData);
     }
   },
 
@@ -1414,6 +1491,13 @@ const BoardTemplates = {
       const newY = initialY + dy;
       stamp.style.left = `${newX}px`;
       stamp.style.top = `${newY}px`;
+
+      // 🔥 Track local state for AI summary
+      const idx = this.financeStamps.findIndex(s => s.id === stamp.dataset.stampId);
+      if (idx !== -1) {
+        this.financeStamps[idx].x = newX;
+        this.financeStamps[idx].y = newY;
+      }
 
       if (this.socket) {
         this.socket.emit(`${type}-move`, {
@@ -1645,14 +1729,18 @@ const BoardTemplates = {
     this.makeMedicalStampInteractive(stamp, diagram, stampId);
     diagram.appendChild(stamp);
 
+    const stampData = {
+      id: stampId,
+      item,
+      isDiagram,
+      x: 50,
+      y: 50
+    };
+
+    this.medicalStamps.push(stampData);
+
     if (this.socket) {
-      this.socket.emit('medical-stamp-add', {
-        id: stampId,
-        item,
-        isDiagram,
-        x: 50,
-        y: 50
-      });
+      this.socket.emit('medical-stamp-add', stampData);
     }
   },
 
@@ -1689,6 +1777,13 @@ const BoardTemplates = {
 
       stamp.style.left = `${newX}%`;
       stamp.style.top = `${newY}%`;
+
+      // 🔥 Track local state for AI summary
+      const idx = this.medicalStamps.findIndex(s => s.id === stampId);
+      if (idx !== -1) {
+        this.medicalStamps[idx].x = newX;
+        this.medicalStamps[idx].y = newY;
+      }
 
       if (this.socket) {
         this.socket.emit('medical-stamp-move', {
@@ -1912,9 +2007,27 @@ const BoardTemplates = {
   },
 
   syncProjectTask(taskId, sectionId, data) {
+    const taskData = { taskId, sectionId, ...data };
+    // 🔥 Track local state
+    const idx = this.projectTasks.findIndex(t => t.taskId === taskId);
+    if (idx !== -1) this.projectTasks[idx] = taskData;
+    else this.projectTasks.push(taskData);
+
     if (this.socket) {
-      this.socket.emit('project-task-update', { taskId, sectionId, ...data });
+      this.socket.emit('project-task-update', taskData);
     }
+  },
+
+  getBoardState() {
+    return {
+      medicalStamps: this.medicalStamps,
+      financeStamps: this.financeStamps,
+      financeCards: this.financeCards,
+      financeFields: this.financeFields,
+      projectTasks: this.projectTasks,
+      templateTexts: this.templateTexts,
+      templateKey: this.currentTemplate
+    };
   },
 
   loadSaved(socketInstance) {

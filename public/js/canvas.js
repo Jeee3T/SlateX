@@ -31,6 +31,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   /* ================= SOCKET ================= */
   const socket = io();
+  window.socket = socket;
 
   // Get username and ID from local storage (real auth) OR fallback to simulated auth
   const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
@@ -48,6 +49,16 @@ document.addEventListener("DOMContentLoaded", () => {
   window.canvasScale = scale;
   window.canvasOffsetX = offsetX;
   window.canvasOffsetY = offsetY;
+
+  // 🔥 EXPLICIT STATE CLEARANCE: Reset all board data globals at startup to prevent leakage
+  let paths = [];
+  window.paths = paths;
+  let shapes = [];
+  window.shapes = shapes;
+  let textElements = [];
+  window.textElements = textElements;
+  let stickyNotes = [];
+  window.stickyNotes = stickyNotes;
 
   /* ================= PERMISSIONS ================= */
   // CRITICAL: Set permissions BEFORE loading templates so template selection works
@@ -139,7 +150,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const shapesClose = document.getElementById("shapes-close");
   const shapeItems = document.querySelectorAll(".shape-item");
 
-  let shapes = []; // Store all shapes on canvas
+  shapes = []; // Store all shapes on canvas
+  // window.shapes = shapes; // Handled above in state clearance
   let selectedShape = null;
   let draggedShape = null;
   let resizingShape = null;
@@ -676,13 +688,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 
-  let paths = [];
+  paths = [];
+  window.paths = paths;
   let currentPath = [];
   let activeRemotePaths = {}; // Stores paths being drawn by others: { socketId: strokeObject }
   let px = 0, py = 0;
 
-  let textElements = [];
-  let stickyNotes = [];
+  textElements = [];
+  window.textElements = textElements;
+  stickyNotes = [];
+  window.stickyNotes = stickyNotes;
+
+  // Add listener for global board clearing (e.g. domain switch)
+  socket.on("clear-all", () => {
+    console.log('[SlateX] Global clearing board state');
+    paths = [];
+    window.paths = paths;
+    shapes = [];
+    window.shapes = shapes;
+    textElements = [];
+    window.textElements = textElements;
+    stickyNotes = [];
+    window.stickyNotes = stickyNotes;
+    redraw();
+  });
 
   /* ================= SELECTION STATE ================= */
   let isSelecting = false;
@@ -724,10 +753,26 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log('[DEBUG] - shapes:', data.shapes?.length || 0);
     console.log('[DEBUG] - templateKey:', data.templateKey);
 
+    // Clear old AI summaries/chat on init to prevent context leakage
+    const summaryText = document.getElementById('exec-summary-text');
+    if (summaryText) summaryText.innerText = 'Analyzing new board session...';
+    const chatHistory = document.getElementById('ai-chat-history');
+    if (chatHistory) {
+      chatHistory.innerHTML = `
+        <div class="chat-bubble ai-bubble fade-in">
+          Hello! I've analyzed your new board session. Do you have any specific questions?
+        </div>
+      `;
+    }
+
     paths = data.paths || [];
+    window.paths = paths;
     shapes = data.shapes || [];
+    window.shapes = shapes;
     textElements = data.textElements || [];
+    window.textElements = textElements;
     stickyNotes = data.stickyNotes || [];
+    window.stickyNotes = stickyNotes;
     redraw();
     renderAllShapes();
     renderAllTexts();
@@ -843,14 +888,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
   socket.on("shape-deleted", shapeId => {
     shapes = shapes.filter(s => s.id !== shapeId);
+    window.shapes = shapes;
     renderAllShapes();
   });
 
   socket.on("clear-all", () => {
     paths = [];
+    window.paths = paths;
     shapes = [];
+    window.shapes = shapes;
     textElements = [];
+    window.textElements = textElements;
     stickyNotes = [];
+    window.stickyNotes = stickyNotes;
     redraw();
     renderAllShapes();
     renderAllTexts();
@@ -873,6 +923,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   socket.on("text-deleted", textId => {
     textElements = textElements.filter(t => t.id !== textId);
+    window.textElements = textElements;
     renderAllTexts();
   });
 
@@ -891,6 +942,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   socket.on("note-deleted", noteId => {
     stickyNotes = stickyNotes.filter(n => n.id !== noteId);
+    window.stickyNotes = stickyNotes;
     renderAllNotes();
   });
 
@@ -1669,18 +1721,22 @@ document.addEventListener("DOMContentLoaded", () => {
       // Undo add = delete
       if (action.objectType === 'stroke') {
         paths = paths.filter(p => p.id !== action.data.id);
+        window.paths = paths;
         socket.emit("stroke-delete", action.data.id);
         redraw();
       } else if (action.objectType === 'shape') {
         shapes = shapes.filter(s => s.id !== action.data.id);
+        window.shapes = shapes;
         socket.emit("shape-delete", action.data.id);
         renderAllShapes();
       } else if (action.objectType === 'text') {
         textElements = textElements.filter(t => t.id !== action.data.id);
+        window.textElements = textElements;
         socket.emit("text-delete", action.data.id);
         renderAllTexts();
       } else if (action.objectType === 'note') {
         stickyNotes = stickyNotes.filter(n => n.id !== action.data.id);
+        window.stickyNotes = stickyNotes;
         socket.emit("note-delete", action.data.id);
         renderAllNotes();
       }
@@ -1904,6 +1960,7 @@ document.addEventListener("DOMContentLoaded", () => {
     drawCtx.stroke();
     drawCtx.globalCompositeOperation = "source-over";
   };
+  window.redraw = redraw;
 
   eraserBtn.onclick = () => {
     setTool("eraser");
@@ -2606,6 +2663,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     checkBoardEmpty();
   }
+  window.renderAllShapes = renderAllShapes;
 
   function createShapeElement(shape) {
     const shapeEl = document.createElement('div');
@@ -2769,6 +2827,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const shapeId = shapeEl.dataset.shapeId;
 
     shapes = shapes.filter(s => s.id !== shapeId);
+    window.shapes = shapes;
     shapeEl.remove();
     socket.emit("shape-delete", shapeId);
   }
@@ -2794,6 +2853,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     checkBoardEmpty();
   }
+  window.renderAllTexts = renderAllTexts;
 
   function createTextElement(textData) {
     const textDiv = document.createElement('div');
@@ -2840,6 +2900,7 @@ document.addEventListener("DOMContentLoaded", () => {
     deleteBtn.onclick = (e) => {
       e.stopPropagation();
       textElements = textElements.filter(t => t.id !== textData.id);
+      window.textElements = textElements;
       socket.emit("text-delete", textData.id);
       textDiv.remove();
     };
@@ -2888,6 +2949,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     checkBoardEmpty();
   }
+  window.renderAllNotes = renderAllNotes;
 
   function createNoteElement(noteData) {
     const note = document.createElement('div');
@@ -2943,6 +3005,7 @@ document.addEventListener("DOMContentLoaded", () => {
     deleteBtn.onclick = (e) => {
       e.stopPropagation();
       stickyNotes = stickyNotes.filter(n => n.id !== noteData.id);
+      window.stickyNotes = stickyNotes;
       socket.emit("note-delete", noteData.id);
       note.remove();
     };
@@ -3491,11 +3554,13 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         const boardImage = getBoardSnapshot();
+        const summarizeRoomData = JSON.parse(localStorage.getItem('currentRoom') || '{}');
         const boardData = {
           textElements: textElements || [],
           stickyNotes: stickyNotes || [],
           shapes: shapes || [],
-          templateName: currentRoomData.template || null
+          templateName: summarizeRoomData.templateKey || summarizeRoomData.template || null,
+          domainData: window.BoardTemplates ? window.BoardTemplates.getBoardState() : null
         };
 
         const response = await fetch('/api/summarize', {
@@ -3616,12 +3681,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try {
       const summary = document.getElementById('exec-summary-text')?.innerText || '';
-      const currentRoomData = JSON.parse(localStorage.getItem('currentRoom') || '{}');
+      const chatRoomData = JSON.parse(localStorage.getItem('currentRoom') || '{}');
       const boardData = {
         textElements: textElements || [],
         stickyNotes: stickyNotes || [],
         shapes: shapes || [],
-        templateName: currentRoomData.template || null
+        templateName: chatRoomData.templateKey || chatRoomData.template || null,
+        domainData: window.BoardTemplates ? window.BoardTemplates.getBoardState() : null
       };
 
       console.log(`[AI Chat] Sending request to /api/ai-chat with question: ${question}`);
@@ -3706,11 +3772,119 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   if (voiceConfirm && voiceBar) {
+    let recognition = null;
+    let isListening = false;
+    let latestTranscript = '';
+
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+
+      recognition.onstart = () => {
+        isListening = true;
+        latestTranscript = '';
+        const statusSpan = voiceBar.querySelector('.voice-status');
+        if (statusSpan) statusSpan.innerHTML = 'Listening... <span class="voice-dot"></span>';
+        micBtn.classList.add('mic-active');
+      };
+
+      recognition.onresult = (event) => {
+        let interimTranscript = '';
+        let finalTranscript = '';
+
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript;
+          } else {
+            interimTranscript += event.results[i][0].transcript;
+          }
+        }
+
+        const hintSpan = voiceBar.querySelector('.voice-hint');
+        if (hintSpan) {
+          // Show live interim results in a dimmed state, final in bold
+          hintSpan.innerHTML = `<span style="opacity: 0.6">${interimTranscript}</span> <strong>${finalTranscript}</strong>`;
+        }
+
+        // 🔥 DIRECT EXECUTION: Trigger command on final transcript
+        if (finalTranscript) {
+          console.log('[Voice] Final Transcript:', finalTranscript);
+          latestTranscript = finalTranscript.trim();
+          const intent = window.VoiceParser.parse(latestTranscript);
+          if (intent && intent.type !== 'unknown') {
+            window.CommandDispatcher.dispatch(intent);
+
+            // Provide visual feedback that command was caught
+            if (hintSpan) {
+              hintSpan.innerHTML = `<span style="color: #22c55e">✓ ${latestTranscript}</span>`;
+              setTimeout(() => { if (isListening) hintSpan.innerHTML = ''; }, 1500);
+            }
+          }
+          latestTranscript = '';
+        }
+      };
+
+      recognition.onerror = (event) => {
+        console.error('[Voice] Error:', event.error);
+        if (event.error !== 'no-speech') {
+          window.VoiceUtils.showToast('Voice error: ' + event.error, 'error');
+        }
+        stopListening();
+      };
+
+      recognition.onend = () => {
+        // If we have a transcript but it didn't auto-stop for some reason, we keep it stored
+        isListening = false;
+        micBtn.classList.remove('mic-active');
+      };
+    }
+
+    function startListening() {
+      if (!recognition) {
+        window.VoiceUtils.showToast('Speech recognition not supported in this browser', 'error');
+        return;
+      }
+      if (!isListening) {
+        recognition.start();
+        voiceBar.classList.remove('hidden');
+      }
+    }
+
+    function stopListening() {
+      if (recognition && isListening) {
+        recognition.stop();
+      }
+      isListening = false;
+      voiceBar.classList.add('hidden');
+      micBtn.classList.remove('mic-active');
+    }
+
+    micBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (isListening) {
+        stopListening();
+      } else {
+        startListening();
+      }
+    });
+
     voiceConfirm.addEventListener('click', (e) => {
       e.stopPropagation();
-      // Placeholder for processing
-      voiceBar.classList.add('hidden');
-      if (micBtn) micBtn.classList.remove('mic-active'); // Remove glow
+      console.log('[Voice] Confirm clicked. Latest transcript:', latestTranscript);
+      if (latestTranscript) {
+        const intent = window.VoiceParser.parse(latestTranscript);
+        window.CommandDispatcher.dispatch(intent);
+        latestTranscript = ''; // Clear after use
+      }
+      stopListening();
+    });
+
+    voiceClose.addEventListener('click', (e) => {
+      e.stopPropagation();
+      stopListening();
     });
   }
 
