@@ -268,10 +268,38 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  const imageModalContent = document.getElementById("image-modal-content");
+
+  function openImageModal() {
+    if (imageSourceModal) {
+      imageSourceModal.classList.remove("hidden");
+      if (imageModalContent) {
+        requestAnimationFrame(() => {
+          imageModalContent.classList.remove("scale-95", "opacity-0");
+          imageModalContent.classList.add("scale-100", "opacity-100");
+        });
+      }
+    }
+  }
+
+  function closeImageModalFn() {
+    if (imageSourceModal) {
+      if (imageModalContent) {
+        imageModalContent.classList.remove("scale-100", "opacity-100");
+        imageModalContent.classList.add("scale-95", "opacity-0");
+        setTimeout(() => {
+          imageSourceModal.classList.add("hidden");
+        }, 300); // Wait for transition
+      } else {
+        imageSourceModal.classList.add("hidden");
+      }
+    }
+  }
+
   if (imageBtn) {
     imageBtn.addEventListener("click", () => {
       setTool("image");
-      if (imageSourceModal) imageSourceModal.classList.remove("hidden");
+      openImageModal();
     });
   }
 
@@ -280,30 +308,89 @@ document.addEventListener("DOMContentLoaded", () => {
     localImageBtn.onclick = () => {
       const imgInput = document.getElementById("image-upload");
       if (imgInput) imgInput.click();
-      if (imageSourceModal) imageSourceModal.classList.add("hidden");
     };
   }
 
-  // AI Image Option (Placeholder)
-  if (aiImageBtn) {
-    aiImageBtn.onclick = () => {
+  // Handle file selection
+  const imgInput = document.getElementById("image-upload");
+  if (imgInput) {
+    imgInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      if (file.size > 10 * 1024 * 1024) {
+        alert("File too large. Max size is 10MB.");
+        imgInput.value = "";
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const dataUrl = event.target.result;
+
+        const img = new Image();
+        img.onload = () => {
+          let w = img.width;
+          let h = img.height;
+          // Scale to max width/height while keeping aspect ratio
+          const maxDim = 400;
+          if (w > maxDim || h > maxDim) {
+            if (w > h) {
+              h = (h / w) * maxDim;
+              w = maxDim;
+            } else {
+              w = (w / h) * maxDim;
+              h = maxDim;
+            }
+          }
+
+          const centerX = (-window.canvasOffsetX + window.innerWidth / 2) / window.canvasScale;
+          const centerY = (-window.canvasOffsetY + window.innerHeight / 2) / window.canvasScale;
+
+          const newShape = {
+            id: 'img_' + Date.now() + Math.random().toString(36).substr(2, 9),
+            type: 'image',
+            url: dataUrl,
+            x: centerX - w / 2,
+            y: centerY - h / 2,
+            width: w,
+            height: h,
+            rotation: 0
+          };
+
+          if (typeof shapes !== 'undefined') {
+            shapes.push(newShape);
+            if (window.socket) window.socket.emit("add-shape", newShape);
+            if (typeof renderAllShapes === 'function') renderAllShapes();
+          }
+        };
+        img.src = dataUrl;
+
+        closeImageModalFn();
+        imgInput.value = ""; // reset for future uploads
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // AI Image Option
+  const aiTabBtn = document.getElementById("tab-ai");
+  if (aiImageBtn || aiTabBtn) {
+    (aiTabBtn || aiImageBtn).onclick = () => {
       alert("AI Image Generation feature coming soon!");
-      if (imageSourceModal) imageSourceModal.classList.add("hidden");
     };
   }
 
   // Close Modal
   if (closeImageModal) {
-    closeImageModal.onclick = () => {
-      if (imageSourceModal) imageSourceModal.classList.add("hidden");
-    };
+    closeImageModal.onclick = closeImageModalFn;
   }
 
   // Close Modal on Backdrop Click
   if (imageSourceModal) {
     imageSourceModal.onclick = (e) => {
       if (e.target === imageSourceModal) {
-        imageSourceModal.classList.add("hidden");
+        closeImageModalFn();
       }
     };
   }
@@ -2545,12 +2632,40 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function highlightSelection() {
-    document.querySelectorAll('.shape-object, .text-element, .note-element').forEach(el => el.classList.remove('selected'));
+    document.querySelectorAll('.shape-object, .text-element, .note-element').forEach(el => {
+      el.classList.remove('selected');
+      el.querySelectorAll('.resize-handle, .shape-delete, .rotate-handle').forEach(h => h.remove());
+    });
     selectedElements.forEach(el => {
       let cssClass = el.type === 'shape' ? '.shape-object' : el.type === 'text' ? '.text-element' : '.note-element';
       let dataAttr = el.type === 'shape' ? 'shapeId' : el.type === 'text' ? 'textId' : 'noteId';
       const domEl = document.querySelector(`${cssClass}[data-${el.type}-id="${el.id}"]`);
-      if (domEl) domEl.classList.add('selected');
+      if (domEl) {
+        domEl.classList.add('selected');
+        // Add handles for shape/image resizing, rotation, and deletion
+        if (el.type === 'shape') {
+          // Resize Handles
+          ['nw', 'ne', 'sw', 'se'].forEach(pos => {
+            const h = document.createElement('div');
+            h.className = `resize-handle ${pos}`;
+            h.addEventListener('mousedown', startResize);
+            domEl.appendChild(h);
+          });
+
+          // Delete Handle
+          const del = document.createElement('div');
+          del.className = 'shape-delete';
+          del.innerHTML = '&times;';
+          del.addEventListener('mousedown', deleteShape);
+          domEl.appendChild(del);
+
+          // Rotate Handle
+          const rot = document.createElement('div');
+          rot.className = 'rotate-handle';
+          rot.addEventListener('mousedown', startRotate);
+          domEl.appendChild(rot);
+        }
+      }
     });
     redraw();
   }
@@ -2820,6 +2935,35 @@ document.addEventListener("DOMContentLoaded", () => {
     document.addEventListener('mouseup', stopResize);
   }
 
+  function startRotate(e) {
+    e.stopPropagation();
+
+    const handle = e.target;
+    const shapeEl = handle.parentElement;
+    const shape = shapes.find(s => s.id === shapeEl.dataset.shapeId);
+
+    // Get center of shape for rotation calculation
+    const rect = shapeEl.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+
+    function rotate(moveE) {
+      const angle = Math.atan2(moveE.clientY - centerY, moveE.clientX - centerX);
+      let degrees = (angle * 180 / Math.PI) + 90;
+      shape.rotation = degrees;
+      shapeEl.style.transform = `rotate(${shape.rotation}deg)`;
+    }
+
+    function stopRotate() {
+      document.removeEventListener('mousemove', rotate);
+      document.removeEventListener('mouseup', stopRotate);
+      socket.emit("shape-update", shape);
+    }
+
+    document.addEventListener('mousemove', rotate);
+    document.addEventListener('mouseup', stopRotate);
+  }
+
   function deleteShape(e) {
     e.stopPropagation();
 
@@ -2837,7 +2981,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!e.target.closest('.shape-object')) {
       document.querySelectorAll('.shape-object').forEach(el => {
         el.classList.remove('selected');
-        el.querySelectorAll('.resize-handle, .shape-delete').forEach(h => h.remove());
+        el.querySelectorAll('.resize-handle, .shape-delete, .rotate-handle').forEach(h => h.remove());
       });
       selectedShape = null;
     }
@@ -3380,13 +3524,11 @@ document.addEventListener("DOMContentLoaded", () => {
       const resultsDivider = document.getElementById('results-divider');
       const chatSection = document.getElementById('ai-chat-section');
       const chatHistory = document.getElementById('ai-chat-history');
-      const loadingScreen = document.getElementById('ai-loading-container');
       // summaryContainer is defined in upper scope
 
       if (summaryContainer) summaryContainer.classList.add('hidden');
       if (resultsDivider) resultsDivider.classList.add('hidden');
       if (chatSection) chatSection.classList.add('hidden');
-      if (loadingScreen) loadingScreen.classList.add('hidden');
       if (chatHistory) {
         chatHistory.innerHTML = '<div class="chat-bubble ai-bubble fade-in">Hello! I\'ve analyzed your board. Do you have any specific questions about these insights?</div>';
       }
@@ -3418,12 +3560,10 @@ document.addEventListener("DOMContentLoaded", () => {
       const resultsDivider = document.getElementById('results-divider');
       const chatSection = document.getElementById('ai-chat-section');
       const chatHistory = document.getElementById('ai-chat-history');
-      const loadingScreen = document.getElementById('ai-loading-container');
 
       if (summaryContainer) summaryContainer.classList.add('hidden');
       if (resultsDivider) resultsDivider.classList.add('hidden');
       if (chatSection) chatSection.classList.add('hidden');
-      if (loadingScreen) loadingScreen.classList.add('hidden');
       if (chatHistory) {
         chatHistory.innerHTML = '<div class="chat-bubble ai-bubble fade-in">Hello! I\'ve analyzed your board. Do you have any specific questions about these insights?</div>';
       }
@@ -3457,11 +3597,11 @@ document.addEventListener("DOMContentLoaded", () => {
       const resultsDivider = document.getElementById('results-divider');
       const summaryContainer = document.getElementById('summary-container');
       const summarizeSubmit = document.getElementById('summarize-submit');
-      const loadingScreen = document.getElementById('ai-loading-container');
+      const generatingOverlay = document.getElementById('ai-generating-overlay');
 
-      // 1. Enter Loading State
+      // Hide generate button and show loading overlay
       if (summarizeSubmit) summarizeSubmit.classList.add('hidden');
-      if (loadingScreen) loadingScreen.classList.remove('hidden');
+      if (generatingOverlay) generatingOverlay.classList.remove('hidden');
 
       try {
         // Collect board data
@@ -3590,37 +3730,90 @@ document.addEventListener("DOMContentLoaded", () => {
         const execSummaryEl = document.getElementById('exec-summary-text');
         if (execSummaryEl) execSummaryEl.innerText = execSummary || 'Analysis complete. No critical summary generated.';
 
-        // 2. Populate Key Insights
+        // 2. Set timestamp
+        const synthTimeEl = document.getElementById('synth-time');
+        if (synthTimeEl) {
+          const now = new Date();
+          synthTimeEl.innerText = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) + ' GMT';
+        }
+
+        // 3. Generate random process ID
+        const processIdEl = document.getElementById('synth-process-id');
+        if (processIdEl) {
+          processIdEl.innerText = 'SX-' + Math.floor(1000 + Math.random() * 9000) + '-BETA';
+        }
+
+        // 4. Populate Key Insights as cards
         const keyInsightsList = document.getElementById('key-insights-list');
         if (keyInsightsList) {
-          keyInsightsList.innerHTML = '';
           const points = keyInsightsText.split('\n').filter(p => p.trim().startsWith('-'));
           if (points.length > 0) {
-            points.forEach(p => {
+            const icons = ['△', '✳', '⬒', '◇', '▣', '⊙'];
+            keyInsightsList.innerHTML = '';
+            points.slice(0, 5).forEach((p, i) => {
+              const cleanText = p.replace('-', '').trim();
+              // Split into title and description if possible (first sentence = title)
+              const firstDot = cleanText.indexOf('.');
+              let title, desc;
+              if (firstDot > 0 && firstDot < cleanText.length - 1) {
+                title = cleanText.substring(0, firstDot + 1);
+                desc = cleanText.substring(firstDot + 1).trim();
+              } else {
+                title = cleanText;
+                desc = '';
+              }
               const li = document.createElement('li');
-              li.innerHTML = `<span class="bullet-arrow"></span> ${p.replace('-', '').trim()}`;
+              li.className = 'synth-insight-card';
+              li.innerHTML = `
+                <span class="synth-insight-icon">${icons[i % icons.length]}</span>
+                <div>
+                  <strong>${title}</strong>
+                  ${desc ? '<p>' + desc + '</p>' : ''}
+                </div>
+              `;
               keyInsightsList.appendChild(li);
             });
-          } else {
-            keyInsightsList.innerHTML = '<li><span class="bullet-dot"></span> No specific insights identified.</li>';
           }
         }
 
-        // Card C, D, E, F removed as requested
+        // 5. Populate Critical Actions from secondary insights or key insights
+        const actionsList = document.getElementById('synth-actions-list');
+        if (actionsList) {
+          const secPoints = secondaryInsights.split('\n').filter(p => p.trim().startsWith('-'));
+          const actionSource = secPoints.length > 0 ? secPoints : keyInsightsText.split('\n').filter(p => p.trim().startsWith('-'));
+          if (actionSource.length > 0) {
+            actionsList.innerHTML = '';
+            actionSource.slice(0, 3).forEach((p, i) => {
+              const li = document.createElement('li');
+              li.innerHTML = `<span class="synth-action-num">${i + 1}</span><span>${p.replace('-', '').trim()}</span>`;
+              actionsList.appendChild(li);
+            });
+          }
+        }
 
-        await new Promise(r => setTimeout(r, 1000)); // Brief pause to show loading state
+        // 6. Update confidence score based on data richness
+        const totalElements = (textElements?.length || 0) + (stickyNotes?.length || 0) + (shapes?.length || 0) + (paths?.length || 0);
+        const confidenceVal = Math.min(98, Math.max(40, Math.round(60 + (totalElements * 2))));
+        const confidenceEl = document.getElementById('synth-confidence-val');
+        if (confidenceEl) confidenceEl.innerText = confidenceVal + '%';
+        const ringCircle = document.getElementById('synth-ring-circle');
+        if (ringCircle) {
+          const circumference = 163.36;
+          ringCircle.style.strokeDashoffset = circumference * (1 - confidenceVal / 100);
+        }
+        const dataPointsEl = document.getElementById('synth-data-points');
+        if (dataPointsEl) {
+          dataPointsEl.innerText = totalElements > 1000 ? (totalElements / 1000).toFixed(1) + 'k' : totalElements.toString();
+        }
 
-        // Hide Loading Screen
-        if (loadingScreen) loadingScreen.classList.add('hidden');
+        // Hide generating overlay and show results
+        if (generatingOverlay) generatingOverlay.classList.add('hidden');
 
-        // Show Results
-        if (resultsDivider) resultsDivider.classList.remove('hidden');
+        // Hide the old modal content and show the synth results as the full window
+        const aiModalContent = document.querySelector('.ai-modal-content');
+        if (aiModalContent) aiModalContent.classList.add('hidden');
         if (summaryContainer) {
           summaryContainer.classList.remove('hidden');
-          // Trigger animations by reflowing
-          summaryContainer.style.display = 'none';
-          summaryContainer.offsetHeight;
-          summaryContainer.style.display = 'grid';
         }
 
         // --- Show AI Chat Section ---
@@ -3632,7 +3825,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       } catch (error) {
         console.error('[AI] Summarization error:', error);
-        if (loadingScreen) loadingScreen.classList.add('hidden');
+        if (generatingOverlay) generatingOverlay.classList.add('hidden');
         if (summarizeSubmit) {
           summarizeSubmit.classList.remove('hidden');
           summarizeSubmit.disabled = false;
@@ -3643,14 +3836,75 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   }
+
+  // Close Synth Modal — return to original AI Insights modal
+  const closeSynthBtn = document.getElementById('close-synth-modal');
+  if (closeSynthBtn) {
+    closeSynthBtn.addEventListener('click', () => {
+      const summaryContainer = document.getElementById('summary-container');
+      const aiModalContent = document.querySelector('.ai-modal-content');
+      const aiModal = document.getElementById('ai-summary-modal');
+      if (summaryContainer) summaryContainer.classList.add('hidden');
+      if (aiModalContent) aiModalContent.classList.remove('hidden');
+      // Optionally close the entire modal
+      if (aiModal) aiModal.classList.add('hidden');
+      // Reset the generate button
+      const summarizeSubmit = document.getElementById('summarize-submit');
+      if (summarizeSubmit) summarizeSubmit.classList.remove('hidden');
+    });
+  }
+  // Export to PDF Logic
+  const exportPdfBtn = document.getElementById('synth-export-pdf');
+  if (exportPdfBtn) {
+    exportPdfBtn.addEventListener('click', () => {
+      const element = document.getElementById('summary-container');
+      const boardName = document.getElementById('board-name')?.innerText || 'SlateX-Board';
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const filename = `${boardName}-AI-Insights-${timestamp}.pdf`;
+
+      // Options for html2pdf
+      const opt = {
+        margin: [10, 10],
+        filename: filename,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { 
+          scale: 2, 
+          useCORS: true,
+          letterRendering: true,
+          backgroundColor: document.body.classList.contains('dark-mode') ? '#0c0c0c' : '#f8fafc'
+        },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+      };
+
+      // Temporarily hide elements with .no-pdf class
+      const noPdfElements = document.querySelectorAll('.no-pdf');
+      noPdfElements.forEach(el => el.style.visibility = 'hidden');
+
+      // Generate PDF
+      html2pdf().set(opt).from(element).save().then(() => {
+        // Restore visibility
+        noPdfElements.forEach(el => el.style.visibility = 'visible');
+      });
+    });
+  }
+
   // AI Chat Toggle Logic
   const toggleAiChat = document.getElementById('toggle-ai-chat');
   if (toggleAiChat) {
     toggleAiChat.addEventListener('click', () => {
       const chatSection = document.getElementById('ai-chat-section');
       if (chatSection) {
+        const isCurrentlyHidden = chatSection.classList.contains('hidden');
         chatSection.classList.toggle('hidden');
         chatSection.classList.toggle('fade-in');
+
+        // Scroll into view if we're opening it
+        if (isCurrentlyHidden) {
+          setTimeout(() => {
+            chatSection.scrollIntoView({ behavior: 'smooth', block: 'end' });
+          }, 100);
+        }
       }
     });
   }

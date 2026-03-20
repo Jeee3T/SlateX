@@ -8,6 +8,8 @@
 
   function applyTheme(theme) {
     document.body.classList.toggle('dark-mode', theme === 'dark');
+    // Also toggle Tailwind's 'dark' class on <html> so dark: variants work
+    document.documentElement.classList.toggle('dark', theme === 'dark');
   }
 
   function toggleTheme() {

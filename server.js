@@ -11,7 +11,7 @@ const mongoose = require("mongoose");
 const session = require("express-session");
 const MongoStore = require("connect-mongo");
 const authRoutes = require("./routes/auth");
-const roomRoutes = require("./routes/rooms"); // ADD THIS LINE
+const roomRoutes = require("./routes/rooms");  
 const { isAuthenticated, redirectIfAuthenticated } = require("./middleware/authMiddleware");
 
 // Google AI configuration

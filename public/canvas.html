@@ -37,6 +37,8 @@
   <link rel="stylesheet" href="/css/canvas.css">
   <link rel="stylesheet" href="/css/theme-toggle.css">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <!-- html2pdf.js for PDF export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <!-- ml5.js for DoodleNet ML Model (QuickDraw) - Rolling back to 0.12.2 for maximum compatibility -->
   <script src="https://unpkg.com/ml5@0.12.2/dist/ml5.min.js"></script>
 </head>
@@ -622,24 +624,72 @@
   </div>
 
   <!-- Image Source Modal -->
-  <div id="image-source-modal" class="modal-overlay hidden">
-    <div class="source-modal glass">
-      <div class="modal-header">
-        <h3 class="text-lg font-bold">Add Image</h3>
-        <button id="close-image-modal" class="close-btn">&times;</button>
-      </div>
-      <div class="modal-body grid grid-cols-2 gap-4">
-        <button id="local-image-btn" class="source-option">
-          <span class="material-symbols-outlined text-4xl mb-2">upload_file</span>
-          <span class="font-semibold text-sm">Local Storage</span>
-          <p class="text-[11px] opacity-60">Upload from your device</p>
+  <div id="image-source-modal"
+    class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 dark:bg-black/60 backdrop-blur-md transition-all duration-300">
+    <div
+      class="w-full max-w-[480px] rounded-2xl bg-white dark:bg-[#121212] border border-slate-200 dark:border-zinc-800 shadow-2xl overflow-hidden flex flex-col transform transition-transform scale-95 opacity-0"
+      id="image-modal-content">
+      <!-- Header -->
+      <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-zinc-800/80">
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-outlined text-primary text-xl">image</span>
+          <h3 class="text-[15px] font-semibold text-slate-800 dark:text-slate-100">Insert Image
+          </h3>
+        </div>
+        <button id="close-image-modal"
+          class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+          <span class="material-symbols-outlined text-[20px]">close</span>
         </button>
-        <button id="ai-image-btn" class="source-option">
-          <span class="material-symbols-outlined text-4xl mb-2">smart_toy</span>
-          <span class="font-semibold text-sm">AI Generate</span>
-          <p class="text-[11px] opacity-60">Create with AI prompt</p>
+      </div>
+
+      <!-- Tabs -->
+      <div class="px-6 pt-5 pb-2">
+        <div class="flex bg-slate-100/80 dark:bg-[#1a1a1a] p-1 rounded-xl">
+          <button
+            class="flex-1 flex items-center justify-center gap-2 py-2 bg-primary text-white rounded-lg shadow-sm text-[13px] font-medium transition-all"
+            id="tab-local">
+            <span class="material-symbols-outlined text-[18px]">upload</span> Upload
+          </button>
+          <button
+            class="flex-1 flex items-center justify-center gap-2 py-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-lg text-[13px] font-medium transition-all"
+            id="tab-ai">
+            <span class="material-symbols-outlined text-[18px]">auto_awesome</span> AI Generate
+          </button>
+        </div>
+      </div>
+
+      <!-- Drag & Drop Zone -->
+      <div class="px-6 py-4">
+        <button id="local-image-btn"
+          class="w-full border border-dashed border-slate-300 dark:border-zinc-700/80 rounded-xl hover:bg-slate-50 dark:hover:bg-[#161616] hover:border-primary/50 transition-all group flex flex-col items-center justify-center py-10 relative cursor-pointer">
+          <div
+            class="w-12 h-12 rounded-full bg-slate-100 dark:bg-[#1a1f2e] flex items-center justify-center mb-4 text-slate-600 dark:text-primary group-hover:scale-110 transition-transform">
+            <span class="material-symbols-outlined text-2xl">cloud_upload</span>
+          </div>
+          <h4 class="text-[14px] text-slate-800 dark:text-slate-200 font-semibold mb-1">Drag &
+            drop your image here</h4>
+          <p class="text-[12px] text-slate-500 dark:text-slate-500 mb-4">Supports PNG, JPG, SVG up
+            to 10MB</p>
+          <div
+            class="bg-slate-800 hover:bg-slate-700 dark:bg-[#2c2c2c] dark:hover:bg-[#383838] text-white text-[13px] font-semibold px-4 py-2 rounded-lg transition-colors pointer-events-none">
+            Choose from Local Storage
+          </div>
         </button>
       </div>
+
+      <!-- Footer Info -->
+      <div
+        class="px-6 py-3 border-t border-slate-100 dark:border-zinc-800/50 flex items-center justify-between bg-slate-50/50 dark:bg-transparent">
+        <div class="flex items-center gap-1.5 text-[10px] text-slate-500 dark:text-slate-400">
+          <span class="material-symbols-outlined text-[12px]">info</span>
+          Max file size 10MB
+        </div>
+        <div class="text-[10px] text-slate-500 dark:text-slate-400">
+          Canvas AI v2.4
+        </div>
+      </div>
+
+      <input type="file" id="image-upload" accept="image/png, image/jpeg, image/svg+xml" class="hidden">
     </div>
   </div>
 
@@ -678,6 +728,7 @@
   </div>
 
 
+
   <!-- AI Insights Modal -->
   <div id="ai-summary-modal" class="ai-modal hidden">
     <div class="ai-modal-overlay"></div>
@@ -701,11 +752,7 @@
               <circle cx="12" cy="12" r="10"></circle>
               <path d="M12 8v4l3 3"></path>
             </svg></button>
-          <button id="toggle-ai-chat" class="ai-action-btn" title="Toggle Chat">
-            <div class="mini-gemini">
-              <div></div>
-            </div>
-          </button>
+
           <button id="close-ai-modal" class="ai-close-btn">
             <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2.5" fill="none">
               <path d="M18 6L6 18M6 6l12 12"></path>
@@ -744,105 +791,192 @@
           </div>
         </div>
 
-        <div id="ai-loading-screen" class="ai-loading-screen hidden">
-          <div class="loading-content">
-            <div class="loading-left">
-              <div class="loader-graphic">
-                <div class="gear-outer">
-                  <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
-                    <path
-                      d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1Z" />
-                  </svg>
-                </div>
-                <h3>Synthesizing<span class="pulse-dots"><span>.</span><span>.</span><span>.</span></span></h3>
-              </div>
-            </div>
-            <div class="loading-right">
-              <div class="loading-steps">
-                <div class="step-item" id="step-layout">
-                  <div class="step-icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none"
-                      stroke="currentColor" stroke-width="2">
-                      <path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z" />
-                    </svg></div>
-                  <div class="step-details">
-                    <span class="step-title">Analyzing Layout</span>
-                    <span class="step-desc">Mapping spatial relationships between canvas elements</span>
-                  </div>
-                  <div class="step-status" id="step-layout-status">0%</div>
-                </div>
-                <div class="step-item muted" id="step-context">
-                  <div class="step-icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none"
-                      stroke="currentColor" stroke-width="2">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                      <polyline points="14 2 14 8 20 8" />
-                    </svg></div>
-                  <div class="step-details">
-                    <span class="step-title">Extracting Context</span>
-                    <span class="step-desc">Processing handwriting and sticky note metadata</span>
-                  </div>
-                  <div class="step-status" id="step-context-status"><svg viewBox="0 0 24 24" width="12" height="12"
-                      fill="currentColor">
-                      <circle cx="12" cy="12" r="2" />
-                      <circle cx="19" cy="12" r="2" />
-                      <circle cx="5" cy="12" r="2" />
-                    </svg></div>
-                </div>
-                <div class="step-item muted" id="step-insights">
-                  <div class="step-icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none"
-                      stroke="currentColor" stroke-width="2">
-                      <path
-                        d="M9.663 17h4.674M12 3v1m6.364 1.364-.707.707M21 12h-1M4 12H3m3.364-7.636.707.707M2 20h20M12 17v4m0-14a5 5 0 0 0-5 5c0 4 5 6 5 6s5-2 5-6a5 5 0 0 0-5-5Z" />
-                    </svg></div>
-                  <div class="step-details">
-                    <span class="step-title">Generating Insights</span>
-                    <span class="step-desc">Synthesizing actionable bullet points from raw data</span>
-                  </div>
-                  <div class="step-status" id="step-insights-status"></div>
-                </div>
-              </div>
-              <div class="loading-footer-progress">
-                <div class="load-meta">
-                  <span class="load-label">SYSTEM LOAD: ELEVATION</span>
-                  <span class="load-status" id="ai-load-status">PROCESSING</span>
-                </div>
-                <div class="custom-progress-bar">
-                  <div id="ai-progress-fill" class="progress-fill"></div>
-                </div>
-              </div>
-            </div>
+        <!-- Full-Screen Generating Overlay -->
+        <div id="ai-generating-overlay" class="ai-generating-overlay hidden">
+          <div class="loader-wrapper">
+            <span class="loader-letter">G</span>
+            <span class="loader-letter">e</span>
+            <span class="loader-letter">n</span>
+            <span class="loader-letter">e</span>
+            <span class="loader-letter">r</span>
+            <span class="loader-letter">a</span>
+            <span class="loader-letter">t</span>
+            <span class="loader-letter">i</span>
+            <span class="loader-letter">n</span>
+            <span class="loader-letter">g</span>
+            <div class="loader"></div>
           </div>
         </div>
 
-        <div id="results-divider" class="ai-divider hidden">
-          <div class="divider-line"></div>
-          <span class="divider-text">RESULTS DISPLAY SECTION (Collapsed until generated)</span>
-          <div class="divider-glow"></div>
-        </div>
+        <div id="results-divider" class="ai-divider hidden"></div>
 
-        <div id="summary-container" class="ai-results-grid hidden">
-          <!-- Card A: Executive Summary -->
-          <div class="ai-card glass-card fade-in delay-1">
-            <div class="card-tag">A. EXECUTIVE SUMMARY CARD</div>
-            <p id="exec-summary-text" class="card-content">This whiteboard is currently synthesizing key abstract
-              patterns. The workspace exhibits high creative entropy with continuous wavy line drawings. The content is
-              forming into structured data clusters from initial noise.</p>
-            <div class="card-progress-bar"></div>
+
+
+      </div>
+
+      <div class="ai-footer">
+        <button id="expand-intelligence-btn" class="ai-minimal-btn">
+          <span>Expand Full Intelligence</span>
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2.5">
+            <line x1="7" y1="17" x2="17" y2="7"></line>
+            <polyline points="7 7 17 7 17 17"></polyline>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- AI Synthesis Results — Full Modal Panel -->
+    <div id="summary-container" class="synth-results synth-modal-panel hidden">
+      <!-- Header -->
+      <div class="synth-header">
+        <div class="synth-header-left">
+          <h2 class="synth-title">AI Synthesis <span class="synth-accent">Results</span></h2>
+          <p class="synth-subtitle">Refined intelligence derived from board assets. Analysis completed at <span
+              id="synth-time"></span>.</p>
+        </div>
+        <div class="synth-header-actions">
+          <button id="toggle-ai-chat" class="ai-action-btn no-pdf" title="Toggle Chat">
+            <div class="mini-gemini">
+              <div></div>
+            </div>
+          </button>
+          <button id="synth-export-pdf" class="synth-btn synth-btn-outline no-pdf">Export PDF</button>
+          <button id="synth-share" class="synth-btn synth-btn-primary no-pdf">Share Report</button>
+          <button id="close-synth-modal" class="synth-close-btn no-pdf" title="Close">&times;</button>
+        </div>
+      </div>
+
+      <!-- Scrollable Content -->
+      <div class="synth-body">
+        <!-- Top Row: Executive Summary + Critical Actions -->
+        <div class="synth-top-row">
+          <div class="synth-card synth-card-exec fade-in delay-1">
+            <div class="synth-card-label"><span class="synth-dot-blue"></span> EXECUTIVE SUMMARY</div>
+            <p id="exec-summary-text" class="synth-exec-text">This whiteboard is currently synthesizing key abstract
+              patterns.</p>
+            <div class="synth-confidence">
+              <div class="synth-confidence-ring" id="synth-confidence-ring">
+                <svg viewBox="0 0 60 60">
+                  <circle class="synth-ring-bg" cx="30" cy="30" r="26" />
+                  <circle class="synth-ring-fill" cx="30" cy="30" r="26" id="synth-ring-circle" />
+                </svg>
+                <span class="synth-ring-value" id="synth-confidence-val">90%</span>
+              </div>
+              <div class="synth-confidence-info">
+                <strong>Confidence Score</strong>
+                <span>Based on <span id="synth-data-points">1.4k</span> data points analyzed</span>
+              </div>
+            </div>
           </div>
 
-          <!-- Card B: Key Insights -->
-          <div class="ai-card glass-card fade-in delay-2">
-            <div class="card-tag">KEY INSIGHTS</div>
-            <ul id="key-insights-list" class="smart-bullets">
-              <li><span class="bullet-arrow"></span> Smart bullets</li>
-              <li><span class="bullet-dot"></span> Information markers</li>
+          <div class="synth-card synth-card-actions fade-in delay-2">
+            <div class="synth-card-label">CRITICAL ACTIONS</div>
+            <ul id="synth-actions-list" class="synth-actions-list">
+              <li><span class="synth-action-num">1</span><span>Audit legacy compliance frameworks for Q4
+                  compatibility.</span></li>
+              <li><span class="synth-action-num">2</span><span>Scale DevOps capacity to meet increased throughput
+                  needs.</span></li>
+              <li><span class="synth-action-num">3</span><span>Initiate stakeholders brief for decentralized
+                  pivot.</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Bottom Row: Key Insights + Content Analysis -->
+        <div class="synth-bottom-row">
+          <div class="synth-col-insights fade-in delay-3">
+            <div class="synth-section-label">KEY INSIGHTS</div>
+            <ul id="key-insights-list" class="synth-insight-cards">
+              <li class="synth-insight-card">
+                <span class="synth-insight-icon">△</span>
+                <div>
+                  <strong>Growth Acceleration</strong>
+                  <p>Synthesis detects a trend toward rapid user acquisition in the APAC region, outperforming EMEA by
+                    22%.</p>
+                </div>
+              </li>
+              <li class="synth-insight-card">
+                <span class="synth-insight-icon">✳</span>
+                <div>
+                  <strong>Structural Friction</strong>
+                  <p>Redundancies identified in procurement pipelines causing an average delay of 4.2 days per sprint
+                    cycle.</p>
+                </div>
+              </li>
+              <li class="synth-insight-card">
+                <span class="synth-insight-icon">⬒</span>
+                <div>
+                  <strong>Pattern Consistency</strong>
+                  <p>Data consistency across distributed teams has improved from 'Moderate' to 'Exceptional' in 30 days.
+                  </p>
+                </div>
+              </li>
             </ul>
           </div>
 
-        </div>
+          <div class="synth-col-analysis fade-in delay-4">
+            <div class="synth-section-label">CONTENT ANALYSIS</div>
+            <div class="synth-gauges">
+              <div class="synth-gauge">
+                <div class="synth-gauge-ring">
+                  <svg viewBox="0 0 80 80">
+                    <circle class="synth-gauge-bg" cx="40" cy="40" r="34" />
+                    <circle class="synth-gauge-fill gauge-1" cx="40" cy="40" r="34" />
+                  </svg>
+                  <span class="synth-gauge-val"><span class="synth-gauge-num">75</span>%</span>
+                  <span class="synth-gauge-sub">VISUAL</span>
+                </div>
+                <div class="synth-gauge-label">Content Type</div>
+                <div class="synth-gauge-desc">Predominantly Diagrams</div>
+              </div>
+              <div class="synth-gauge">
+                <div class="synth-gauge-ring">
+                  <svg viewBox="0 0 80 80">
+                    <circle class="synth-gauge-bg" cx="40" cy="40" r="34" />
+                    <circle class="synth-gauge-fill gauge-2" cx="40" cy="40" r="34" />
+                  </svg>
+                  <span class="synth-gauge-val"><span class="synth-gauge-num">60</span>%</span>
+                  <span class="synth-gauge-sub">DENSITY</span>
+                </div>
+                <div class="synth-gauge-label">Complexity</div>
+                <div class="synth-gauge-desc">High Technical Debt</div>
+              </div>
+              <div class="synth-gauge">
+                <div class="synth-gauge-ring">
+                  <svg viewBox="0 0 80 80">
+                    <circle class="synth-gauge-bg" cx="40" cy="40" r="34" />
+                    <circle class="synth-gauge-fill gauge-3" cx="40" cy="40" r="34" />
+                  </svg>
+                  <span class="synth-gauge-val"><span class="synth-gauge-num">88</span>%</span>
+                  <span class="synth-gauge-sub">SIGNAL</span>
+                </div>
+                <div class="synth-gauge-label">Signal/Noise</div>
+                <div class="synth-gauge-desc">Optimal Clarity</div>
+              </div>
+            </div>
 
-        <!-- AI Insight Chat Interface -->
-        <div id="ai-chat-section" class="ai-chat-section hidden">
+            <div class="synth-depth-row">
+              <div class="synth-depth-left">
+                <div class="synth-section-label" style="margin-bottom:8px;">ANALYSIS DEPTH</div>
+                <div class="synth-depth-bars">
+                  <span class="synth-bar active"></span>
+                  <span class="synth-bar active"></span>
+                  <span class="synth-bar active"></span>
+                  <span class="synth-bar active"></span>
+                  <span class="synth-bar"></span>
+                </div>
+              </div>
+              <div class="synth-depth-right">
+                <span class="synth-meta-label">Process ID:</span>
+                <span class="synth-meta-id" id="synth-process-id">SX-9942-BETA</span>
+              </div>
+            </div>
+          </div>
+        </div> <!-- synth-bottom-row -->
+
+        <!-- AI Insight Chat Interface (Integrated into Results) -->
+        <div id="ai-chat-section" class="ai-chat-section hidden no-pdf" style="margin: 0 40px 20px;">
           <div class="chat-header">
             <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
@@ -865,16 +999,16 @@
           </div>
         </div>
       </div>
-
-      <div class="ai-footer">
-        <button id="expand-intelligence-btn" class="ai-minimal-btn">
-          <span>Expand Full Intelligence</span>
-          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2.5">
-            <line x1="7" y1="17" x2="17" y2="7"></line>
-            <polyline points="7 7 17 7 17 17"></polyline>
-          </svg>
-        </button>
+      <!-- Footer -->
+      <div class="synth-footer">
+        <span>&copy; 2024 NEURALLINK AI &nbsp;|&nbsp; SECURE SYNTHESIS PROTOCOL V4</span>
+        <div class="synth-footer-links">
+          <a href="#">PRIVACY</a>
+          <a href="#">SYSTEM LOGS</a>
+          <a href="#">SUPPORT</a>
+        </div>
       </div>
+
     </div>
   </div>
 
@@ -902,22 +1036,8 @@
   <!-- Exit button handler is now in canvas.js with save-on-exit functionality -->
 
 
-  <!-- Immersive Full-Screen "Generating" Animation -->
-  <div id="ai-loading-container" class="hidden">
-    <div class="loader-wrapper">
-      <span class="loader-letter">G</span>
-      <span class="loader-letter">e</span>
-      <span class="loader-letter">n</span>
-      <span class="loader-letter">e</span>
-      <span class="loader-letter">r</span>
-      <span class="loader-letter">a</span>
-      <span class="loader-letter">t</span>
-      <span class="loader-letter">i</span>
-      <span class="loader-letter">n</span>
-      <span class="loader-letter">g</span>
-      <div class="loader"></div>
-    </div>
-  </div>
+
+
   <!-- Voice Command UI -->
   <div id="voice-command-bar" class="voice-command-bar hidden">
     <div class="voice-loader">
