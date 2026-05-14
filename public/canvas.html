@@ -37,6 +37,8 @@
   <link rel="stylesheet" href="/css/canvas.css">
   <link rel="stylesheet" href="/css/theme-toggle.css">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <!-- jsPDF for programmatic PDF generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <!-- html2pdf.js for PDF export -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <!-- ml5.js for DoodleNet ML Model (QuickDraw) - Rolling back to 0.12.2 for maximum compatibility -->
@@ -841,6 +843,7 @@
             </div>
           </button>
           <button id="synth-export-pdf" class="synth-btn synth-btn-outline no-pdf">Export PDF</button>
+          <button id="synth-download-txt" class="synth-btn synth-btn-outline no-pdf" title="Download summary as plain text">Download .txt</button>
           <button id="synth-share" class="synth-btn synth-btn-primary no-pdf">Share Report</button>
           <button id="close-synth-modal" class="synth-close-btn no-pdf" title="Close">&times;</button>
         </div>

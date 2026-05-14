@@ -27,6 +27,7 @@ if (!GOOGLE_API_KEY) {
 const genAI = new GoogleGenerativeAI(GOOGLE_API_KEY);
 
 const app = express();
+app.set('trust proxy', 1); // Required for secure cookies behind Render's reverse proxy
 const server = http.createServer(app);
 const io = new Server(server);
 

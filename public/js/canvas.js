@@ -3494,6 +3494,9 @@ document.addEventListener("DOMContentLoaded", () => {
   setTimeout(checkBoardEmpty, 500); // Wait for init-board
 
   /* ================= AI BOARD SUMMARIZATION ================= */
+  // Stores the latest raw summary text from the Gemini API for downloads
+  let _aiSummaryRaw = null;
+
   const aiBtn = document.getElementById('ai-btn');
   const aiDropdown = document.getElementById('ai-dropdown');
   const summarizeBtn = document.getElementById('summarize-btn');
@@ -3714,6 +3717,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // --- Structured Parsing Logic ---
         const text = data.summary;
+        _aiSummaryRaw = text; // Store raw text so download buttons always have content
 
         function extractSection(sectionName) {
           const regex = new RegExp(`\\[${sectionName}\\]([\\s\\S]*?)(?=\\[|$)`, 'i');
@@ -3853,39 +3857,152 @@ document.addEventListener("DOMContentLoaded", () => {
       if (summarizeSubmit) summarizeSubmit.classList.remove('hidden');
     });
   }
-  // Export to PDF Logic
+  // ---- Helper: trigger a file download from a Blob ----
+  function _triggerDownload(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  // ---- Helper: extract a [SECTION] from the raw Gemini text ----
+  function _extractRawSection(rawText, sectionName) {
+    const regex = new RegExp(`\\[${sectionName}\\]([\\s\\S]*?)(?=\\[|$)`, 'i');
+    const match = rawText.match(regex);
+    return match ? match[1].trim() : '';
+  }
+
+  // Export PDF — uses jsPDF text API (no html2canvas, works on all modal layouts)
   const exportPdfBtn = document.getElementById('synth-export-pdf');
   if (exportPdfBtn) {
     exportPdfBtn.addEventListener('click', () => {
-      const element = document.getElementById('summary-container');
-      const boardName = document.getElementById('board-name')?.innerText || 'SlateX-Board';
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const filename = `${boardName}-AI-Insights-${timestamp}.pdf`;
+      if (!_aiSummaryRaw) {
+        alert('No summary yet. Please click "Generate Insights" first.');
+        return;
+      }
 
-      // Options for html2pdf
-      const opt = {
-        margin: [10, 10],
-        filename: filename,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { 
-          scale: 2, 
-          useCORS: true,
-          letterRendering: true,
-          backgroundColor: document.body.classList.contains('dark-mode') ? '#0c0c0c' : '#f8fafc'
-        },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-      };
+      // Resolve jsPDF from any of the globals it can be exposed under:
+      // - window.jspdf.jsPDF  (standalone jsPDF UMD v2+)
+      // - window.jsPDF        (older standalone build)
+      // - html2pdf bundled version (same as above in different environments)
+      const JsPDF =
+        (window.jspdf && window.jspdf.jsPDF) ||
+        window.jsPDF ||
+        (window.jspdf);           // fallback: jspdf itself if it is the constructor
+      if (!JsPDF || typeof JsPDF !== 'function') {
+        alert('PDF library unavailable. Please use "Download .txt" instead.');
+        return;
+      }
 
-      // Temporarily hide elements with .no-pdf class
-      const noPdfElements = document.querySelectorAll('.no-pdf');
-      noPdfElements.forEach(el => el.style.visibility = 'hidden');
+      const boardName = document.getElementById('board-name')?.innerText || 'SlateX Board';
+      const doc = new JsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+      const margin = 18;
+      const pageW = doc.internal.pageSize.getWidth();
+      const maxW  = pageW - margin * 2;
+      let y = margin;
 
-      // Generate PDF
-      html2pdf().set(opt).from(element).save().then(() => {
-        // Restore visibility
-        noPdfElements.forEach(el => el.style.visibility = 'visible');
+      // Helper: add a line, auto page-break
+      function pdfLine(text, { size = 11, bold = false, color = [30, 30, 30], gap = 7 } = {}) {
+        doc.setFontSize(size);
+        doc.setFont('helvetica', bold ? 'bold' : 'normal');
+        doc.setTextColor(...color);
+        const lines = doc.splitTextToSize(String(text), maxW);
+        lines.forEach(line => {
+          if (y > 278) { doc.addPage(); y = margin; }
+          doc.text(line, margin, y);
+          y += gap;
+        });
+      }
+
+      function pdfRule(color = [200, 200, 200]) {
+        if (y > 278) { doc.addPage(); y = margin; }
+        doc.setDrawColor(...color);
+        doc.setLineWidth(0.3);
+        doc.line(margin, y, pageW - margin, y);
+        y += 5;
+      }
+
+      // --- Title block ---
+      pdfLine('SlateX — AI Synthesis Report', { size: 20, bold: true, color: [59, 130, 246], gap: 9 });
+      pdfLine(`Board: ${boardName}`,           { size: 10, color: [100, 100, 100], gap: 6 });
+      pdfLine(`Generated: ${new Date().toLocaleString()}`, { size: 10, color: [100, 100, 100], gap: 5 });
+      pdfRule([59, 130, 246]);
+
+      // --- Sections from the raw Gemini text ---
+      const sectionDefs = [
+        { key: 'EXECUTIVE SUMMARY',  label: 'Executive Summary'  },
+        { key: 'KEY INSIGHTS',       label: 'Key Insights'       },
+        { key: 'METADATA',           label: 'Metadata'           },
+        { key: 'SECONDARY INSIGHTS', label: 'Secondary Insights' },
+      ];
+
+      sectionDefs.forEach(({ key, label }) => {
+        const content = _extractRawSection(_aiSummaryRaw, key);
+        if (!content) return;
+        pdfLine(label.toUpperCase(), { size: 12, bold: true, color: [59, 130, 246], gap: 8 });
+        pdfLine(content,             { size: 10, color: [30, 30, 30], gap: 6 });
+        y += 4;
       });
+
+      // --- Footer ---
+      pdfRule();
+      pdfLine('Powered by SlateX × Gemini AI', { size: 9, color: [150, 150, 150], gap: 5 });
+
+      const safeFilename = boardName.replace(/[^a-z0-9]/gi, '-') || 'SlateX-Board';
+      doc.save(`${safeFilename}-AI-Summary-${new Date().toISOString().slice(0, 10)}.pdf`);
+
+      // Visual feedback
+      const orig = exportPdfBtn.innerText;
+      exportPdfBtn.innerText = 'Saved!';
+      setTimeout(() => { exportPdfBtn.innerText = orig; }, 2000);
+    });
+  }
+
+  // Download Summary as Plain Text (.txt) — reads from the stored raw API text
+  const downloadTxtBtn = document.getElementById('synth-download-txt');
+  if (downloadTxtBtn) {
+    downloadTxtBtn.addEventListener('click', () => {
+      if (!_aiSummaryRaw) {
+        alert('No summary yet. Please click "Generate Insights" first.');
+        return;
+      }
+
+      const boardName = document.getElementById('board-name')?.innerText || 'SlateX Board';
+      const processId = document.getElementById('synth-process-id')?.innerText || '';
+      const synthTime  = document.getElementById('synth-time')?.innerText  || '';
+      const confidence = document.getElementById('synth-confidence-val')?.innerText || '';
+      const dataPoints = document.getElementById('synth-data-points')?.innerText || '';
+
+      const fullText = [
+        '========================================',
+        '   SlateX — AI Synthesis Report',
+        '========================================',
+        `Board:       ${boardName}`,
+        `Generated:   ${new Date().toLocaleString()}`,
+        `Process ID:  ${processId}`,
+        `Synth Time:  ${synthTime}`,
+        `Confidence:  ${confidence}  (${dataPoints} data points)`,
+        '',
+        _aiSummaryRaw,
+        '',
+        '========================================',
+        '  Powered by SlateX × Gemini AI',
+        '========================================',
+      ].join('\n');
+
+      const safeFilename = boardName.replace(/[^a-z0-9]/gi, '-') || 'SlateX-Board';
+      _triggerDownload(
+        new Blob([fullText], { type: 'text/plain;charset=utf-8' }),
+        `${safeFilename}-AI-Summary-${new Date().toISOString().slice(0, 10)}.txt`
+      );
+
+      const orig = downloadTxtBtn.innerText;
+      downloadTxtBtn.innerText = 'Downloaded!';
+      setTimeout(() => { downloadTxtBtn.innerText = orig; }, 2000);
     });
   }
 
