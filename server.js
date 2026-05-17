@@ -86,6 +86,11 @@ app.get("/about", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "about.html"));
 });
 
+// Example page (public)
+app.get("/example", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "example.html"));
+});
+
 // Auth page (redirect if already logged in)
 app.get("/auth", redirectIfAuthenticated, (req, res) => {
   res.sendFile(path.join(__dirname, "public", "auth.html"));
